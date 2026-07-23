@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import './App.css'
 
@@ -8,12 +9,144 @@ type SignInErrors = {
   password?: string
 }
 
+type OrganizationAccess = {
+  organizationId: string
+  organizationName: string
+  role: string
+  setupComplete: boolean
+  subscriptionStatus: string
+}
+
+type AccessResult = {
+  access: OrganizationAccess | null
+  error: string | null
+}
+
+async function getOrganizationAccess(userId: string): Promise<AccessResult> {
+  const { data: membership, error: membershipError } = await supabase
+    .from('organization_users')
+    .select('organization_id, role, is_active')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (membershipError) {
+    return {
+      access: null,
+      error: 'Unable to verify organization access.',
+    }
+  }
+
+  if (!membership?.organization_id || !membership.role) {
+    return {
+      access: null,
+      error: 'This account does not have active organization portal access.',
+    }
+  }
+
+  const { data: organization, error: organizationError } = await supabase
+    .from('organizations')
+    .select('id, name, setup_complete, subscription_status')
+    .eq('id', membership.organization_id)
+    .maybeSingle()
+
+  if (organizationError || !organization) {
+    return {
+      access: null,
+      error: 'Unable to load the organization connected to this account.',
+    }
+  }
+
+  if (organization.subscription_status !== 'active') {
+    return {
+      access: null,
+      error: 'This organization does not have an active portal subscription.',
+    }
+  }
+
+  return {
+    access: {
+      organizationId: organization.id,
+      organizationName: organization.name,
+      role: membership.role,
+      setupComplete: Boolean(organization.setup_complete),
+      subscriptionStatus: organization.subscription_status,
+    },
+    error: null,
+  }
+}
+
+function formatRole(role: string) {
+  return role
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [organizationAccess, setOrganizationAccess] =
+    useState<OrganizationAccess | null>(null)
+  const [accessError, setAccessError] = useState('')
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<SignInErrors>({})
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadSession(nextSession: Session | null) {
+      if (!isMounted) {
+        return
+      }
+
+      setSession(nextSession)
+      setOrganizationAccess(null)
+      setAccessError('')
+
+      if (!nextSession) {
+        setIsCheckingSession(false)
+        return
+      }
+
+      setIsCheckingSession(true)
+
+      const result = await getOrganizationAccess(nextSession.user.id)
+
+      if (!isMounted) {
+        return
+      }
+
+      setOrganizationAccess(result.access)
+      setAccessError(result.error ?? '')
+      setIsCheckingSession(false)
+    }
+
+    async function initializeSession() {
+      const {
+        data: { session: existingSession },
+      } = await supabase.auth.getSession()
+
+      await loadSession(existingSession)
+    }
+
+    void initializeSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void loadSession(nextSession)
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -52,7 +185,7 @@ function App() {
       return
     }
 
-    setMessage('Signed in successfully.')
+    setPassword('')
     setIsSubmitting(false)
   }
 
@@ -96,6 +229,119 @@ function App() {
     }
 
     setMessage('Check your email for a password reset link.')
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setEmail('')
+    setPassword('')
+    setErrors({})
+    setMessage('')
+  }
+
+  if (isCheckingSession) {
+    return (
+      <main className="session-loading">
+        <img className="session-loading-logo" src="/icon.png" alt="Everward" />
+        <p>Loading your organization portal...</p>
+      </main>
+    )
+  }
+
+  if (session && accessError) {
+    return (
+      <main className="access-page">
+        <section className="access-card">
+          <img className="access-logo" src="/icon.png" alt="Everward" />
+          <p className="eyebrow">Organization access required</p>
+          <h1>Unable to open the portal</h1>
+          <p>{accessError}</p>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={handleSignOut}
+          >
+            Sign out
+          </button>
+        </section>
+      </main>
+    )
+  }
+
+  if (session && organizationAccess) {
+    return (
+      <main className="dashboard-page">
+        <header className="dashboard-header">
+          <div className="dashboard-brand">
+            <img src="/icon.png" alt="Everward" />
+            <div>
+              <span>Everward</span>
+              <small>Organization Portal</small>
+            </div>
+          </div>
+
+          <div className="dashboard-account">
+            <div>
+              <strong>{session.user.email}</strong>
+              <span>{formatRole(organizationAccess.role)}</span>
+            </div>
+
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleSignOut}
+            >
+              Sign out
+            </button>
+          </div>
+        </header>
+
+        <section className="dashboard-content">
+          <div className="dashboard-welcome">
+            <p className="eyebrow">Organization dashboard</p>
+            <h1>Welcome to {organizationAccess.organizationName}</h1>
+            <p>
+              Your secure organization portal is connected and your access has
+              been verified.
+            </p>
+          </div>
+
+          <div className="dashboard-grid">
+            <article className="dashboard-card">
+              <span className="dashboard-card-label">Your role</span>
+              <strong>{formatRole(organizationAccess.role)}</strong>
+              <p>
+                Your portal permissions will be based on this organization
+                role.
+              </p>
+            </article>
+
+            <article className="dashboard-card">
+              <span className="dashboard-card-label">Subscription</span>
+              <strong>
+                {organizationAccess.subscriptionStatus === 'active'
+                  ? 'Active'
+                  : organizationAccess.subscriptionStatus}
+              </strong>
+              <p>The organization portal subscription is active.</p>
+            </article>
+
+            <article className="dashboard-card">
+              <span className="dashboard-card-label">Organization setup</span>
+              <strong>
+                {organizationAccess.setupComplete
+                  ? 'Complete'
+                  : 'Setup required'}
+              </strong>
+              <p>
+                Organization onboarding and configuration will continue from
+                this dashboard.
+              </p>
+            </article>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (
