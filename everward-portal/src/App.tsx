@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { supabase } from './lib/supabase'
 import './App.css'
 
 type SignInErrors = {
@@ -12,8 +13,9 @@ function App() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<SignInErrors>({})
   const [message, setMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const nextErrors: SignInErrors = {}
@@ -36,9 +38,64 @@ function App() {
       return
     }
 
-    setMessage(
-      'The sign-in form is valid. Supabase authentication will be connected next.',
+    setIsSubmitting(true)
+    setMessage('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    })
+
+    if (error) {
+      setMessage('The email address or password is incorrect.')
+      setIsSubmitting(false)
+      return
+    }
+
+    setMessage('Signed in successfully.')
+    setIsSubmitting(false)
+  }
+
+  async function handleForgotPassword() {
+    const normalizedEmail = email.trim()
+
+    if (!normalizedEmail) {
+      setErrors((current) => ({
+        ...current,
+        email: 'Enter your organization email address first.',
+      }))
+      setMessage('')
+      return
+    }
+
+    if (!normalizedEmail.includes('@')) {
+      setErrors((current) => ({
+        ...current,
+        email: 'Enter a valid email address.',
+      }))
+      setMessage('')
+      return
+    }
+
+    setErrors((current) => ({
+      ...current,
+      email: undefined,
+    }))
+    setMessage('Sending password reset email...')
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      },
     )
+
+    if (error) {
+      setMessage('Unable to send the password reset email. Try again.')
+      return
+    }
+
+    setMessage('Check your email for a password reset link.')
   }
 
   return (
@@ -115,6 +172,7 @@ function App() {
                 type="email"
                 autoComplete="email"
                 value={email}
+                disabled={isSubmitting}
                 aria-invalid={Boolean(errors.email)}
                 aria-describedby={errors.email ? 'email-error' : undefined}
                 onChange={(event) => {
@@ -126,6 +184,7 @@ function App() {
                   setMessage('')
                 }}
               />
+
               {errors.email ? (
                 <p id="email-error" className="field-error">
                   {errors.email}
@@ -136,14 +195,12 @@ function App() {
             <div className="form-field">
               <div className="password-heading">
                 <label htmlFor="password">Password</label>
+
                 <button
                   className="text-button"
                   type="button"
-                  onClick={() => {
-                    setMessage(
-                      'Password reset will be connected to Supabase authentication.',
-                    )
-                  }}
+                  disabled={isSubmitting}
+                  onClick={handleForgotPassword}
                 >
                   Forgot password?
                 </button>
@@ -155,6 +212,7 @@ function App() {
                 type="password"
                 autoComplete="current-password"
                 value={password}
+                disabled={isSubmitting}
                 aria-invalid={Boolean(errors.password)}
                 aria-describedby={
                   errors.password ? 'password-error' : undefined
@@ -176,8 +234,12 @@ function App() {
               ) : null}
             </div>
 
-            <button className="primary-button" type="submit">
-              Sign in
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
 
             {message ? (
