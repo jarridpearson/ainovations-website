@@ -6,3 +6,9 @@ node_modules/
 dist/
 .netlify/
 *.log
+
+# Supabase local temporary files
+supabase/.temp/
+
+# Invalid function backup
+supabase/functions/create-organization-users-corrupted/
