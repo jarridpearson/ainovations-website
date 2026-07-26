@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import OrganizationDashboard from './components/OrganizationDashboard'
+import OrganizationSetup from './components/OrganizationSetup'
 import { supabase } from './lib/supabase'
 import './App.css'
 
@@ -9,12 +11,21 @@ type SignInErrors = {
   password?: string
 }
 
+type PasswordChangeErrors = {
+  newPassword?: string
+  confirmPassword?: string
+}
+
 type OrganizationAccess = {
   organizationId: string
   organizationName: string
   role: string
+  billingAccessEnabled: boolean
   setupComplete: boolean
   subscriptionStatus: string
+  missionStatement: string
+  visionStatement: string
+  valuesStatement: string
 }
 
 type AccessResult = {
@@ -25,7 +36,9 @@ type AccessResult = {
 async function getOrganizationAccess(userId: string): Promise<AccessResult> {
   const { data: membership, error: membershipError } = await supabase
     .from('organization_users')
-    .select('organization_id, role, is_active')
+    .select(
+      'organization_id, role, is_active, portal_access_enabled, manager_portal_access_enabled, billing_access_enabled',
+    )
     .eq('user_id', userId)
     .eq('is_active', true)
     .maybeSingle()
@@ -44,9 +57,31 @@ async function getOrganizationAccess(userId: string): Promise<AccessResult> {
     }
   }
 
+  if (
+    !membership.portal_access_enabled &&
+    !membership.billing_access_enabled
+  ) {
+    return {
+      access: null,
+      error: 'This account does not have organization portal access enabled.',
+    }
+  }
+
+  if (
+    membership.role === 'member' &&
+    !membership.billing_access_enabled
+  ) {
+    return {
+      access: null,
+      error: 'Employee accounts do not have organization portal access.',
+    }
+  }
+
   const { data: organization, error: organizationError } = await supabase
     .from('organizations')
-    .select('id, name, setup_complete, subscription_status')
+    .select(
+      'id, name, setup_complete, subscription_status, mission_statement, vision_statement, values_statement, manager_portal_access_mode',
+    )
     .eq('id', membership.organization_id)
     .maybeSingle()
 
@@ -64,13 +99,48 @@ async function getOrganizationAccess(userId: string): Promise<AccessResult> {
     }
   }
 
+  if (membership.role === 'group_manager') {
+    if (organization.manager_portal_access_mode === 'disabled') {
+      return {
+        access: null,
+        error: 'Group Manager portal access is disabled for this organization.',
+      }
+    }
+
+    if (
+      organization.manager_portal_access_mode === 'individual' &&
+      !membership.manager_portal_access_enabled
+    ) {
+      return {
+        access: null,
+        error: 'This Group Manager does not have individual portal access enabled.',
+      }
+    }
+
+    if (
+      organization.manager_portal_access_mode !== 'individual' &&
+      organization.manager_portal_access_mode !== 'all_group_managers'
+    ) {
+      return {
+        access: null,
+        error: 'The organization’s Group Manager portal access setting is invalid.',
+      }
+    }
+  }
+
   return {
     access: {
       organizationId: organization.id,
       organizationName: organization.name,
       role: membership.role,
+      billingAccessEnabled: Boolean(
+        membership.billing_access_enabled,
+      ),
       setupComplete: Boolean(organization.setup_complete),
       subscriptionStatus: organization.subscription_status,
+      missionStatement: organization.mission_statement ?? '',
+      visionStatement: organization.vision_statement ?? '',
+      valuesStatement: organization.values_statement ?? '',
     },
     error: null,
   }
@@ -95,6 +165,13 @@ function App() {
   const [errors, setErrors] = useState<SignInErrors>({})
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordChangeErrors, setPasswordChangeErrors] =
+    useState<PasswordChangeErrors>({})
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState('')
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -237,6 +314,108 @@ function App() {
     setPassword('')
     setErrors({})
     setMessage('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setPasswordChangeErrors({})
+    setPasswordChangeMessage('')
+  }
+
+  async function handleRequiredPasswordChange(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault()
+
+    const nextErrors: PasswordChangeErrors = {}
+
+    if (!newPassword) {
+      nextErrors.newPassword = 'Enter a new password.'
+    } else if (newPassword.length < 8) {
+      nextErrors.newPassword =
+        'Your new password must contain at least 8 characters.'
+    }
+
+    if (!confirmPassword) {
+      nextErrors.confirmPassword = 'Confirm your new password.'
+    } else if (newPassword !== confirmPassword) {
+      nextErrors.confirmPassword = 'The passwords do not match.'
+    }
+
+    setPasswordChangeErrors(nextErrors)
+
+    if (Object.keys(nextErrors).length > 0) {
+      setPasswordChangeMessage('')
+      return
+    }
+
+    if (!session) {
+      setPasswordChangeMessage(
+        'Your session has expired. Sign in again to change your password.',
+      )
+      return
+    }
+
+    setIsChangingPassword(true)
+    setPasswordChangeMessage('Updating your password...')
+
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+      data: {
+        ...session.user.user_metadata,
+        must_change_password: false,
+      },
+    })
+
+    if (error || !data.user) {
+      setPasswordChangeMessage(
+        'Unable to update your password. Try a different password.',
+      )
+      setIsChangingPassword(false)
+      return
+    }
+
+    setSession((current) => {
+      if (!current) {
+        return current
+      }
+
+      return {
+        ...current,
+        user: data.user,
+      }
+    })
+
+    setNewPassword('')
+    setConfirmPassword('')
+    setPasswordChangeErrors({})
+    setPasswordChangeMessage('')
+
+    const result = await getOrganizationAccess(data.user.id)
+
+    setOrganizationAccess(result.access)
+    setAccessError(result.error ?? '')
+    setIsChangingPassword(false)
+  }
+
+  function handleSetupComplete(details: {
+    organizationName: string
+    missionStatement: string
+    visionStatement: string
+    valuesStatement: string
+  }) {
+    setOrganizationAccess((current) => {
+      if (!current) {
+        return current
+      }
+
+      return {
+        ...current,
+        organizationName: details.organizationName,
+        missionStatement: details.missionStatement,
+        visionStatement: details.visionStatement,
+        valuesStatement: details.valuesStatement,
+        setupComplete: true,
+      }
+    })
   }
 
   if (isCheckingSession) {
@@ -244,6 +423,124 @@ function App() {
       <main className="session-loading">
         <img className="session-loading-logo" src="/icon.png" alt="Everward" />
         <p>Loading your organization portal...</p>
+      </main>
+    )
+  }
+
+  if (
+    session &&
+    session.user.user_metadata?.must_change_password === true
+  ) {
+    return (
+      <main className="access-page">
+        <section className="access-card">
+          <img className="access-logo" src="/icon.png" alt="Everward" />
+          <p className="eyebrow">Password change required</p>
+          <h1>Create your permanent password</h1>
+          <p>
+            Your organization administrator created a temporary password for
+            this account. Create a new password before entering the portal.
+          </p>
+
+          <form
+            className="sign-in-form"
+            onSubmit={handleRequiredPasswordChange}
+            noValidate
+          >
+            <div className="form-field">
+              <label htmlFor="new-password">New password</label>
+
+              <input
+                id="new-password"
+                name="new-password"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                disabled={isChangingPassword}
+                aria-invalid={Boolean(passwordChangeErrors.newPassword)}
+                aria-describedby={
+                  passwordChangeErrors.newPassword
+                    ? 'new-password-error'
+                    : undefined
+                }
+                onChange={(event) => {
+                  setNewPassword(event.target.value)
+                  setPasswordChangeErrors((current) => ({
+                    ...current,
+                    newPassword: undefined,
+                  }))
+                  setPasswordChangeMessage('')
+                }}
+              />
+
+              {passwordChangeErrors.newPassword ? (
+                <p id="new-password-error" className="field-error">
+                  {passwordChangeErrors.newPassword}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="confirm-password">Confirm new password</label>
+
+              <input
+                id="confirm-password"
+                name="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                disabled={isChangingPassword}
+                aria-invalid={Boolean(
+                  passwordChangeErrors.confirmPassword,
+                )}
+                aria-describedby={
+                  passwordChangeErrors.confirmPassword
+                    ? 'confirm-password-error'
+                    : undefined
+                }
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value)
+                  setPasswordChangeErrors((current) => ({
+                    ...current,
+                    confirmPassword: undefined,
+                  }))
+                  setPasswordChangeMessage('')
+                }}
+              />
+
+              {passwordChangeErrors.confirmPassword ? (
+                <p id="confirm-password-error" className="field-error">
+                  {passwordChangeErrors.confirmPassword}
+                </p>
+              ) : null}
+            </div>
+
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={isChangingPassword}
+            >
+              {isChangingPassword
+                ? 'Updating password...'
+                : 'Save new password'}
+            </button>
+
+            {passwordChangeMessage ? (
+              <p className="form-message" role="status">
+                {passwordChangeMessage}
+              </p>
+            ) : null}
+          </form>
+
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={isChangingPassword}
+            onClick={handleSignOut}
+          >
+            Sign out
+          </button>
+        </section>
       </main>
     )
   }
@@ -256,6 +553,7 @@ function App() {
           <p className="eyebrow">Organization access required</p>
           <h1>Unable to open the portal</h1>
           <p>{accessError}</p>
+
           <button
             className="primary-button"
             type="button"
@@ -269,78 +567,64 @@ function App() {
   }
 
   if (session && organizationAccess) {
+    if (!organizationAccess.setupComplete) {
+      return (
+        <main className="dashboard-page">
+          <header className="dashboard-header">
+            <div className="dashboard-brand">
+              <img src="/icon.png" alt="Everward" />
+
+              <div>
+                <span>Everward</span>
+                <small>Organization Portal</small>
+              </div>
+            </div>
+
+            <div className="dashboard-account">
+              <div>
+                <strong>{session.user.email}</strong>
+                <span>{formatRole(organizationAccess.role)}</span>
+              </div>
+
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleSignOut}
+              >
+                Sign out
+              </button>
+            </div>
+          </header>
+
+          <section className="dashboard-content">
+            <OrganizationSetup
+              organizationId={organizationAccess.organizationId}
+              organizationName={organizationAccess.organizationName}
+              initialMission={organizationAccess.missionStatement}
+              initialVision={organizationAccess.visionStatement}
+              initialValues={organizationAccess.valuesStatement}
+              onSetupComplete={handleSetupComplete}
+            />
+          </section>
+        </main>
+      )
+    }
+
     return (
-      <main className="dashboard-page">
-        <header className="dashboard-header">
-          <div className="dashboard-brand">
-            <img src="/icon.png" alt="Everward" />
-            <div>
-              <span>Everward</span>
-              <small>Organization Portal</small>
-            </div>
-          </div>
-
-          <div className="dashboard-account">
-            <div>
-              <strong>{session.user.email}</strong>
-              <span>{formatRole(organizationAccess.role)}</span>
-            </div>
-
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={handleSignOut}
-            >
-              Sign out
-            </button>
-          </div>
-        </header>
-
-        <section className="dashboard-content">
-          <div className="dashboard-welcome">
-            <p className="eyebrow">Organization dashboard</p>
-            <h1>Welcome to {organizationAccess.organizationName}</h1>
-            <p>
-              Your secure organization portal is connected and your access has
-              been verified.
-            </p>
-          </div>
-
-          <div className="dashboard-grid">
-            <article className="dashboard-card">
-              <span className="dashboard-card-label">Your role</span>
-              <strong>{formatRole(organizationAccess.role)}</strong>
-              <p>
-                Your portal permissions will be based on this organization
-                role.
-              </p>
-            </article>
-
-            <article className="dashboard-card">
-              <span className="dashboard-card-label">Subscription</span>
-              <strong>
-                {organizationAccess.subscriptionStatus === 'active'
-                  ? 'Active'
-                  : organizationAccess.subscriptionStatus}
-              </strong>
-              <p>The organization portal subscription is active.</p>
-            </article>
-
-            <article className="dashboard-card">
-              <span className="dashboard-card-label">Organization setup</span>
-              <strong>
-                {organizationAccess.setupComplete
-                  ? 'Complete'
-                  : 'Setup required'}
-              </strong>
-              <p>
-                Organization onboarding and configuration will continue from
-                this dashboard.
-              </p>
-            </article>
-          </div>
-        </section>
-      </main>
+      <OrganizationDashboard
+        organizationId={organizationAccess.organizationId}
+        organizationName={organizationAccess.organizationName}
+        role={organizationAccess.role}
+        billingAccessEnabled={
+          organizationAccess.billingAccessEnabled
+        }
+        subscriptionStatus={organizationAccess.subscriptionStatus}
+        missionStatement={organizationAccess.missionStatement}
+        visionStatement={organizationAccess.visionStatement}
+        valuesStatement={organizationAccess.valuesStatement}
+        accountEmail={session.user.email ?? ''}
+        onSignOut={handleSignOut}
+      />
     )
   }
 
@@ -361,6 +645,7 @@ function App() {
         <div className="feature-list" aria-label="Portal capabilities">
           <div className="feature-item">
             <span className="feature-number">01</span>
+
             <div>
               <h2>Structured access</h2>
               <p>
@@ -372,6 +657,7 @@ function App() {
 
           <div className="feature-item">
             <span className="feature-number">02</span>
+
             <div>
               <h2>Organization visibility</h2>
               <p>
@@ -383,6 +669,7 @@ function App() {
 
           <div className="feature-item">
             <span className="feature-number">03</span>
+
             <div>
               <h2>AI reporting</h2>
               <p>
@@ -412,6 +699,7 @@ function App() {
           <form className="sign-in-form" onSubmit={handleSubmit} noValidate>
             <div className="form-field">
               <label htmlFor="email">Organization email</label>
+
               <input
                 id="email"
                 name="email"
@@ -497,6 +785,7 @@ function App() {
 
           <div className="support-note">
             <strong>Need access?</strong>
+
             <span>
               Contact your organization administrator for an invitation.
             </span>
