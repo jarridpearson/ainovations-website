@@ -662,23 +662,34 @@ function OrganizationDashboard({
   const showComparisonMatrix =
     selectedReportUserIds.size > 1 || selectedReportGroupIds.size > 1;
 
+  const selectedReportUserNames = reportableOrganizationUsers
+    .filter((user) => selectedReportUserIds.has(user.user_id))
+    .map((user) => user.full_name.trim())
+    .filter(Boolean);
+
+  const selectedReportGroupNames = organizationGroups
+    .filter((group) => selectedReportGroupIds.has(group.id))
+    .map((group) => group.name.trim())
+    .filter(Boolean)
+    .sort((firstName, secondName) =>
+      firstName.localeCompare(secondName),
+    );
+
   const reportScopeLabel =
-    selectedReportUserIds.size === 0 && selectedReportGroupIds.size === 0
+    selectedReportUserNames.length === 0 &&
+    selectedReportGroupNames.length === 0
       ? "Whole organization"
-      : [
-          selectedReportUserIds.size > 0
-            ? `${selectedReportUserIds.size} ${
-                selectedReportUserIds.size === 1 ? "individual" : "individuals"
-              }`
-            : "",
-          selectedReportGroupIds.size > 0
-            ? `${selectedReportGroupIds.size} ${
-                selectedReportGroupIds.size === 1 ? "group" : "groups"
-              }`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(" and ");
+      : selectedReportUserNames.length > 0
+        ? `${
+            selectedReportUserNames.length === 1
+              ? "Individual"
+              : "Individuals"
+          }: ${selectedReportUserNames.join(", ")}`
+        : `${
+            selectedReportGroupNames.length === 1
+              ? "Group"
+              : "Groups"
+          }: ${selectedReportGroupNames.join(", ")}`;
 
   const normalizedReportDetailSearchQuery = reportDetailSearchQuery
     .trim()
