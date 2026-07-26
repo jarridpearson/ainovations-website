@@ -33,6 +33,7 @@ type AskOrganizationDataRequest = {
   requestId?: unknown;
   portalView?: unknown;
   question?: unknown;
+  scopeLabel?: unknown;
   selectedUserIds?: unknown;
   selectedGroupIds?: unknown;
   userSearchQuery?: unknown;
@@ -242,6 +243,9 @@ Deno.serve(async (request) => {
   const portalView = normalizeString(requestBody.portalView) as PortalView;
 
   const question = normalizeString(requestBody.question);
+
+  const requestedScopeLabel =
+    normalizeString(requestBody.scopeLabel).slice(0, 1000);
 
   if (!organizationId || !isUuid(organizationId)) {
     return jsonResponse(
@@ -652,7 +656,17 @@ Deno.serve(async (request) => {
       request_id: requestId,
       portal_view: portalView,
       question_text: question,
-      scope_snapshot: scopeSnapshot,
+      scope_snapshot: {
+        ...scopeSnapshot,
+        reportingScopeLabel:
+          requestedScopeLabel ||
+          (
+            selectedUserIds.length === 0 &&
+            selectedGroupIds.length === 0
+              ? "Whole organization"
+              : "Selected reporting scope"
+          ),
+      },
       data_snapshot: dataSnapshot,
       answer_status: "pending",
     })

@@ -94,6 +94,17 @@ function formatEvidenceLabel(value: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function getSavedReportingScope(
+  scopeSnapshot: JsonRecord | null | undefined,
+  fallback: string,
+) {
+  const savedLabel = scopeSnapshot?.reportingScopeLabel;
+
+  return typeof savedLabel === "string" && savedLabel.trim()
+    ? savedLabel.trim()
+    : fallback;
+}
+
 function OrganizationDataAi({
   organizationId,
   scopeLabel,
@@ -188,7 +199,7 @@ function OrganizationDataAi({
         `,
       )
       .eq("organization_id", organizationId)
-      .eq("portal_view", "reports")
+      .eq("portal_view", "analyze")
       .order("created_at", {
         ascending: false,
       })
@@ -245,6 +256,11 @@ function OrganizationDataAi({
               requestId: crypto.randomUUID(),
               portalView: "analyze",
               question: normalizedQuestion,
+              scopeLabel:
+                selectedUserIds.length === 0 &&
+                selectedGroupIds.length === 0
+                  ? "Whole organization"
+                  : scopeLabel,
               selectedUserIds,
               selectedGroupIds,
               reportDetailSearchQuery: reportDetailSearchQuery.trim(),
@@ -536,6 +552,28 @@ function OrganizationDataAi({
                   Asked {formatDateTime(activeAnswerRecord.created_at)}
                 </p>
               ) : null}
+
+              <div
+                style={{
+                  marginTop: "8px",
+                  backgroundColor: "#edf7f7",
+                  border: "1px solid #c9e2e2",
+                  borderRadius: "10px",
+                  color: "#315f5f",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  padding: "9px 12px",
+                }}
+              >
+                Data scope:{" "}
+                {getSavedReportingScope(
+                  activeAnswerRecord?.scope_snapshot,
+                  selectedUserIds.length === 0 &&
+                    selectedGroupIds.length === 0
+                    ? "Whole organization"
+                    : scopeLabel,
+                )}
+              </div>
             </div>
 
             <div
@@ -775,6 +813,21 @@ function OrganizationDataAi({
                     <span className="dashboard-card-label">
                       {formatDateTime(historyQuestion.created_at)}
                     </span>
+
+                    <div
+                      style={{
+                        margin: "7px 0 10px",
+                        color: "#315f5f",
+                        fontSize: "13px",
+                        fontWeight: 800,
+                      }}
+                    >
+                      Data scope:{" "}
+                      {getSavedReportingScope(
+                        historyQuestion.scope_snapshot,
+                        "Reporting scope unavailable",
+                      )}
+                    </div>
 
                     <strong
                       style={{
