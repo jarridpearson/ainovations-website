@@ -163,6 +163,17 @@ function getUsagePercentage(used: number, total: number) {
   return Math.min(100, Math.max(0, Math.round((used / total) * 100)));
 }
 
+function getRecurringAddonLabel(
+  isStripeBacked: boolean,
+  credits: number,
+) {
+  if (credits <= 0 || isStripeBacked) {
+    return "Recurring add-on";
+  }
+
+  return "Manually granted / legacy credits";
+}
+
 function getStatusBadge(
   status: string | null,
   cancelAtPeriodEnd: boolean,
@@ -708,6 +719,18 @@ export default function OrganizationBillingManager({
   const hasAppAddonChange =
     appCredits !== billingState.currentAppAddonCredits;
 
+  // currentPortalAddonCredits/currentAppAddonCredits come from the
+  // organization's dedicated Stripe add-on subscription (0 when none
+  // exists). Credit-pool totals can still be non-zero via manually granted
+  // or legacy credits, so this is the signal for whether the pool's
+  // "recurring add-on" figure is actually backed by an active Stripe
+  // package, not just a database balance.
+  const isPortalAddonStripeBacked =
+    billingState.currentPortalAddonCredits > 0;
+
+  const isAppAddonStripeBacked =
+    billingState.currentAppAddonCredits > 0;
+
   const statusBadge = getStatusBadge(
     billingState.subscriptionStatus,
     billingState.cancelAtPeriodEnd,
@@ -1011,7 +1034,13 @@ export default function OrganizationBillingManager({
             </div>
 
             <div>
-              <span>Recurring add-on</span>
+              <span>
+                {getRecurringAddonLabel(
+                  isPortalAddonStripeBacked,
+                  portalCreditSummary
+                    ?.recurring_addon_credits ?? 0,
+                )}
+              </span>
               <strong>
                 {formatNumber(
                   portalCreditSummary
@@ -1040,6 +1069,17 @@ export default function OrganizationBillingManager({
               </strong>
             </div>
           </div>
+
+          {!isPortalAddonStripeBacked &&
+          (portalCreditSummary?.recurring_addon_credits ??
+            0) > 0 ? (
+            <p className="billing-helper-text">
+              These additional credits are active in
+              Everward but are not currently billed
+              through a recurring Stripe add-on
+              subscription.
+            </p>
+          ) : null}
 
           <label>
             Recurring portal add-on package
@@ -1146,7 +1186,13 @@ export default function OrganizationBillingManager({
             </div>
 
             <div>
-              <span>Recurring add-on</span>
+              <span>
+                {getRecurringAddonLabel(
+                  isAppAddonStripeBacked,
+                  appCreditSummary
+                    ?.recurring_addon_credits ?? 0,
+                )}
+              </span>
               <strong>
                 {formatNumber(
                   appCreditSummary
@@ -1175,6 +1221,17 @@ export default function OrganizationBillingManager({
               </strong>
             </div>
           </div>
+
+          {!isAppAddonStripeBacked &&
+          (appCreditSummary?.recurring_addon_credits ??
+            0) > 0 ? (
+            <p className="billing-helper-text">
+              These additional credits are active in
+              Everward but are not currently billed
+              through a recurring Stripe add-on
+              subscription.
+            </p>
+          ) : null}
 
           <label>
             Recurring shared app add-on package
