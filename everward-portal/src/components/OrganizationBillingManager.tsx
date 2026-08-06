@@ -75,6 +75,41 @@ type Props = {
   organizationId: string;
 };
 
+// The only two plan keys every write path in manage-organization-billing,
+// create-organization-checkout, and create-organization-signup validates
+// against. Kept as the single source of truth for the dropdown so it can
+// never silently diverge from what the backend actually accepts.
+const PLAN_OPTIONS: { value: string; label: string }[] = [
+  { value: "organization_starter", label: "Organization Starter" },
+  { value: "organization_pro", label: "Organization Pro" },
+];
+
+const BILLING_INTERVAL_OPTIONS: { value: string; label: string }[] = [
+  { value: "monthly", label: "Monthly" },
+  { value: "annual", label: "Annual prepaid" },
+];
+
+// Defensive only: if the organization's actual current value is ever
+// something outside the known option set, surface it instead of silently
+// selecting nothing. Does not change what the backend accepts.
+function withCurrentValueOption(
+  options: { value: string; label: string }[],
+  currentValue: string | null,
+  labelForUnknown: (value: string) => string,
+) {
+  if (
+    !currentValue ||
+    options.some((option) => option.value === currentValue)
+  ) {
+    return options;
+  }
+
+  return [
+    { value: currentValue, label: labelForUnknown(currentValue) },
+    ...options,
+  ];
+}
+
 function formatLabel(value: string | null) {
   if (!value) {
     return "Not available";
@@ -114,6 +149,56 @@ function formatCurrency(
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(amount / 100);
+}
+
+function formatNumber(value: number) {
+  return value.toLocaleString("en-US");
+}
+
+function getUsagePercentage(used: number, total: number) {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, Math.round((used / total) * 100)));
+}
+
+function getStatusBadge(
+  status: string | null,
+  cancelAtPeriodEnd: boolean,
+) {
+  if (cancelAtPeriodEnd) {
+    return {
+      label: "Cancels at renewal",
+      className: "billing-status-badge-warning",
+    };
+  }
+
+  if (status === "active") {
+    return {
+      label: "Active",
+      className: "billing-status-badge-active",
+    };
+  }
+
+  if (status === "past_due" || status === "unpaid") {
+    return {
+      label: formatLabel(status),
+      className: "billing-status-badge-warning",
+    };
+  }
+
+  if (status === "canceled") {
+    return {
+      label: "Canceled",
+      className: "billing-status-badge-canceled",
+    };
+  }
+
+  return {
+    label: status ? formatLabel(status) : "Not available",
+    className: "billing-status-badge-neutral",
+  };
 }
 
 function getPendingPoolLabel(
@@ -192,11 +277,16 @@ export default function OrganizationBillingManager({
   const [billingState, setBillingState] =
     useState<BillingState | null>(null);
 
+  // Initial values are intentionally empty/zero, never a hardcoded plan or
+  // interval. They are populated exclusively from the organization's actual
+  // *current* billing state once loadBillingState resolves — never from a
+  // pending scheduled change, so the controls always match what the summary
+  // card shows. See loadBillingState below for the single place these are set.
   const [selectedPlan, setSelectedPlan] =
-    useState("organization_starter");
+    useState("");
 
   const [selectedInterval, setSelectedInterval] =
-    useState("monthly");
+    useState("");
 
   const [seatQuantity, setSeatQuantity] =
     useState(1);
@@ -287,6 +377,14 @@ export default function OrganizationBillingManager({
     [organizationId],
   );
 
+  // The organization's *current* state — not any pending/scheduled value —
+  // is the only source for these five controls. Using pendingPlanKey /
+  // pendingBillingInterval / pendingPaidSeatCount here was the root cause of
+  // the dropdowns not matching the summary card: whenever a change was
+  // already scheduled, the controls silently pre-filled with the *future*
+  // value instead of the organization's actual current one. Scheduled
+  // changes are still fully visible in the "Scheduled changes" section below
+  // — they're just no longer used to seed what these editable controls show.
   const loadBillingState =
     useCallback(async () => {
       setIsLoading(true);
@@ -357,24 +455,11 @@ export default function OrganizationBillingManager({
           ),
         );
 
-        setSelectedPlan(
-          data.pendingPlanKey ??
-            data.currentPlanKey ??
-            "organization_starter",
-        );
-
-        setSelectedInterval(
-          data.pendingBillingInterval ??
-            data.billingInterval ??
-            "monthly",
-        );
+        setSelectedPlan(data.currentPlanKey ?? "");
+        setSelectedInterval(data.billingInterval ?? "");
 
         setSeatQuantity(
-          Math.max(
-            1,
-            data.pendingPaidSeatCount ??
-              data.purchasedSeatCount,
-          ),
+          Math.max(1, data.purchasedSeatCount),
         );
 
         setPortalCredits(
@@ -397,7 +482,7 @@ export default function OrganizationBillingManager({
       } finally {
         setIsLoading(false);
       }
-    }, [invokeBilling]);
+    }, [invokeBilling, organizationId]);
 
   useEffect(() => {
     void loadBillingState();
@@ -594,6 +679,50 @@ export default function OrganizationBillingManager({
         row.credit_pool_type === "app",
     ) ?? null;
 
+  const planOptions = withCurrentValueOption(
+    PLAN_OPTIONS,
+    billingState.currentPlanKey,
+    formatLabel,
+  );
+
+  const billingIntervalOptions = withCurrentValueOption(
+    BILLING_INTERVAL_OPTIONS,
+    billingState.billingInterval,
+    formatLabel,
+  );
+
+  // Every "Review ... change" button stays disabled until the selection
+  // genuinely differs from the organization's loaded current state — never
+  // from busyAction alone. This is what stops an untouched control from
+  // submitting a no-op "change".
+  const hasPlanChange =
+    selectedPlan !== (billingState.currentPlanKey ?? "") ||
+    selectedInterval !== (billingState.billingInterval ?? "");
+
+  const hasSeatChange =
+    seatQuantity !== billingState.purchasedSeatCount;
+
+  const hasPortalAddonChange =
+    portalCredits !== billingState.currentPortalAddonCredits;
+
+  const hasAppAddonChange =
+    appCredits !== billingState.currentAppAddonCredits;
+
+  const statusBadge = getStatusBadge(
+    billingState.subscriptionStatus,
+    billingState.cancelAtPeriodEnd,
+  );
+
+  const portalUsagePercentage = getUsagePercentage(
+    portalCreditSummary?.used_credits ?? 0,
+    portalCreditSummary?.total_monthly_credits ?? 0,
+  );
+
+  const appUsagePercentage = getUsagePercentage(
+    appCreditSummary?.used_credits ?? 0,
+    appCreditSummary?.total_monthly_credits ?? 0,
+  );
+
   return (
     <section className="billing-compact">
       <div className="billing-summary-strip">
@@ -604,11 +733,15 @@ export default function OrganizationBillingManager({
               billingState.currentPlanKey,
             )}
           </strong>
-          <small>
+        </div>
+
+        <div>
+          <span>Billing interval</span>
+          <strong>
             {formatLabel(
               billingState.billingInterval,
             )}
-          </small>
+          </strong>
         </div>
 
         <div>
@@ -618,79 +751,37 @@ export default function OrganizationBillingManager({
               billingState.renewalDate,
             )}
           </strong>
-          <small>
-            {billingState.cancelAtPeriodEnd
-              ? "Cancellation scheduled"
-              : "Subscription active"}
-          </small>
         </div>
 
         <div>
-          <span>App seats</span>
-          <strong>
-            {billingState.usedSeatCount} /{" "}
-            {billingState.purchasedSeatCount}
-          </strong>
-          <small>
-            {Math.max(
-              0,
-              billingState.purchasedSeatCount -
-                billingState.usedSeatCount,
-            )}{" "}
-            available
-          </small>
+          <span>Status</span>
+          <span
+            className={`billing-status-badge ${statusBadge.className}`}
+          >
+            {statusBadge.label}
+          </span>
         </div>
 
         <div>
-          <span>Monthly portal AI credits</span>
-
+          <span>Purchased seats</span>
           <strong>
-            {(
-              portalCreditSummary
-                ?.total_monthly_credits ?? 0
-            ).toLocaleString("en-US")}
+            {formatNumber(
+              billingState.purchasedSeatCount,
+            )}
           </strong>
-
-          <small>
-            {(
-              portalCreditSummary
-                ?.included_monthly_credits ?? 0
-            ).toLocaleString("en-US")}{" "}
-            included +{" "}
-            {(
-              portalCreditSummary
-                ?.recurring_addon_credits ?? 0
-            ).toLocaleString("en-US")}{" "}
-            portal add-on
-          </small>
         </div>
 
         <div>
-          <span>Monthly shared app AI credits</span>
-
+          <span>Available seats</span>
           <strong>
-            {(
-              appCreditSummary
-                ?.total_monthly_credits ?? 0
-            ).toLocaleString("en-US")}
+            {formatNumber(
+              Math.max(
+                0,
+                billingState.purchasedSeatCount -
+                  billingState.usedSeatCount,
+              ),
+            )}
           </strong>
-
-          <small>
-            {(
-              appCreditSummary
-                ?.included_monthly_credits ?? 0
-            ).toLocaleString("en-US")}{" "}
-            pooled from{" "}
-            {billingState.purchasedSeatCount.toLocaleString(
-              "en-US",
-            )}{" "}
-            seats +{" "}
-            {(
-              appCreditSummary
-                ?.recurring_addon_credits ?? 0
-            ).toLocaleString("en-US")}{" "}
-            shared app add-on
-          </small>
         </div>
       </div>
 
@@ -714,12 +805,14 @@ export default function OrganizationBillingManager({
                   )
                 }
               >
-                <option value="organization_starter">
-                  Organization Starter
-                </option>
-                <option value="organization_pro">
-                  Organization Pro
-                </option>
+                {planOptions.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -733,20 +826,28 @@ export default function OrganizationBillingManager({
                   )
                 }
               >
-                <option value="monthly">
-                  Monthly
-                </option>
-                <option value="annual">
-                  Annual prepaid
-                </option>
+                {billingIntervalOptions.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
 
+          <p className="billing-helper-text">
+            Upgrades apply immediately after payment. Downgrades
+            and interval changes apply at renewal on{" "}
+            {formatDate(billingState.renewalDate)}.
+          </p>
+
           <button
             className="primary-button"
             type="button"
-            disabled={Boolean(busyAction)}
+            disabled={Boolean(busyAction) || !hasPlanChange}
             onClick={() =>
               void previewChange({
                 title:
@@ -799,6 +900,12 @@ export default function OrganizationBillingManager({
             />
           </label>
 
+          <p className="billing-helper-text">
+            Increasing seats charges a prorated amount today.
+            Decreasing seats takes effect at renewal with no
+            refund for the prepaid period.
+          </p>
+
           {seatLossCount > 0 ? (
             <p className="billing-inline-warning">
               {seatLossCount} active account
@@ -810,7 +917,7 @@ export default function OrganizationBillingManager({
           <button
             className="primary-button"
             type="button"
-            disabled={Boolean(busyAction)}
+            disabled={Boolean(busyAction) || !hasSeatChange}
             onClick={() =>
               void previewChange({
                 title:
@@ -839,22 +946,26 @@ export default function OrganizationBillingManager({
             Review seat change
           </button>
         </article>
+      </div>
 
-        {!hasAddonSubscription ? (
-          <p
-            className="form-message"
-            role="status"
-          >
-            This organization does not have a recurring AI add-on
-            subscription yet.{" "}
-            <a href="?mode=ai-access">
-              Purchase one from AI access
-            </a>{" "}
-            to enable portal and shared app credit packages.
+      {!hasAddonSubscription ? (
+        <div className="billing-addon-notice">
+          <h3>No recurring AI add-on subscription</h3>
+          <p>
+            Purchase a recurring add-on subscription to enable
+            portal and shared app credit packages below.
           </p>
-        ) : null}
+          <a
+            className="primary-button"
+            href="?mode=ai-access"
+          >
+            Purchase from AI access
+          </a>
+        </div>
+      ) : null}
 
-        <article className="billing-control-card">
+      <div className="billing-control-grid">
+        <article className="billing-control-card billing-credit-card">
           <div className="billing-control-heading">
             <div>
               <span>Portal AI</span>
@@ -862,43 +973,72 @@ export default function OrganizationBillingManager({
             </div>
           </div>
 
-          <div className="billing-credit-breakdown">
+          <div className="billing-credit-total">
+            <span>Total monthly portal credits</span>
             <strong>
-              {(
+              {formatNumber(
                 portalCreditSummary
-                  ?.total_monthly_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              total monthly portal credits
+                  ?.total_monthly_credits ?? 0,
+              )}
             </strong>
+          </div>
 
-            <span>
-              {(
-                portalCreditSummary
-                  ?.included_monthly_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              included with the portal plan
-            </span>
+          <div
+            className="billing-utilization-track"
+            role="progressbar"
+            aria-label="Web portal AI credits used"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={portalUsagePercentage}
+          >
+            <div
+              className="billing-utilization-fill"
+              style={{
+                width: `${portalUsagePercentage}%`,
+              }}
+            />
+          </div>
 
-            <span>
-              {(
-                portalCreditSummary
-                  ?.recurring_addon_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              recurring portal add-on
-            </span>
+          <div className="billing-credit-metrics">
+            <div>
+              <span>Included with plan</span>
+              <strong>
+                {formatNumber(
+                  portalCreditSummary
+                    ?.included_monthly_credits ?? 0,
+                )}
+              </strong>
+            </div>
 
-            <small>
-              {(
-                portalCreditSummary
-                  ?.used_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              used ·{" "}
-              {(
-                portalCreditSummary
-                  ?.remaining_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              remaining
-            </small>
+            <div>
+              <span>Recurring add-on</span>
+              <strong>
+                {formatNumber(
+                  portalCreditSummary
+                    ?.recurring_addon_credits ?? 0,
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Used</span>
+              <strong>
+                {formatNumber(
+                  portalCreditSummary
+                    ?.used_credits ?? 0,
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Remaining</span>
+              <strong>
+                {formatNumber(
+                  portalCreditSummary
+                    ?.remaining_credits ?? 0,
+                )}
+              </strong>
+            </div>
           </div>
 
           <label>
@@ -921,20 +1061,24 @@ export default function OrganizationBillingManager({
                     key={credits}
                     value={credits}
                   >
-                    {credits.toLocaleString(
-                      "en-US",
-                    )}{" "}
-                    credits
+                    {formatNumber(credits)} credits
                   </option>
                 ),
               )}
             </select>
           </label>
 
+          <p className="billing-helper-text">
+            Billed on the organization&rsquo;s dedicated add-on
+            subscription, separate from the plan above.
+          </p>
+
           <button
             className="primary-button"
             type="button"
-            disabled={Boolean(busyAction)}
+            disabled={
+              Boolean(busyAction) || !hasPortalAddonChange
+            }
             onClick={() =>
               void previewChange({
                 title:
@@ -956,7 +1100,7 @@ export default function OrganizationBillingManager({
           </button>
         </article>
 
-        <article className="billing-control-card">
+        <article className="billing-control-card billing-credit-card">
           <div className="billing-control-heading">
             <div>
               <span>App AI</span>
@@ -964,48 +1108,72 @@ export default function OrganizationBillingManager({
             </div>
           </div>
 
-          <div className="billing-credit-breakdown">
+          <div className="billing-credit-total">
+            <span>Total monthly shared app credits</span>
             <strong>
-              {(
+              {formatNumber(
                 appCreditSummary
-                  ?.total_monthly_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              total monthly shared app credits
+                  ?.total_monthly_credits ?? 0,
+              )}
             </strong>
+          </div>
 
-            <span>
-              {(
-                appCreditSummary
-                  ?.included_monthly_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              included in the pooled seat allocation
-            </span>
+          <div
+            className="billing-utilization-track"
+            role="progressbar"
+            aria-label="Shared app AI credits used"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={appUsagePercentage}
+          >
+            <div
+              className="billing-utilization-fill"
+              style={{
+                width: `${appUsagePercentage}%`,
+              }}
+            />
+          </div>
 
-            <span>
-              {(
-                appCreditSummary
-                  ?.recurring_addon_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              recurring shared app add-on
-            </span>
+          <div className="billing-credit-metrics">
+            <div>
+              <span>Pooled from seats</span>
+              <strong>
+                {formatNumber(
+                  appCreditSummary
+                    ?.included_monthly_credits ?? 0,
+                )}
+              </strong>
+            </div>
 
-            <small>
-              The app add-on is added once to the organization
-              pool, not once for every seat.
-            </small>
+            <div>
+              <span>Recurring add-on</span>
+              <strong>
+                {formatNumber(
+                  appCreditSummary
+                    ?.recurring_addon_credits ?? 0,
+                )}
+              </strong>
+            </div>
 
-            <small>
-              {(
-                appCreditSummary
-                  ?.used_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              used ·{" "}
-              {(
-                appCreditSummary
-                  ?.remaining_credits ?? 0
-              ).toLocaleString("en-US")}{" "}
-              remaining
-            </small>
+            <div>
+              <span>Used</span>
+              <strong>
+                {formatNumber(
+                  appCreditSummary
+                    ?.used_credits ?? 0,
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Remaining</span>
+              <strong>
+                {formatNumber(
+                  appCreditSummary
+                    ?.remaining_credits ?? 0,
+                )}
+              </strong>
+            </div>
           </div>
 
           <label>
@@ -1028,20 +1196,25 @@ export default function OrganizationBillingManager({
                     key={credits}
                     value={credits}
                   >
-                    {credits.toLocaleString(
-                      "en-US",
-                    )}{" "}
-                    credits
+                    {formatNumber(credits)} credits
                   </option>
                 ),
               )}
             </select>
           </label>
 
+          <p className="billing-helper-text">
+            Added once to the organization&rsquo;s shared pool,
+            not once per seat. Billed on the dedicated add-on
+            subscription.
+          </p>
+
           <button
             className="primary-button"
             type="button"
-            disabled={Boolean(busyAction)}
+            disabled={
+              Boolean(busyAction) || !hasAppAddonChange
+            }
             onClick={() =>
               void previewChange({
                 title:
@@ -1176,8 +1349,10 @@ export default function OrganizationBillingManager({
       {billingState.pendingChanges.length > 0 ? (
         <details className="billing-pending-details">
           <summary>
-            Scheduled changes (
-            {billingState.pendingChanges.length})
+            Scheduled changes
+            <span className="billing-count-badge">
+              {billingState.pendingChanges.length}
+            </span>
           </summary>
 
           <div className="billing-pending-list">
@@ -1232,6 +1407,21 @@ export default function OrganizationBillingManager({
         >
           Invoices and payment method
         </button>
+      </div>
+
+      <div className="billing-danger-zone">
+        <div>
+          <h3>
+            {billingState.cancelAtPeriodEnd
+              ? "Subscription cancellation scheduled"
+              : "Cancel subscription"}
+          </h3>
+          <p>
+            {billingState.cancelAtPeriodEnd
+              ? `Access continues through ${formatDate(billingState.renewalDate)}. No refund or prorated credit will be issued.`
+              : "Cancels at the end of the current paid term. Access continues until then. No refund or prorated credit will be issued."}
+          </p>
+        </div>
 
         {billingState.cancelAtPeriodEnd ? (
           <button
