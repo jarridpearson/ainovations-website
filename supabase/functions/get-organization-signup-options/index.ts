@@ -1,0 +1,174 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status = 200,
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: corsHeaders,
+    });
+  }
+
+  if (
+    request.method !== "GET" &&
+    request.method !== "POST"
+  ) {
+    return jsonResponse(
+      {
+        error: "Method not allowed.",
+      },
+      405,
+    );
+  }
+
+  const supabaseUrl =
+    Deno.env.get("SUPABASE_URL");
+
+  const serviceRoleKey =
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return jsonResponse(
+      {
+        error:
+          "The organization purchase catalog is not configured.",
+      },
+      500,
+    );
+  }
+
+  const adminClient = createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
+
+  const [plansResult, productsResult] =
+    await Promise.all([
+      adminClient
+        .from("subscription_plans")
+        .select(
+          `
+            plan_key,
+            plan_name,
+            portal_monthly_price_cents,
+            portal_annual_price_cents,
+            per_user_monthly_price_cents,
+            per_user_annual_price_cents,
+            included_admin_ai_credits_monthly,
+            included_user_ai_credits_monthly,
+            company_document_limit,
+            allowed_company_document_types,
+            allows_company_activity_questions,
+            allows_advanced_reporting,
+            allows_full_data_export
+          `,
+        )
+        .in("plan_key", [
+          "organization_starter",
+          "organization_pro",
+        ])
+        .eq("active", true)
+        .order("portal_monthly_price_cents"),
+
+      adminClient
+        .from("organization_billing_products")
+        .select("*")
+        .eq("active", true),
+    ]);
+
+  if (plansResult.error) {
+    console.error(
+      "Organization plans failed to load:",
+      plansResult.error,
+    );
+
+    return jsonResponse(
+      {
+        error:
+          "Organization plan pricing could not be loaded.",
+      },
+      500,
+    );
+  }
+
+  if (productsResult.error) {
+    console.error(
+      "Organization AI add-ons failed to load:",
+      productsResult.error,
+    );
+
+    return jsonResponse(
+      {
+        error:
+          "Organization AI credit add-ons could not be loaded.",
+      },
+      500,
+    );
+  }
+
+  const billingProducts =
+    (productsResult.data ?? []).filter(
+      (product) => {
+        const searchableProduct =
+          Object.values(product)
+            .filter(
+              (value) =>
+                typeof value === "string",
+            )
+            .join(" ")
+            .toLowerCase();
+
+        const isCreditProduct =
+          searchableProduct.includes("credit");
+
+        const isPortalCreditProduct =
+          searchableProduct.includes("portal") &&
+          isCreditProduct;
+
+        const isMobileAppCreditProduct =
+          isCreditProduct &&
+          !searchableProduct.includes("portal") &&
+          (
+            searchableProduct.includes("app") ||
+            searchableProduct.includes("mobile") ||
+            searchableProduct.includes("shared") ||
+            searchableProduct.includes("user")
+          );
+
+        return (
+          isPortalCreditProduct ||
+          isMobileAppCreditProduct
+        );
+      },
+    );
+
+  return jsonResponse({
+    plans: plansResult.data ?? [],
+    billingProducts,
+  });
+});

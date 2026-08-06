@@ -13,6 +13,8 @@ type CheckoutRequest = {
   planKey?: unknown;
   billingInterval?: unknown;
   seatQuantity?: unknown;
+  portalCreditAddonProductKey?: unknown;
+  appCreditAddonProductKey?: unknown;
 };
 
 type StripeCheckoutSession = {
@@ -170,6 +172,12 @@ Deno.serve(async (request) => {
   const planKey = normalizeString(requestBody.planKey);
   const billingInterval = normalizeString(requestBody.billingInterval);
   const seatQuantity = Number(requestBody.seatQuantity);
+  const portalCreditAddonProductKey = normalizeString(
+    requestBody.portalCreditAddonProductKey,
+  );
+  const appCreditAddonProductKey = normalizeString(
+    requestBody.appCreditAddonProductKey,
+  );
 
   if (!isUuid(organizationId)) {
     return jsonResponse(
@@ -408,10 +416,16 @@ Deno.serve(async (request) => {
 
   try {
     const organization = organizationResult.data;
+
+
     const stripeForm = new URLSearchParams();
 
     appendFormValue(stripeForm, "mode", "subscription");
-    appendFormValue(stripeForm, "success_url", `${portalUrl}/?billing=success`);
+    appendFormValue(
+      stripeForm,
+      "success_url",
+      `${portalUrl}/?mode=ai-access&billing=base-success&session_id={CHECKOUT_SESSION_ID}`,
+    );
     appendFormValue(stripeForm, "cancel_url", `${portalUrl}/?billing=cancelled`);
     appendFormValue(stripeForm, "client_reference_id", organizationId);
     appendFormValue(stripeForm, "allow_promotion_codes", true);
@@ -473,6 +487,19 @@ Deno.serve(async (request) => {
       "subscription_data[metadata][seat_quantity]",
       seatQuantity,
     );
+
+if (appCreditAddonProductKey) {
+      appendFormValue(
+        stripeForm,
+        "metadata[app_credit_addon_product_key]",
+        appCreditAddonProductKey,
+      );
+      appendFormValue(
+        stripeForm,
+        "subscription_data[metadata][app_credit_addon_product_key]",
+        appCreditAddonProductKey,
+      );
+    }
 
     if (organization.stripe_customer_id) {
       appendFormValue(

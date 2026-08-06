@@ -240,6 +240,56 @@ async function countSeatsInUse(
   return Math.max(0, Number(count ?? 0));
 }
 
+
+async function synchronizeOrganizationCreditAddons(
+  adminClient: ReturnType<typeof createClient>,
+  organizationId: string,
+  subscription: Stripe.Subscription,
+) {
+  const subscriptionItems =
+    subscription.items.data.map((item) => ({
+      price_id: item.price?.id ?? null,
+      quantity: Math.max(
+        0,
+        Number(item.quantity ?? 0),
+      ),
+    }));
+
+  const [
+    appPoolSyncResult,
+    portalPoolSyncResult,
+  ] = await Promise.all([
+    adminClient.rpc(
+      "sync_organization_app_pool_recurring_addons",
+      {
+        p_organization_id: organizationId,
+        p_subscription_status: subscription.status,
+        p_items: subscriptionItems,
+      },
+    ),
+    adminClient.rpc(
+      "sync_organization_portal_recurring_addons",
+      {
+        p_organization_id: organizationId,
+        p_subscription_status: subscription.status,
+        p_items: subscriptionItems,
+      },
+    ),
+  ]);
+
+  if (appPoolSyncResult.error) {
+    throw new Error(
+      `The organization shared app-credit pool could not be synchronized: ${appPoolSyncResult.error.message}`,
+    );
+  }
+
+  if (portalPoolSyncResult.error) {
+    throw new Error(
+      `The organization portal-credit pool could not be synchronized: ${portalPoolSyncResult.error.message}`,
+    );
+  }
+}
+
 async function synchronizeSubscription(
   stripe: Stripe,
   adminClient: ReturnType<typeof createClient>,
@@ -263,6 +313,68 @@ async function synchronizeSubscription(
   }
 
   const subscriptionItems = subscription.items.data;
+  const subscriptionKind =
+    subscription.metadata.subscription_kind?.trim() || "base";
+
+  if (subscriptionKind === "ai_addons") {
+    const { error: addonSubscriptionUpdateError } =
+      await adminClient
+        .from("organizations")
+        .update({
+          stripe_customer_id: customerId,
+          stripe_addon_subscription_id: subscription.id,
+          stripe_billing_synced_at: new Date().toISOString(),
+          stripe_billing_error: null,
+        })
+        .eq("id", organization.id);
+
+    if (addonSubscriptionUpdateError) {
+      throw addonSubscriptionUpdateError;
+    }
+
+    await synchronizeOrganizationCreditAddons(
+      adminClient,
+      organization.id,
+      subscription,
+    );
+
+    const { error: addonAuditError } =
+      await adminClient
+        .from("organization_billing_events")
+        .insert({
+          organization_id: organization.id,
+          actor_user_id: null,
+          stripe_event_id: stripeEventId,
+          event_type:
+            "stripe_addon_subscription_synchronized",
+          previous_plan_key:
+            organization.current_plan_key,
+          new_plan_key:
+            organization.current_plan_key,
+          previous_subscription_status:
+            organization.subscription_status,
+          new_subscription_status:
+            organization.subscription_status,
+          previous_paid_seat_count:
+            organization.paid_seat_count,
+          new_paid_seat_count:
+            organization.paid_seat_count,
+          metadata: {
+            stripe_addon_subscription_id:
+              subscription.id,
+            stripe_customer_id: customerId,
+            subscription_status:
+              subscription.status,
+          },
+        });
+
+    if (addonAuditError) {
+      throw addonAuditError;
+    }
+
+    return organization.id;
+  }
+
   const priceIds = subscriptionItems
     .map((item) => item.price?.id)
     .filter((priceId): priceId is string => Boolean(priceId));
@@ -374,6 +486,12 @@ async function synchronizeSubscription(
     throw updateError;
   }
 
+  await synchronizeOrganizationCreditAddons(
+    adminClient,
+    organization.id,
+    subscription,
+  );
+
   const { error: auditError } = await adminClient
     .from("organization_billing_events")
     .insert({
@@ -402,7 +520,7 @@ async function synchronizeSubscription(
     throw auditError;
   }
 
-  return organization.id;
+return organization.id;
 }
 
 async function handleCheckoutCompleted(
@@ -431,17 +549,48 @@ async function handleCheckoutCompleted(
     );
   }
 
-  const { error: organizationUpdateError } = await adminClient
-    .from("organizations")
-    .update({
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId,
-      stripe_checkout_session_id: session.id,
-      stripe_latest_invoice_id: getExpandableId(session.invoice),
-      stripe_billing_synced_at: new Date().toISOString(),
-      stripe_billing_error: null,
-    })
-    .eq("id", organization.id);
+  const subscriptionKind =
+    session.metadata?.subscription_kind?.trim() ||
+    "base";
+
+  const checkoutUpdate =
+    subscriptionKind === "ai_addons"
+      ? {
+          stripe_customer_id:
+            customerId,
+          stripe_addon_subscription_id:
+            subscriptionId ??
+            organization
+              .stripe_addon_subscription_id,
+          stripe_billing_synced_at:
+            new Date().toISOString(),
+          stripe_billing_error:
+            null,
+        }
+      : {
+          stripe_customer_id:
+            customerId,
+          stripe_subscription_id:
+            subscriptionId ??
+            organization
+              .stripe_subscription_id,
+          stripe_checkout_session_id:
+            session.id,
+          stripe_latest_invoice_id:
+            getExpandableId(
+              session.invoice,
+            ),
+          stripe_billing_synced_at:
+            new Date().toISOString(),
+          stripe_billing_error:
+            null,
+        };
+
+  const { error: organizationUpdateError } =
+    await adminClient
+      .from("organizations")
+      .update(checkoutUpdate)
+      .eq("id", organization.id);
 
   if (organizationUpdateError) {
     throw organizationUpdateError;
@@ -477,6 +626,7 @@ async function handleCheckoutCompleted(
 }
 
 async function handleInvoiceEvent(
+  stripe: Stripe,
   adminClient: ReturnType<typeof createClient>,
   stripeEventId: string,
   invoice: Stripe.Invoice,
@@ -515,6 +665,19 @@ async function handleInvoiceEvent(
 
   if (updateError) {
     throw updateError;
+  }
+
+  if (paymentSucceeded && subscriptionId) {
+    const paidSubscription =
+      await stripe.subscriptions.retrieve(
+        subscriptionId,
+      );
+
+    await synchronizeOrganizationCreditAddons(
+      adminClient,
+      organization.id,
+      paidSubscription,
+    );
   }
 
   const { error: auditError } = await adminClient
@@ -734,6 +897,7 @@ Deno.serve(async (request) => {
 
       case "invoice.paid": {
         organizationId = await handleInvoiceEvent(
+          stripe,
           adminClient,
           stripeEvent.id,
           stripeEvent.data.object as Stripe.Invoice,
@@ -744,6 +908,7 @@ Deno.serve(async (request) => {
 
       case "invoice.payment_failed": {
         organizationId = await handleInvoiceEvent(
+          stripe,
           adminClient,
           stripeEvent.id,
           stripeEvent.data.object as Stripe.Invoice,
