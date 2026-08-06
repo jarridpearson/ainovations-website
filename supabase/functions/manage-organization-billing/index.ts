@@ -1264,6 +1264,7 @@ Deno.serve(async (request) => {
           await stripe.checkout.sessions.create({
             mode: "payment",
             customer: organization.stripe_customer_id,
+            allow_promotion_codes: true,
             line_items: [
               {
                 price_data: {
