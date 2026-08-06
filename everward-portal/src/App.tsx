@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import OrganizationDashboard from './components/OrganizationDashboard'
 import OrganizationSetup from './components/OrganizationSetup'
+import OrganizationAiUpsell from './components/OrganizationAiUpsell'
 import { supabase } from './lib/supabase'
 import './App.css'
 
@@ -543,6 +544,12 @@ function App() {
         </section>
       </main>
     )
+  }
+
+  if (
+    new URLSearchParams(window.location.search).get('mode') === 'ai-access'
+  ) {
+    return <OrganizationAiUpsell />
   }
 
   if (session && accessError) {
