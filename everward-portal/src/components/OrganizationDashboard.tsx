@@ -3,13 +3,17 @@ import { supabase } from "../lib/supabase";
 import OrganizationUserSetup from "./OrganizationUserSetup";
 import OrganizationKnowledge from "./OrganizationKnowledge";
 import OrganizationDataAi from "./OrganizationDataAi";
+import OrganizationBillingManager from "./OrganizationBillingManager";
+import OrganizationGroupManager from "./OrganizationGroupManager";
 
 type DashboardView =
   | "overview"
   | "users"
   | "groups"
   | "billing"
-  | "reports" | "analyze"
+  | "ai-usage"
+  | "reports"
+  | "analyze"
   | "knowledge"
   | "settings";
 
@@ -87,6 +91,17 @@ type OrganizationPortalCreditSummary = {
   portal_credit_period_start: string | null;
   portal_credit_renewal_date: string | null;
 };
+
+type OrganizationCreditBreakdown = {
+  credit_pool_type: "portal" | "app";
+  included_monthly_credits: number;
+  recurring_addon_credits: number;
+  total_monthly_credits: number;
+  used_credits: number;
+  remaining_credits: number;
+  renewal_date: string | null;
+};
+
 
 type GenerateOrganizationMvvResponse = {
   missionStatement?: string;
@@ -385,37 +400,6 @@ function getDefaultExpandedGroupIds(
   return expandedGroupIds;
 }
 
-function getVisibleGroupHierarchy(
-  groups: OrganizationGroup[],
-  expandedGroupIds: Set<string>,
-) {
-  return buildGroupHierarchy(groups).filter((group) => {
-    if (!group.parent_group_id) {
-      return true;
-    }
-
-    let parentGroupId: string | null = group.parent_group_id;
-
-    const visitedGroupIds = new Set<string>();
-
-    while (parentGroupId && !visitedGroupIds.has(parentGroupId)) {
-      visitedGroupIds.add(parentGroupId);
-
-      if (!expandedGroupIds.has(parentGroupId)) {
-        return false;
-      }
-
-      const parentGroup = groups.find(
-        (possibleParent) => possibleParent.id === parentGroupId,
-      );
-
-      parentGroupId = parentGroup?.parent_group_id ?? null;
-    }
-
-    return true;
-  });
-}
-
 function OrganizationDashboard({
   organizationId,
   organizationName,
@@ -456,6 +440,12 @@ function OrganizationDashboard({
 
   const [organizationPortalCreditSummary, setOrganizationPortalCreditSummary] =
     useState<OrganizationPortalCreditSummary | null>(null);
+
+  const [
+    organizationCreditBreakdown,
+    setOrganizationCreditBreakdown,
+  ] = useState<OrganizationCreditBreakdown[]>([]);
+
   const [
     isLoadingOrganizationPortalCredits,
     setIsLoadingOrganizationPortalCredits,
@@ -494,8 +484,7 @@ function OrganizationDashboard({
     OrganizationGroup[]
   >([]);
   const [groupMessage, setGroupMessage] = useState("");
-  const [groupSearchQuery, setGroupSearchQuery] = useState("");
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
+  const [, setExpandedGroupIds] = useState<Set<string>>(
     new Set(),
   );
   const [hasInitializedGroupExpansion, setHasInitializedGroupExpansion] =
@@ -592,60 +581,6 @@ function OrganizationDashboard({
       user.email_address.trim().toLowerCase() ===
       accountEmail.trim().toLowerCase(),
   );
-
-  const visibleOrganizationGroupHierarchy = getVisibleGroupHierarchy(
-    organizationGroups,
-    expandedGroupIds,
-  );
-
-  const normalizedGroupSearchQuery = groupSearchQuery.trim().toLowerCase();
-
-  const directlyMatchingGroupIds = new Set(
-    organizationGroups
-      .filter((group) => {
-        return (
-          !normalizedGroupSearchQuery ||
-          group.name.toLowerCase().includes(normalizedGroupSearchQuery)
-        );
-      })
-      .map((group) => group.id),
-  );
-
-  const matchingGroupAndAncestorIds = new Set<string>();
-
-  directlyMatchingGroupIds.forEach((groupId) => {
-    let currentGroupId: string | null = groupId;
-    const visitedGroupIds = new Set<string>();
-
-    while (currentGroupId && !visitedGroupIds.has(currentGroupId)) {
-      visitedGroupIds.add(currentGroupId);
-      matchingGroupAndAncestorIds.add(currentGroupId);
-
-      const currentGroup = organizationGroups.find(
-        (group) => group.id === currentGroupId,
-      );
-
-      currentGroupId = currentGroup?.parent_group_id ?? null;
-    }
-  });
-
-  const organizationGroupHierarchy = !normalizedGroupSearchQuery
-    ? visibleOrganizationGroupHierarchy
-    : buildGroupHierarchy(organizationGroups).filter((group) =>
-        matchingGroupAndAncestorIds.has(group.id),
-      );
-
-  const rootGroupCount = organizationGroups.filter(
-    (group) => !group.parent_group_id,
-  ).length;
-
-  const assignedGroupCount = new Set(
-    organizationUsers
-      .filter(
-        (user) => user.is_active && user.is_billable && user.primary_group_id,
-      )
-      .map((user) => user.primary_group_id),
-  ).size;
 
   const reportableOrganizationUsers = organizationUsers
     .filter((user) => user.is_active && user.is_billable)
@@ -967,6 +902,8 @@ function OrganizationDashboard({
     role === "group_manager" ||
     role === "view_only";
 
+  const canViewAiUsage = canViewBilling || canViewReports;
+
   const canViewCompanyKnowledge =
     role === "organization_admin" ||
     role === "user_admin" ||
@@ -988,6 +925,10 @@ function OrganizationDashboard({
       return;
     }
 
+    if (view === "ai-usage" && !canViewAiUsage) {
+      return;
+    }
+
     if (view === "reports" && !canViewReports) {
       return;
     }
@@ -1005,7 +946,18 @@ function OrganizationDashboard({
     setSelectedUser(null);
     setEditUserMessage("");
 
-    if (view === "reports") {
+    if (view === "billing") {
+      void loadOrganizationPortalCreditSummary();
+      void loadOrganizationAiCreditSummary();
+    }
+
+    if (view === "billing") {
+      void loadOrganizationAiCreditSummary();
+      void loadOrganizationPortalCreditSummary();
+    }
+
+    if (view === "ai-usage") {
+      void loadOrganizationPortalCreditSummary();
       void loadOrganizationAiCreditSummary();
     }
 
@@ -1038,20 +990,6 @@ function OrganizationDashboard({
     setSelectedUser(null);
     setEditUserMessage("");
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function toggleGroupExpansion(groupId: string) {
-    setExpandedGroupIds((currentExpandedGroupIds) => {
-      const nextExpandedGroupIds = new Set(currentExpandedGroupIds);
-
-      if (nextExpandedGroupIds.has(groupId)) {
-        nextExpandedGroupIds.delete(groupId);
-      } else {
-        nextExpandedGroupIds.add(groupId);
-      }
-
-      return nextExpandedGroupIds;
-    });
   }
 
   function toggleReportUser(userId: string) {
@@ -1210,6 +1148,156 @@ function OrganizationDashboard({
 
     setIsLoadingOrganizationPortalCredits(false);
   }
+
+  async function loadOrganizationCreditBreakdown() {
+    if (!organizationId) {
+      setOrganizationCreditBreakdown([]);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc(
+      "get_organization_credit_breakdown",
+      {
+        p_organization_id: organizationId,
+      },
+    );
+
+    if (error) {
+      console.error(
+        "Organization credit breakdown failed to load:",
+        error,
+      );
+
+      setOrganizationCreditBreakdown([]);
+      return;
+    }
+
+    setOrganizationCreditBreakdown(
+      (data ?? []).map((row: Record<string, unknown>) => ({
+        credit_pool_type:
+          row.credit_pool_type === "app"
+            ? "app"
+            : "portal",
+
+        included_monthly_credits: Number(
+          row.included_monthly_credits ?? 0,
+        ),
+
+        recurring_addon_credits: Number(
+          row.recurring_addon_credits ?? 0,
+        ),
+
+        total_monthly_credits: Number(
+          row.total_monthly_credits ?? 0,
+        ),
+
+        used_credits: Number(
+          row.used_credits ?? 0,
+        ),
+
+        remaining_credits: Number(
+          row.remaining_credits ?? 0,
+        ),
+
+        renewal_date:
+          row.renewal_date ?? null,
+      })),
+    );
+  }
+
+  async function refreshPurchasedSeatSummary() {
+    if (!organizationId) {
+      return;
+    }
+
+    const { data, error } = await supabase.rpc(
+      "get_organization_seat_summary",
+      {
+        p_organization_id: organizationId,
+      },
+    );
+
+    if (error) {
+      console.error(
+        "Organization seat summary refresh failed:",
+        error,
+      );
+      return;
+    }
+
+    const summary = data?.[0];
+
+    if (!summary) {
+      return;
+    }
+
+    setSeatSummary({
+      purchasedSeatCount: Math.max(
+        0,
+        Number(summary.purchased_seat_count ?? 0),
+      ),
+      usedSeatCount: Math.max(
+        0,
+        Number(summary.used_seat_count ?? 0),
+      ),
+      availableSeatCount: Math.max(
+        0,
+        Number(summary.available_seat_count ?? 0),
+      ),
+    });
+  }
+
+  useEffect(() => {
+    if (!organizationId) {
+      return;
+    }
+
+    void refreshPurchasedSeatSummary();
+
+    function handleWindowFocus() {
+      void refreshPurchasedSeatSummary();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void refreshPurchasedSeatSummary();
+      }
+    }
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+    };
+  }, [organizationId]);
+
+  useEffect(() => {
+    if (!organizationId) {
+      return;
+    }
+
+    void loadOrganizationCreditBreakdown();
+  }, [organizationId]);
+
+  const portalCreditBreakdown =
+    organizationCreditBreakdown.find(
+      (row) =>
+        row.credit_pool_type === "portal",
+    ) ?? null;
+
+  const appCreditBreakdown =
+    organizationCreditBreakdown.find(
+      (row) =>
+        row.credit_pool_type === "app",
+    ) ?? null;
 
   async function handleGenerateOrganizationMvv() {
     const normalizedOrganizationName = settingsOrganizationName.trim();
@@ -2143,6 +2231,7 @@ function OrganizationDashboard({
     );
   }
 
+
   async function handleSaveUser() {
     if (!selectedUser) {
       return;
@@ -2384,6 +2473,22 @@ function OrganizationDashboard({
                 }}
               >
                 Billing and Seats
+              </button>
+            ) : null}
+
+            {canViewAiUsage ? (
+              <button
+                className={
+                  activeView === "ai-usage"
+                    ? "organization-dashboard-nav-button organization-dashboard-nav-button-active"
+                    : "organization-dashboard-nav-button"
+                }
+                type="button"
+                onClick={() => {
+                  openView("ai-usage");
+                }}
+              >
+                AI Usage
               </button>
             ) : null}
 
@@ -3177,234 +3282,10 @@ function OrganizationDashboard({
           ) : null}
 
           {activeView === "groups" ? (
-            <section className="dashboard-management-section">
-              <div className="dashboard-section-heading">
-                <div>
-                  <p className="eyebrow">Organization structure</p>
-                  <h1>Groups</h1>
-                  <p>
-                    Review departments, teams, locations, and their reporting
-                    hierarchy.
-                  </p>
-                </div>
-              </div>
-
-              {groupMessage ? (
-                <p className="form-message" role="alert">
-                  {groupMessage}
-                </p>
-              ) : (
-                <>
-                  <div className="group-summary-grid">
-                    <article className="dashboard-card">
-                      <span className="dashboard-card-label">
-                        Active groups
-                      </span>
-                      <strong>{organizationGroups.length}</strong>
-                      <p>
-                        Total active groups currently available in this
-                        organization.
-                      </p>
-                    </article>
-
-                    <article className="dashboard-card">
-                      <span className="dashboard-card-label">
-                        Top-level groups
-                      </span>
-                      <strong>{rootGroupCount}</strong>
-                      <p>Groups that do not report beneath another group.</p>
-                    </article>
-
-                    <article className="dashboard-card">
-                      <span className="dashboard-card-label">
-                        Groups with app users
-                      </span>
-                      <strong>{assignedGroupCount}</strong>
-                      <p>
-                        Groups currently assigned as a primary group for at
-                        least one active app user.
-                      </p>
-                    </article>
-                  </div>
-
-                  <section className="group-hierarchy-section">
-                    <div className="group-directory-filters">
-                      <div className="setup-field">
-                        <label htmlFor="group-directory-search">
-                          Search groups
-                        </label>
-
-                        <input
-                          id="group-directory-search"
-                          type="search"
-                          value={groupSearchQuery}
-                          placeholder="Search by group name"
-                          onChange={(event) => {
-                            setGroupSearchQuery(event.target.value);
-                          }}
-                        />
-                      </div>
-
-                      <button
-                        className="text-button"
-                        type="button"
-                        disabled={!groupSearchQuery}
-                        onClick={() => {
-                          setGroupSearchQuery("");
-                        }}
-                      >
-                        Clear filters
-                      </button>
-                    </div>
-
-                    <div className="dashboard-section-heading">
-                      <div>
-                        <p className="eyebrow">Relevant structure</p>
-                        <h2>Your visible group hierarchy</h2>
-                        <p>
-                          Expand or collapse groups to control how much of the
-                          organization structure is visible.
-                        </p>
-                      </div>
-
-                      <div className="group-hierarchy-actions">
-                        <button
-                          className="text-button"
-                          type="button"
-                          onClick={() => {
-                            setExpandedGroupIds(new Set());
-                          }}
-                        >
-                          Collapse all
-                        </button>
-
-                        <button
-                          className="text-button"
-                          type="button"
-                          onClick={() => {
-                            setExpandedGroupIds(
-                              new Set(
-                                organizationGroups
-                                  .filter((group) =>
-                                    organizationGroups.some(
-                                      (possibleChild) =>
-                                        possibleChild.parent_group_id ===
-                                        group.id,
-                                    ),
-                                  )
-                                  .map((group) => group.id),
-                              ),
-                            );
-                          }}
-                        >
-                          Expand all
-                        </button>
-                      </div>
-                    </div>
-
-                    {organizationGroupHierarchy.length === 0 ? (
-                      <div className="dashboard-empty-state">
-                        <strong>
-                          {organizationGroups.length === 0
-                            ? "No active groups found"
-                            : "No groups match these filters"}
-                        </strong>
-
-                        <p>
-                          {organizationGroups.length === 0
-                            ? "Organization groups will appear here after they are created."
-                            : "Change or clear the current group filters."}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="group-hierarchy-list">
-                        {organizationGroupHierarchy.map((group) => {
-                          const minimumVisibleDepth = Math.min(
-                            ...organizationGroupHierarchy.map(
-                              (visibleGroup) => visibleGroup.depth,
-                            ),
-                          );
-
-                          const visibleDepth =
-                            group.depth - minimumVisibleDepth;
-                          const parentGroup = organizationGroups.find(
-                            (possibleParent) =>
-                              possibleParent.id === group.parent_group_id,
-                          );
-
-                          const groupUserCount = organizationUsers.filter(
-                            (user) =>
-                              user.is_active &&
-                              user.is_billable &&
-                              user.primary_group_id === group.id,
-                          ).length;
-
-                          const childGroupCount = organizationGroups.filter(
-                            (possibleChild) =>
-                              possibleChild.parent_group_id === group.id,
-                          ).length;
-
-                          const isExpanded = expandedGroupIds.has(group.id);
-
-                          return (
-                            <article
-                              key={group.id}
-                              className="group-hierarchy-row"
-                              style={{
-                                marginLeft: `${
-                                  Math.min(visibleDepth, 5) * 28
-                                }px`,
-                              }}
-                            >
-                              <div className="group-hierarchy-marker">
-                                <span>{group.depth + 1}</span>
-                              </div>
-
-                              <div className="group-hierarchy-details">
-                                <strong>{group.name}</strong>
-
-                                <span>
-                                  {parentGroup
-                                    ? `Reports to ${parentGroup.name}`
-                                    : "Top-level group"}
-                                </span>
-                              </div>
-
-                              <div className="group-hierarchy-counts">
-                                <div>
-                                  <span>App users</span>
-                                  <strong>{groupUserCount}</strong>
-                                </div>
-
-                                <div>
-                                  <span>Child groups</span>
-                                  <strong>{childGroupCount}</strong>
-                                </div>
-
-                                {childGroupCount > 0 ? (
-                                  <button
-                                    className="group-hierarchy-toggle"
-                                    type="button"
-                                    aria-expanded={isExpanded}
-                                    onClick={() => {
-                                      toggleGroupExpansion(group.id);
-                                    }}
-                                  >
-                                    {isExpanded
-                                      ? "Collapse"
-                                      : `Expand (${childGroupCount})`}
-                                  </button>
-                                ) : null}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </section>
-                </>
-              )}
-            </section>
+            <OrganizationGroupManager
+              organizationId={organizationId}
+              onGroupsChanged={loadDashboardData}
+            />
           ) : null}
 
           {activeView === "billing" ? (
@@ -3414,192 +3295,16 @@ function OrganizationDashboard({
                   <p className="eyebrow">Subscription management</p>
                   <h1>Billing and Seats</h1>
                   <p>
-                    Review the organization subscription and current Everward
-                    app-seat usage.
+                    Manage the organization subscription, app seats, payment
+                    method, invoices, and cancellation.
                   </p>
                 </div>
               </div>
 
-              {isLoadingSeats ? (
-                <p className="form-message">
-                  Loading billing and seat information...
-                </p>
-              ) : seatMessage ? (
-                <p className="form-message" role="alert">
-                  {seatMessage}
-                </p>
-              ) : (
-                <>
-                  <div className="billing-seat-grid">
-                    <article className="billing-seat-card">
-                      <span>Purchased seats</span>
-                      <strong>{seatSummary.purchasedSeatCount}</strong>
-                      <p>
-                        Total Everward app seats currently purchased by the
-                        organization.
-                      </p>
-                    </article>
+              <OrganizationBillingManager
+                organizationId={organizationId}
+              />
 
-                    <article className="billing-seat-card">
-                      <span>Seats in use</span>
-                      <strong>{seatSummary.usedSeatCount}</strong>
-                      <p>
-                        Active organization users who currently have Everward
-                        app access.
-                      </p>
-                    </article>
-
-                    <article className="billing-seat-card">
-                      <span>Available seats</span>
-                      <strong>{seatSummary.availableSeatCount}</strong>
-                      <p>
-                        Purchased seats that can still be assigned to active app
-                        users.
-                      </p>
-                    </article>
-                  </div>
-
-                  <section className="billing-utilization-section">
-                    <div className="dashboard-section-heading">
-                      <div>
-                        <p className="eyebrow">Seat utilization</p>
-                        <h2>Current app-seat usage</h2>
-                      </div>
-
-                      <strong className="billing-utilization-percentage">
-                        {seatSummary.purchasedSeatCount > 0
-                          ? `${Math.min(
-                              100,
-                              Math.round(
-                                (seatSummary.usedSeatCount /
-                                  seatSummary.purchasedSeatCount) *
-                                  100,
-                              ),
-                            )}%`
-                          : "0%"}
-                      </strong>
-                    </div>
-
-                    <div
-                      className="billing-utilization-track"
-                      role="progressbar"
-                      aria-label="Organization seat utilization"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={
-                        seatSummary.purchasedSeatCount > 0
-                          ? Math.min(
-                              100,
-                              Math.round(
-                                (seatSummary.usedSeatCount /
-                                  seatSummary.purchasedSeatCount) *
-                                  100,
-                              ),
-                            )
-                          : 0
-                      }
-                    >
-                      <div
-                        className="billing-utilization-fill"
-                        style={{
-                          width: `${
-                            seatSummary.purchasedSeatCount > 0
-                              ? Math.min(
-                                  100,
-                                  Math.round(
-                                    (seatSummary.usedSeatCount /
-                                      seatSummary.purchasedSeatCount) *
-                                      100,
-                                  ),
-                                )
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="billing-utilization-summary">
-                      <span>
-                        {seatSummary.usedSeatCount} of{" "}
-                        {seatSummary.purchasedSeatCount} seats assigned
-                      </span>
-
-                      <span>
-                        {seatSummary.availableSeatCount} seats available
-                      </span>
-                    </div>
-                  </section>
-
-                  {seatSummary.availableSeatCount === 0 ? (
-                    <div className="dashboard-warning">
-                      <strong>All purchased seats are assigned</strong>
-                      <p>
-                        Remove app access from an existing user or add another
-                        seat before enabling another app user.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="billing-availability-notice">
-                      <strong>
-                        {seatSummary.availableSeatCount}{" "}
-                        {seatSummary.availableSeatCount === 1
-                          ? "seat is"
-                          : "seats are"}{" "}
-                        available
-                      </strong>
-
-                      <p>
-                        Available seats can be assigned from the Users section
-                        by enabling Everward app access.
-                      </p>
-
-                      <button
-                        className="text-button"
-                        type="button"
-                        onClick={() => {
-                          openView("users");
-                        }}
-                      >
-                        Manage users
-                      </button>
-                    </div>
-                  )}
-
-                  <section className="billing-seat-explanation">
-                    <div className="dashboard-section-heading">
-                      <div>
-                        <p className="eyebrow">How seats work</p>
-                        <h2>Portal access and app access</h2>
-                      </div>
-                    </div>
-
-                    <div className="billing-explanation-grid">
-                      <article>
-                        <strong>Everward app access</strong>
-                        <p>
-                          An active user with Everward app access uses one
-                          purchased seat.
-                        </p>
-                      </article>
-
-                      <article>
-                        <strong>Portal-only access</strong>
-                        <p>
-                          An authorized portal account without app access does
-                          not use a purchased app seat.
-                        </p>
-                      </article>
-
-                      <article>
-                        <strong>Inactive accounts</strong>
-                        <p>
-                          Inactive organization accounts do not use an app seat.
-                        </p>
-                      </article>
-                    </div>
-                  </section>
-                </>
-              )}
             </section>
           ) : null}
 
@@ -3789,6 +3494,228 @@ function OrganizationDashboard({
             </section>
           ) : null}
 
+          {activeView === "ai-usage" ? (
+            <section className="dashboard-management-section">
+              <div className="dashboard-section-heading">
+                <div>
+                  <p className="eyebrow">Organization AI usage</p>
+                  <h1>AI Usage</h1>
+                  <p>
+                    Review the organization’s separate web-portal and
+                    Everward mobile-app AI credit pools.
+                  </p>
+                </div>
+              </div>
+
+              <section className="billing-seat-explanation">
+                <div className="dashboard-section-heading">
+                  <div>
+                    <p className="eyebrow">Web portal usage</p>
+                    <h2>Web Portal AI Credits</h2>
+                    <p>
+                      Used only by AI tools inside the organization web portal.
+                      These credits are separate from employee mobile-app
+                      credits.
+                    </p>
+                  </div>
+                </div>
+
+                {isLoadingOrganizationPortalCredits ? (
+                  <p className="form-message">
+                    Loading web portal AI credits...
+                  </p>
+                ) : organizationPortalCreditMessage ? (
+                  <p className="form-message" role="alert">
+                    {organizationPortalCreditMessage}
+                  </p>
+                ) : organizationPortalCreditSummary ? (
+                  <div className="usage-metric-grid">
+                    <article className="usage-metric-card">
+                      <span>Included portal credits</span>
+                      <strong>
+                        {(
+                          portalCreditBreakdown
+                            ?.included_monthly_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Included in the monthly portal pool
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Portal add-on credits</span>
+                      <strong>
+                        {(
+                          portalCreditBreakdown
+                            ?.recurring_addon_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Recurring portal add-on package
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Total monthly portal credits</span>
+                      <strong>
+                        {(
+                          portalCreditBreakdown
+                            ?.total_monthly_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Included portal pool plus portal add-on
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Portal credits used</span>
+                      <strong>
+                        {(
+                          portalCreditBreakdown
+                            ?.used_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Used only by web-portal AI features
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Portal credits remaining</span>
+                      <strong>
+                        {(
+                          portalCreditBreakdown
+                            ?.remaining_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Available only in the web portal
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Portal credit renewal date</span>
+                      <strong>
+                        {formatReportDate(
+                          portalCreditBreakdown
+                            ?.renewal_date ?? null,
+                        )}
+                      </strong>
+                      <small>Portal credit pool resets</small>
+                    </article>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="billing-seat-explanation">
+                <div className="dashboard-section-heading">
+                  <div>
+                    <p className="eyebrow">Mobile app usage</p>
+                    <h2>Everward App AI Credits</h2>
+                    <p>
+                      Shared by organization members using the Everward iOS and
+                      Android apps. These credits cannot be used by web-portal
+                      AI tools.
+                    </p>
+                  </div>
+                </div>
+
+                {isLoadingOrganizationAiCredits ? (
+                  <p className="form-message">
+                    Loading Everward app AI credits...
+                  </p>
+                ) : organizationAiCreditMessage ? (
+                  <p className="form-message" role="alert">
+                    {organizationAiCreditMessage}
+                  </p>
+                ) : organizationAiCreditSummary ? (
+                  <div className="usage-metric-grid">
+                    <article className="usage-metric-card">
+                      <span>Included shared app credits</span>
+                      <strong>
+                        {(
+                          appCreditBreakdown
+                            ?.included_monthly_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Per-seat app credits combined into one
+                        organization pool
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Shared app add-on credits</span>
+                      <strong>
+                        {(
+                          appCreditBreakdown
+                            ?.recurring_addon_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Added once to the shared pool, not once per
+                        seat
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>Total monthly shared app credits</span>
+                      <strong>
+                        {(
+                          appCreditBreakdown
+                            ?.total_monthly_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Pooled seat credits plus one shared app
+                        add-on
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>App credits used</span>
+                      <strong>
+                        {(
+                          appCreditBreakdown
+                            ?.used_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Used by organization app members
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>App credits remaining</span>
+                      <strong>
+                        {(
+                          appCreditBreakdown
+                            ?.remaining_credits ?? 0
+                        ).toLocaleString("en-US")}
+                      </strong>
+                      <small>
+                        Available in the iOS and Android apps
+                      </small>
+                    </article>
+
+                    <article className="usage-metric-card">
+                      <span>App credit renewal date</span>
+                      <strong>
+                        {formatReportDate(
+                          appCreditBreakdown
+                            ?.renewal_date ?? null,
+                        )}
+                      </strong>
+                      <small>Shared app credit pool resets</small>
+                    </article>
+                  </div>
+                ) : null}
+              </section>
+            </section>
+          ) : null}
+
           {activeView === "reports" ? (
             <section className="dashboard-management-section">
               <div className="dashboard-section-heading">
@@ -3801,57 +3728,6 @@ function OrganizationDashboard({
                   </p>
                 </div>
               </div>
-
-              <section className="report-filter-section">
-                <div className="dashboard-section-heading">
-                  <div>
-                    <p className="eyebrow">Organization AI credits</p>
-                    <h2>Current billing period</h2>
-                    <p>
-                      Organization-wide AI credit availability and renewal
-                      information.
-                    </p>
-                  </div>
-                </div>
-
-                {isLoadingOrganizationAiCredits ? (
-                  <p className="form-message">
-                    Loading organization AI credits...
-                  </p>
-                ) : organizationAiCreditMessage ? (
-                  <p className="form-message" role="alert">
-                    {organizationAiCreditMessage}
-                  </p>
-                ) : organizationAiCreditSummary ? (
-                  <div className="usage-metric-grid">
-                    <article className="usage-metric-card">
-                      <span>AI credits available</span>
-                      <strong>
-                        {organizationAiCreditSummary.ai_credits_available}
-                      </strong>
-                      <small>Organization pool</small>
-                    </article>
-
-                    <article className="usage-metric-card">
-                      <span>AI credits used</span>
-                      <strong>
-                        {organizationAiCreditSummary.ai_credits_used}
-                      </strong>
-                      <small>Current billing period</small>
-                    </article>
-
-                    <article className="usage-metric-card">
-                      <span>AI credit renewal date</span>
-                      <strong>
-                        {formatReportDate(
-                          organizationAiCreditSummary.ai_credit_renewal_date,
-                        )}
-                      </strong>
-                      <small>Organization pool resets</small>
-                    </article>
-                  </div>
-                ) : null}
-              </section>
 
               {isLoadingUsers ? (
                 <p className="form-message">
