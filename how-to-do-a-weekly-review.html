@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SSSRNSG9P2"></script>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>How to Do a Weekly Review That Improves Decisions | Everward</title>
+<meta name="description" content="Use a practical weekly review to evaluate priorities, decisions, progress, obstacles, and next actions without turning the process into busywork." />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<link rel="canonical" href="https://ainovations.net/how-to-do-a-weekly-review" />
+
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="Everward" />
+<meta property="og:title" content="How to Do a Weekly Review That Actually Improves Your Decisions" />
+<meta property="og:description" content="A practical weekly review framework for priorities, progress, decisions, obstacles, and next actions." />
+<meta property="og:url" content="https://ainovations.net/how-to-do-a-weekly-review" />
+<meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@EverwardApp" />
+<meta name="twitter:creator" content="@EverwardApp" />
+<meta name="twitter:title" content="How to Do a Weekly Review That Actually Improves Your Decisions" />
+<meta name="twitter:description" content="Review priorities, progress, decisions, obstacles, and next actions with a practical weekly process." />
+<meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
+
+<style>
+:root {
+  --bg: #061520;
+  --bg-deep: #020b12;
+  --panel: rgba(255,255,255,0.07);
+  --panel-strong: rgba(255,255,255,0.11);
+  --text: #f5fbff;
+  --muted: #b7cad5;
+  --teal: #5eead4;
+  --teal-dark: #0f766e;
+  --blue: #60a5fa;
+  --border: rgba(255,255,255,0.14);
+  --white: #ffffff;
+  --shadow: 0 28px 80px rgba(0,0,0,0.34);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(94,234,212,0.18), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(96,165,250,0.14), transparent 25%),
+    linear-gradient(180deg, #09263a 0%, var(--bg) 48%, var(--bg-deep) 100%);
+}
+
+a { color: inherit; }
+
+.site-shell {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+}
+
+.brand {
+  font-size: 22px;
+  font-weight: 900;
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #dbeaf1;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.nav-links a:hover,
+.nav-links a:focus-visible {
+  border-color: var(--border);
+  background: rgba(255,255,255,0.07);
+}
+
+.hero {
+  margin-top: 24px;
+  padding: clamp(34px, 7vw, 76px);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.025));
+  box-shadow: var(--shadow);
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(44px, 7vw, 78px);
+  line-height: 0.99;
+  letter-spacing: -0.055em;
+}
+
+.hero-copy {
+  max-width: 760px;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.58;
+}
+
+.button-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 20px;
+  border: 1px solid rgba(94,234,212,0.42);
+  border-radius: 14px;
+  background: rgba(94,234,212,0.12);
+  color: #eafffc;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.button.secondary {
+  border-color: var(--border);
+  background: rgba(255,255,255,0.055);
+}
+
+.section {
+  margin-top: 74px;
+}
+
+.section-heading {
+  max-width: 760px;
+  margin-bottom: 26px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: clamp(32px, 4.5vw, 52px);
+  line-height: 1.06;
+  letter-spacing: -0.045em;
+}
+
+.section-heading p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.card {
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--panel);
+}
+
+.card-tag {
+  display: inline-flex;
+  margin-bottom: 16px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.card h2,
+.card h3 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.16;
+  letter-spacing: -0.035em;
+}
+
+.card p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.62;
+}
+
+.card a {
+  display: inline-flex;
+  margin-top: 20px;
+  color: var(--teal);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 36px;
+  align-items: start;
+  margin-top: 54px;
+}
+
+.article {
+  padding: clamp(28px, 5vw, 56px);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: rgba(255,255,255,0.96);
+  color: #10232d;
+}
+
+.article h2 {
+  margin: 42px 0 12px;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+}
+
+.article h2:first-child { margin-top: 0; }
+
+.article h3 {
+  margin: 30px 0 10px;
+  font-size: 23px;
+  letter-spacing: -0.025em;
+}
+
+.article p,
+.article li {
+  color: #40545f;
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.article strong { color: #10232d; }
+
+.article ul,
+.article ol { padding-left: 24px; }
+
+.callout {
+  margin: 30px 0;
+  padding: 22px;
+  border-left: 5px solid var(--teal-dark);
+  border-radius: 12px;
+  background: #e7f8f5;
+}
+
+.callout p {
+  margin: 0;
+  color: #174a47;
+  font-weight: 750;
+}
+
+.sidebar {
+  position: sticky;
+  top: 22px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel-strong);
+}
+
+.sidebar h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sidebar a {
+  display: block;
+  margin-top: 14px;
+  color: #d9edf4;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.sidebar a:hover,
+.sidebar a:focus-visible {
+  color: var(--teal);
+}
+
+.final-cta {
+  margin-top: 74px;
+  padding: clamp(32px, 6vw, 64px);
+  border: 1px solid rgba(94,234,212,0.28);
+  border-radius: 30px;
+  text-align: center;
+  background:
+    linear-gradient(135deg, rgba(94,234,212,0.16), rgba(96,165,250,0.09)),
+    rgba(255,255,255,0.035);
+}
+
+.final-cta h2 {
+  max-width: 760px;
+  margin: 0 auto;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.final-cta p {
+  max-width: 650px;
+  margin: 16px auto 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 64px;
+  padding: 26px 0 42px;
+  border-top: 1px solid var(--border);
+  color: #91a9b5;
+  font-size: 14px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer a {
+  color: #cce0e9;
+  text-decoration: none;
+}
+
+@media (max-width: 820px) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nav-links {
+    justify-content: flex-start;
+  }
+
+  .card-grid,
+  .article-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Do a Weekly Review That Actually Improves Your Decisions",
+  "description": "A practical weekly review framework for evaluating priorities, decisions, progress, obstacles, and next actions.",
+  "datePublished": "2026-08-06",
+  "dateModified": "2026-08-06",
+  "mainEntityOfPage": "https://ainovations.net/how-to-do-a-weekly-review",
+  "image": "https://ainovations.net/ainovationslogo.png",
+  "author": {
+    "@type": "Organization",
+    "name": "Everward by AInovations",
+    "url": "https://ainovations.net/everward-individuals",
+    "sameAs": [
+      "https://x.com/EverwardApp",
+      "https://www.linkedin.com/company/everward-app/"
+    ]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "AInovations LLC",
+    "url": "https://ainovations.net/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://ainovations.net/ainovationslogo.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="/">Everward by AInovations</a>
+
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="/everward-individuals">For Individuals</a>
+        <a href="/everward-organizations">For Organizations</a>
+        <a href="/resources">Resources</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Weekly Review Guide</p>
+        <h1>How to do a weekly review that actually improves your decisions.</h1>
+        <p class="hero-copy">
+          A useful weekly review is not a list of everything you completed.
+          It is a structured check on whether your time, decisions, and actions
+          are supporting the priorities that matter most.
+        </p>
+      </section>
+
+      <div class="article-layout">
+        <article class="article">
+          <h2 id="purpose">The purpose of a weekly review</h2>
+          <p>
+            A weekly review creates a regular pause between activity and
+            direction. It helps you see what changed, what stalled, which
+            decisions had consequences, and where attention should go next.
+          </p>
+          <p>
+            Without a review, it is easy to confuse motion with progress.
+            Tasks get completed, messages get answered, and urgent problems
+            consume time while important priorities remain unchanged.
+          </p>
+
+          <div class="callout">
+            <p>
+              The goal is not to judge whether the week felt productive. The
+              goal is to compare what happened against the priorities and
+              outcomes you intended to support.
+            </p>
+          </div>
+
+          <h2 id="prepare">1. Gather the week’s evidence</h2>
+          <p>
+            Begin with information rather than memory alone. Review the records
+            that show how the week was actually spent.
+          </p>
+          <ul>
+            <li>Priority progress indicators.</li>
+            <li>Important decisions made during the week.</li>
+            <li>Completed and unfinished actions.</li>
+            <li>Calendar commitments.</li>
+            <li>Unexpected problems or opportunities.</li>
+            <li>Notes about changes in circumstances.</li>
+          </ul>
+
+          <h2 id="priorities">2. Review each priority separately</h2>
+          <p>
+            Look at every active priority and ask whether it improved,
+            declined, or remained largely unchanged.
+          </p>
+          <p>For each priority, answer:</p>
+          <ul>
+            <li>What evidence of progress exists?</li>
+            <li>What action contributed most?</li>
+            <li>What blocked movement?</li>
+            <li>Did another priority receive attention at its expense?</li>
+            <li>Does the current indicator still represent meaningful progress?</li>
+          </ul>
+
+          <h2 id="decisions">3. Examine important decisions</h2>
+          <p>
+            Weekly reviews are especially valuable when decisions are recorded
+            while the reasoning is still fresh.
+          </p>
+          <p>Ask:</p>
+          <ul>
+            <li>Which decisions created immediate effects?</li>
+            <li>Which decisions require more time before evaluation?</li>
+            <li>What assumptions influenced the choice?</li>
+            <li>Did the decision support the intended priority?</li>
+            <li>What risks or tradeoffs need monitoring?</li>
+          </ul>
+
+          <h2 id="patterns">4. Look for patterns, not isolated moments</h2>
+          <p>
+            One difficult day may not mean the system is failing. Repeated
+            delays, recurring conflicts, and the same unfinished action can
+            reveal a pattern that deserves attention.
+          </p>
+          <p>
+            Patterns may appear in when work gets completed, which obligations
+            are repeatedly postponed, how often urgent requests interrupt
+            planned work, or where progress depends on another person or system.
+          </p>
+
+          <h2 id="conflicts">5. Identify conflicts between priorities</h2>
+          <p>
+            Priorities compete for limited time, energy, money, and attention.
+            A weekly review should make those conflicts visible rather than
+            pretending every priority can advance equally.
+          </p>
+          <p>
+            Decide whether the conflict was intentional, temporary, or evidence
+            that expectations need to change.
+          </p>
+
+          <h2 id="unfinished">6. Evaluate unfinished work honestly</h2>
+          <p>
+            Unfinished work is not automatically failure. It may reveal that
+            the task was poorly defined, dependent on missing information,
+            lower in value than expected, or unrealistic within the available
+            time.
+          </p>
+          <p>
+            For every important unfinished action, choose one response:
+          </p>
+          <ol>
+            <li>Complete it next week.</li>
+            <li>Break it into a smaller action.</li>
+            <li>Delegate it.</li>
+            <li>Delay it intentionally.</li>
+            <li>Remove it because it no longer supports a priority.</li>
+          </ol>
+
+          <h2 id="next">7. Choose the next meaningful actions</h2>
+          <p>
+            End the review by choosing a limited number of actions that can
+            produce meaningful movement during the next week.
+          </p>
+          <p>
+            Each action should connect clearly to a priority, resolve an
+            identified obstacle, test an assumption, or move an important
+            decision forward.
+          </p>
+
+          <h2 id="questions">Weekly review questions</h2>
+          <ol>
+            <li>What changed this week?</li>
+            <li>Which priority received the most attention?</li>
+            <li>Which priority received too little attention?</li>
+            <li>What evidence shows real progress?</li>
+            <li>What important decision was made?</li>
+            <li>What tradeoff did that decision create?</li>
+            <li>What repeatedly blocked progress?</li>
+            <li>What should stop, continue, or change?</li>
+            <li>What are the most important next actions?</li>
+            <li>What should be reviewed again next week?</li>
+          </ol>
+
+          <h2 id="avoid">What to avoid</h2>
+          <ul>
+            <li>Turning the review into a complete diary of the week.</li>
+            <li>Measuring activity that does not reveal meaningful progress.</li>
+            <li>Adding more tasks without removing lower-value work.</li>
+            <li>Changing priorities whenever progress feels uncomfortable.</li>
+            <li>Ignoring context behind temporary changes.</li>
+            <li>Using AI-generated conclusions as replacements for judgment.</li>
+          </ul>
+
+          <h2 id="everward">How Everward supports weekly reviews</h2>
+          <p>
+            Everward connects priorities, decisions, progress indicators, and
+            review history. This allows users to examine the week against what
+            they previously said mattered instead of relying only on memory.
+          </p>
+          <p>
+            AI-assisted weekly summaries can highlight patterns, conflicts,
+            risks, and areas worth reviewing. The user still evaluates the
+            evidence, defines the priorities, chooses the next actions, and
+            makes every final decision.
+          </p>
+        </article>
+
+        <aside class="sidebar" aria-label="Article contents">
+          <h2>In this guide</h2>
+          <a href="#purpose">Purpose of the review</a>
+          <a href="#prepare">Gather evidence</a>
+          <a href="#priorities">Review priorities</a>
+          <a href="#decisions">Examine decisions</a>
+          <a href="#patterns">Look for patterns</a>
+          <a href="#conflicts">Identify conflicts</a>
+          <a href="#unfinished">Evaluate unfinished work</a>
+          <a href="#next">Choose next actions</a>
+          <a href="#questions">Review questions</a>
+          <a href="#avoid">What to avoid</a>
+          <a href="#everward">How Everward helps</a>
+        </aside>
+      </div>
+
+      <section class="final-cta">
+        <h2>Review the week against what matters—not just what got done.</h2>
+        <p>
+          Everward helps connect priorities, decisions, progress indicators,
+          and review history so patterns become easier to recognize.
+        </p>
+
+        <div class="button-row" style="justify-content:center;">
+          <a class="button" href="/everward-individuals">Explore Everward</a>
+          <a class="button secondary" href="/resources">More resources</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Everward by AInovations</span>
+
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/everward-individuals">Individuals</a>
+        <a href="/everward-organizations">Organizations</a>
+        <a href="/resources">Resources</a>
+        <a href="https://x.com/EverwardApp">X</a>
+        <a href="https://www.linkedin.com/company/everward-app/">LinkedIn</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
