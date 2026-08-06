@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import OrganizationUserSetup from "./OrganizationUserSetup";
 import OrganizationKnowledge from "./OrganizationKnowledge";
 import OrganizationDataAi from "./OrganizationDataAi";
+import OrganizationBillingManager from "./OrganizationBillingManager";
 
 type DashboardView =
   | "overview"
@@ -3414,192 +3415,16 @@ function OrganizationDashboard({
                   <p className="eyebrow">Subscription management</p>
                   <h1>Billing and Seats</h1>
                   <p>
-                    Review the organization subscription and current Everward
-                    app-seat usage.
+                    Manage the organization subscription, app seats, payment
+                    method, invoices, and cancellation.
                   </p>
                 </div>
               </div>
 
-              {isLoadingSeats ? (
-                <p className="form-message">
-                  Loading billing and seat information...
-                </p>
-              ) : seatMessage ? (
-                <p className="form-message" role="alert">
-                  {seatMessage}
-                </p>
-              ) : (
-                <>
-                  <div className="billing-seat-grid">
-                    <article className="billing-seat-card">
-                      <span>Purchased seats</span>
-                      <strong>{seatSummary.purchasedSeatCount}</strong>
-                      <p>
-                        Total Everward app seats currently purchased by the
-                        organization.
-                      </p>
-                    </article>
+              <OrganizationBillingManager
+                organizationId={organizationId}
+              />
 
-                    <article className="billing-seat-card">
-                      <span>Seats in use</span>
-                      <strong>{seatSummary.usedSeatCount}</strong>
-                      <p>
-                        Active organization users who currently have Everward
-                        app access.
-                      </p>
-                    </article>
-
-                    <article className="billing-seat-card">
-                      <span>Available seats</span>
-                      <strong>{seatSummary.availableSeatCount}</strong>
-                      <p>
-                        Purchased seats that can still be assigned to active app
-                        users.
-                      </p>
-                    </article>
-                  </div>
-
-                  <section className="billing-utilization-section">
-                    <div className="dashboard-section-heading">
-                      <div>
-                        <p className="eyebrow">Seat utilization</p>
-                        <h2>Current app-seat usage</h2>
-                      </div>
-
-                      <strong className="billing-utilization-percentage">
-                        {seatSummary.purchasedSeatCount > 0
-                          ? `${Math.min(
-                              100,
-                              Math.round(
-                                (seatSummary.usedSeatCount /
-                                  seatSummary.purchasedSeatCount) *
-                                  100,
-                              ),
-                            )}%`
-                          : "0%"}
-                      </strong>
-                    </div>
-
-                    <div
-                      className="billing-utilization-track"
-                      role="progressbar"
-                      aria-label="Organization seat utilization"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={
-                        seatSummary.purchasedSeatCount > 0
-                          ? Math.min(
-                              100,
-                              Math.round(
-                                (seatSummary.usedSeatCount /
-                                  seatSummary.purchasedSeatCount) *
-                                  100,
-                              ),
-                            )
-                          : 0
-                      }
-                    >
-                      <div
-                        className="billing-utilization-fill"
-                        style={{
-                          width: `${
-                            seatSummary.purchasedSeatCount > 0
-                              ? Math.min(
-                                  100,
-                                  Math.round(
-                                    (seatSummary.usedSeatCount /
-                                      seatSummary.purchasedSeatCount) *
-                                      100,
-                                  ),
-                                )
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="billing-utilization-summary">
-                      <span>
-                        {seatSummary.usedSeatCount} of{" "}
-                        {seatSummary.purchasedSeatCount} seats assigned
-                      </span>
-
-                      <span>
-                        {seatSummary.availableSeatCount} seats available
-                      </span>
-                    </div>
-                  </section>
-
-                  {seatSummary.availableSeatCount === 0 ? (
-                    <div className="dashboard-warning">
-                      <strong>All purchased seats are assigned</strong>
-                      <p>
-                        Remove app access from an existing user or add another
-                        seat before enabling another app user.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="billing-availability-notice">
-                      <strong>
-                        {seatSummary.availableSeatCount}{" "}
-                        {seatSummary.availableSeatCount === 1
-                          ? "seat is"
-                          : "seats are"}{" "}
-                        available
-                      </strong>
-
-                      <p>
-                        Available seats can be assigned from the Users section
-                        by enabling Everward app access.
-                      </p>
-
-                      <button
-                        className="text-button"
-                        type="button"
-                        onClick={() => {
-                          openView("users");
-                        }}
-                      >
-                        Manage users
-                      </button>
-                    </div>
-                  )}
-
-                  <section className="billing-seat-explanation">
-                    <div className="dashboard-section-heading">
-                      <div>
-                        <p className="eyebrow">How seats work</p>
-                        <h2>Portal access and app access</h2>
-                      </div>
-                    </div>
-
-                    <div className="billing-explanation-grid">
-                      <article>
-                        <strong>Everward app access</strong>
-                        <p>
-                          An active user with Everward app access uses one
-                          purchased seat.
-                        </p>
-                      </article>
-
-                      <article>
-                        <strong>Portal-only access</strong>
-                        <p>
-                          An authorized portal account without app access does
-                          not use a purchased app seat.
-                        </p>
-                      </article>
-
-                      <article>
-                        <strong>Inactive accounts</strong>
-                        <p>
-                          Inactive organization accounts do not use an app seat.
-                        </p>
-                      </article>
-                    </div>
-                  </section>
-                </>
-              )}
             </section>
           ) : null}
 

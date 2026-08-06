@@ -408,10 +408,16 @@ Deno.serve(async (request) => {
 
   try {
     const organization = organizationResult.data;
+
+
     const stripeForm = new URLSearchParams();
 
     appendFormValue(stripeForm, "mode", "subscription");
-    appendFormValue(stripeForm, "success_url", `${portalUrl}/?billing=success`);
+    appendFormValue(
+      stripeForm,
+      "success_url",
+      `${portalUrl}/?mode=ai-access&billing=base-success&session_id={CHECKOUT_SESSION_ID}`,
+    );
     appendFormValue(stripeForm, "cancel_url", `${portalUrl}/?billing=cancelled`);
     appendFormValue(stripeForm, "client_reference_id", organizationId);
     appendFormValue(stripeForm, "allow_promotion_codes", true);
