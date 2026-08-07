@@ -3377,6 +3377,7 @@
   border-radius: 16px;
   background: #f0fdfa;
   box-shadow: 0 14px 34px rgba(15, 118, 110, 0.12);
+  scroll-margin-top: 16px;
 }
 
 .billing-confirmation-heading {

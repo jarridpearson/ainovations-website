@@ -325,6 +325,12 @@ export default function OrganizationBillingManager({
   const messageRef =
     useRef<HTMLParagraphElement | null>(null);
 
+  const confirmationScrollFrameRef =
+    useRef<number | null>(null);
+
+  const messageScrollFrameRef =
+    useRef<number | null>(null);
+
   const [creditBreakdown, setCreditBreakdown] =
     useState<OrganizationCreditBreakdown[]>([]);
 
@@ -337,22 +343,62 @@ export default function OrganizationBillingManager({
   const [message, setMessage] =
     useState("");
 
+  // A scroll fired synchronously in the same tick the panel first renders
+  // (even with behavior: "smooth") can be computed against layout that
+  // hasn't settled yet — with real async content this landed ~1183px short
+  // of the actual target in production. Waiting two animation frames
+  // defers the scroll until after the browser has committed and painted
+  // the new layout, and behavior: "auto" (instant, not animated) avoids
+  // the separate failure mode where an in-progress smooth-scroll animation
+  // gets interrupted by a later layout shift and never reaches its target.
   useEffect(() => {
-    if (confirmation) {
-      confirmationRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    if (!confirmation) {
+      return;
     }
+
+    const firstFrame = requestAnimationFrame(() => {
+      const secondFrame = requestAnimationFrame(() => {
+        confirmationRef.current?.scrollIntoView({
+          behavior: "auto",
+          block: "start",
+        });
+      });
+      confirmationScrollFrameRef.current = secondFrame;
+    });
+    confirmationScrollFrameRef.current = firstFrame;
+
+    return () => {
+      if (confirmationScrollFrameRef.current !== null) {
+        cancelAnimationFrame(
+          confirmationScrollFrameRef.current,
+        );
+      }
+    };
   }, [confirmation]);
 
   useEffect(() => {
-    if (message) {
-      messageRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    if (!message) {
+      return;
     }
+
+    const firstFrame = requestAnimationFrame(() => {
+      const secondFrame = requestAnimationFrame(() => {
+        messageRef.current?.scrollIntoView({
+          behavior: "auto",
+          block: "start",
+        });
+      });
+      messageScrollFrameRef.current = secondFrame;
+    });
+    messageScrollFrameRef.current = firstFrame;
+
+    return () => {
+      if (messageScrollFrameRef.current !== null) {
+        cancelAnimationFrame(
+          messageScrollFrameRef.current,
+        );
+      }
+    };
   }, [message]);
 
   const invokeBilling = useCallback(
