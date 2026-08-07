@@ -237,7 +237,7 @@ function replaceItemDefinition(
   return result;
 }
 
-function getPositiveProrationAmount(
+export function getPositiveProrationAmount(
   invoice: Stripe.Invoice,
   targetSubscriptionItemId: string | null,
   targetPriceId: string | null,
@@ -685,6 +685,12 @@ async function getAuthorizedContext(
   };
 }
 
+// Guarded so importing this module for its exported functions (tests)
+// does not also start a listener, which needs net permission and isn't
+// available under `deno test`. Supabase's Edge Runtime executes this file
+// as the entrypoint, so import.meta.main is still true when actually
+// deployed.
+if (import.meta.main) {
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", {
@@ -1840,3 +1846,4 @@ Deno.serve(async (request) => {
     );
   }
 });
+}
