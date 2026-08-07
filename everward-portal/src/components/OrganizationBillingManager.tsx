@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { supabase } from "../lib/supabase";
@@ -314,6 +315,16 @@ export default function OrganizationBillingManager({
   const [confirmation, setConfirmation] =
     useState<ConfirmationRequest | null>(null);
 
+  // The confirmation panel and result message render below several large
+  // credit cards, off the bottom of the screen on most viewports. Without
+  // this, clicking a "Review ..." button appears to do nothing — the
+  // preview loaded successfully, it's just scrolled out of view.
+  const confirmationRef =
+    useRef<HTMLElement | null>(null);
+
+  const messageRef =
+    useRef<HTMLParagraphElement | null>(null);
+
   const [creditBreakdown, setCreditBreakdown] =
     useState<OrganizationCreditBreakdown[]>([]);
 
@@ -325,6 +336,24 @@ export default function OrganizationBillingManager({
 
   const [message, setMessage] =
     useState("");
+
+  useEffect(() => {
+    if (confirmation) {
+      confirmationRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [confirmation]);
+
+  useEffect(() => {
+    if (message) {
+      messageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [message]);
 
   const invokeBilling = useCallback(
     async (
@@ -1296,6 +1325,7 @@ export default function OrganizationBillingManager({
 
       {confirmation ? (
         <section
+          ref={confirmationRef}
           className="billing-confirmation-panel"
           aria-live="polite"
         >
@@ -1520,6 +1550,7 @@ export default function OrganizationBillingManager({
 
       {message ? (
         <p
+          ref={messageRef}
           className="form-message"
           role="status"
         >
