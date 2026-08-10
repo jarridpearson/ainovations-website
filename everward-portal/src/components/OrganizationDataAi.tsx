@@ -105,6 +105,12 @@ function getSavedReportingScope(
     : fallback;
 }
 
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
 function OrganizationDataAi({
   organizationId,
   scopeLabel,
@@ -225,6 +231,63 @@ function OrganizationDataAi({
     void loadQuestionHistory();
   }, [loadPortalCreditSummary, loadQuestionHistory]);
 
+  const waitForQuestionCompletion = useCallback(
+    async (requestId: string) => {
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        const { data, error } = await supabase
+          .from("organization_ai_questions")
+          .select(
+            `
+              id,
+              question_text,
+              answer_text,
+              answer_status,
+              credit_status,
+              credits_used,
+              error_message,
+              scope_snapshot,
+              data_snapshot,
+              created_at,
+              completed_at
+            `,
+          )
+          .eq("organization_id", organizationId)
+          .eq("request_id", requestId)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(
+            "The saved Organization Data AI result could not be checked.",
+          );
+        }
+
+        if (data?.answer_status === "completed") {
+          if (!data.answer_text?.trim()) {
+            throw new Error(
+              "Organization Data AI completed without returning an answer.",
+            );
+          }
+
+          return data as OrganizationDataQuestion;
+        }
+
+        if (data?.answer_status === "failed") {
+          throw new Error(
+            data.error_message ||
+              "Organization Data AI could not complete the analysis.",
+          );
+        }
+
+        await wait(2500);
+      }
+
+      throw new Error(
+        "The analysis is still processing. Use Refresh history in a moment to open the completed answer.",
+      );
+    },
+    [organizationId],
+  );
+
   async function handleAskQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -240,6 +303,8 @@ function OrganizationDataAi({
       return;
     }
 
+    const requestId = crypto.randomUUID();
+
     setIsAsking(true);
     setAnswer("");
     setSelectedHistoryQuestion(null);
@@ -253,7 +318,7 @@ function OrganizationDataAi({
           {
             body: {
               organizationId,
-              requestId: crypto.randomUUID(),
+              requestId,
               portalView: "analyze",
               question: normalizedQuestion,
               scopeLabel:
@@ -310,13 +375,35 @@ function OrganizationDataAi({
         loadQuestionHistory(),
       ]);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "The organization data question could not be answered.";
+      console.error(
+        "Organization Data AI request did not return normally:",
+        error,
+      );
 
-      console.error("Organization Data AI question failed:", error);
-      setMessage(errorMessage);
+      setMessage(
+        "The analysis is taking longer than usual. Checking the saved result...",
+      );
+
+      try {
+        const completedQuestion =
+          await waitForQuestionCompletion(requestId);
+
+        setAnswer(completedQuestion.answer_text ?? "");
+        setSelectedHistoryQuestion(completedQuestion);
+        setQuestion("");
+        setMessage(
+          "The selected organization data was analyzed successfully.",
+        );
+      } catch (completionError) {
+        const errorMessage =
+          completionError instanceof Error
+            ? completionError.message
+            : error instanceof Error
+              ? error.message
+              : "The organization data question could not be answered.";
+
+        setMessage(errorMessage);
+      }
 
       await Promise.all([
         loadPortalCreditSummary(),

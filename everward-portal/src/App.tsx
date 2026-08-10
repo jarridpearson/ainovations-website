@@ -3,7 +3,6 @@ import type { FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import OrganizationDashboard from './components/OrganizationDashboard'
 import OrganizationSetup from './components/OrganizationSetup'
-import OrganizationAiUpsell from './components/OrganizationAiUpsell'
 import { supabase } from './lib/supabase'
 import './App.css'
 
@@ -34,15 +33,29 @@ type AccessResult = {
   error: string | null
 }
 
-async function getOrganizationAccess(userId: string): Promise<AccessResult> {
-  const { data: membership, error: membershipError } = await supabase
-    .from('organization_users')
-    .select(
-      'organization_id, role, is_active, portal_access_enabled, manager_portal_access_enabled, billing_access_enabled',
-    )
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .maybeSingle()
+type OrganizationAccessRow = {
+  id: string
+  name: string
+  setup_complete: boolean | null
+  subscription_status: string | null
+  stripe_subscription_id: string | null
+  mission_statement: string | null
+  vision_statement: string | null
+  values_statement: string | null
+  manager_portal_access_mode: string | null
+}
+
+async function getOrganizationAccess(
+  userId: string,
+): Promise<AccessResult> {
+  const { data: memberships, error: membershipError } =
+    await supabase
+      .from('organization_users')
+      .select(
+        'organization_id, role, is_active, portal_access_enabled, manager_portal_access_enabled, billing_access_enabled',
+      )
+      .eq('user_id', userId)
+      .eq('is_active', true)
 
   if (membershipError) {
     return {
@@ -51,52 +64,87 @@ async function getOrganizationAccess(userId: string): Promise<AccessResult> {
     }
   }
 
-  if (!membership?.organization_id || !membership.role) {
+  const usableMemberships = (memberships ?? []).filter(
+    (membership) =>
+      Boolean(membership.organization_id) &&
+      Boolean(membership.role) &&
+      (
+        membership.portal_access_enabled === true ||
+        membership.billing_access_enabled === true
+      ) &&
+      (
+        membership.role !== 'member' ||
+        membership.billing_access_enabled === true
+      ),
+  )
+
+  if (usableMemberships.length === 0) {
     return {
       access: null,
-      error: 'This account does not have active organization portal access.',
+      error:
+        'This account does not have active organization portal access.',
     }
   }
 
-  if (
-    !membership.portal_access_enabled &&
-    !membership.billing_access_enabled
-  ) {
-    return {
-      access: null,
-      error: 'This account does not have organization portal access enabled.',
-    }
-  }
+  const organizationIds = [
+    ...new Set(
+      usableMemberships.map(
+        (membership) => membership.organization_id,
+      ),
+    ),
+  ]
 
-  if (
-    membership.role === 'member' &&
-    !membership.billing_access_enabled
-  ) {
-    return {
-      access: null,
-      error: 'Employee accounts do not have organization portal access.',
-    }
-  }
-
-  const { data: organization, error: organizationError } = await supabase
+  const {
+    data: organizationRows,
+    error: organizationError,
+  } = await supabase
     .from('organizations')
     .select(
-      'id, name, setup_complete, subscription_status, mission_statement, vision_statement, values_statement, manager_portal_access_mode',
+      'id, name, setup_complete, subscription_status, stripe_subscription_id, mission_statement, vision_statement, values_statement, manager_portal_access_mode',
     )
-    .eq('id', membership.organization_id)
-    .maybeSingle()
+    .in('id', organizationIds)
 
-  if (organizationError || !organization) {
+  const organizations =
+    (organizationRows ?? []) as OrganizationAccessRow[]
+
+  if (organizationError) {
     return {
       access: null,
-      error: 'Unable to load the organization connected to this account.',
+      error:
+        'Unable to load the organization connected to this account.',
     }
   }
 
-  if (organization.subscription_status !== 'active') {
+  const activeOrganizations = organizations.filter(
+    (organization) =>
+      organization.subscription_status === 'active',
+  )
+
+  if (activeOrganizations.length === 0) {
     return {
       access: null,
-      error: 'This organization does not have an active portal subscription.',
+      error:
+        'This organization does not have an active portal subscription.',
+    }
+  }
+
+  const organization =
+    activeOrganizations.find(
+      (candidate) =>
+        Boolean(candidate.stripe_subscription_id),
+    ) ??
+    activeOrganizations[0]
+
+  const membership = usableMemberships.find(
+    (candidate) =>
+      candidate.organization_id === organization.id,
+  )
+
+  if (!membership?.role) {
+    return {
+      access: null,
+      error:
+        'Unable to match this account to its active organization.',
     }
   }
 
@@ -104,7 +152,8 @@ async function getOrganizationAccess(userId: string): Promise<AccessResult> {
     if (organization.manager_portal_access_mode === 'disabled') {
       return {
         access: null,
-        error: 'Group Manager portal access is disabled for this organization.',
+        error:
+          'Group Manager portal access is disabled for this organization.',
       }
     }
 
@@ -114,17 +163,20 @@ async function getOrganizationAccess(userId: string): Promise<AccessResult> {
     ) {
       return {
         access: null,
-        error: 'This Group Manager does not have individual portal access enabled.',
+        error:
+          'This Group Manager does not have individual portal access enabled.',
       }
     }
 
     if (
       organization.manager_portal_access_mode !== 'individual' &&
-      organization.manager_portal_access_mode !== 'all_group_managers'
+      organization.manager_portal_access_mode !==
+        'all_group_managers'
     ) {
       return {
         access: null,
-        error: 'The organization’s Group Manager portal access setting is invalid.',
+        error:
+          'The organization’s Group Manager portal access setting is invalid.',
       }
     }
   }
@@ -138,10 +190,13 @@ async function getOrganizationAccess(userId: string): Promise<AccessResult> {
         membership.billing_access_enabled,
       ),
       setupComplete: Boolean(organization.setup_complete),
-      subscriptionStatus: organization.subscription_status,
-      missionStatement: organization.mission_statement ?? '',
-      visionStatement: organization.vision_statement ?? '',
-      valuesStatement: organization.values_statement ?? '',
+      subscriptionStatus: organization.subscription_status ?? 'active',
+      missionStatement:
+        organization.mission_statement ?? '',
+      visionStatement:
+        organization.vision_statement ?? '',
+      valuesStatement:
+        organization.values_statement ?? '',
     },
     error: null,
   }
@@ -153,6 +208,10 @@ function formatRole(role: string) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
+
+import OrganizationSignup from "./components/OrganizationSignup";
+import OrganizationAiUpsell from "./components/OrganizationAiUpsell";
+import OrganizationBusiness from "./components/OrganizationBusiness";
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -546,10 +605,21 @@ function App() {
     )
   }
 
-  if (
-    new URLSearchParams(window.location.search).get('mode') === 'ai-access'
-  ) {
-    return <OrganizationAiUpsell />
+  const pageMode =
+    new URLSearchParams(
+      window.location.search,
+    ).get("mode");
+
+  if (pageMode === "signup") {
+    return <OrganizationSignup />;
+  }
+
+  if (pageMode === "business") {
+    return <OrganizationBusiness />;
+  }
+
+  if (pageMode === "ai-access") {
+    return <OrganizationAiUpsell />;
   }
 
   if (session && accessError) {
@@ -648,6 +718,22 @@ function App() {
           Manage users, groups, AI credits, reporting, company guidance, and
           organization-wide insights from one secure portal.
         </p>
+
+        <div className="portal-public-actions">
+          <a
+            className="portal-business-link"
+            href="/?mode=business"
+          >
+            Explore business features
+          </a>
+
+          <a
+            className="portal-signup-link"
+            href="/?mode=signup"
+          >
+            Start organization signup
+          </a>
+        </div>
 
         <div className="feature-list" aria-label="Portal capabilities">
           <div className="feature-item">
@@ -789,6 +875,22 @@ function App() {
               </p>
             ) : null}
           </form>
+
+          <div className="organization-public-links">
+            <a
+              className="primary-button organization-create-account-link"
+              href="/?mode=signup"
+            >
+              Create an organization account
+            </a>
+
+            <a
+              className="organization-business-details-link"
+              href="/?mode=business"
+            >
+              See how Everward helps organizations
+            </a>
+          </div>
 
           <div className="support-note">
             <strong>Need access?</strong>

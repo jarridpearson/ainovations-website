@@ -18,7 +18,21 @@ const PORTAL_ADDON_PRICES: Record<number, string> = {
   50: "price_1Txnu2DBB5irv1eWMxKboLcP",
   100: "price_1Txnu4DBB5irv1eW68ncPZxT",
   250: "price_1Txnu5DBB5irv1eW10l2A52d",
+  500: "price_1U2jTBDBB5irv1eW5jf31YMY",
+  1000: "price_1U2jUEDBB5irv1eWVdxAuRSv",
+  5000: "price_1U2jVZDBB5irv1eWEVmiFeOs",
+  10000: "price_1U2jW3DBB5irv1eWxYjlLfFM",
 };
+
+// Disposable test-only organization IDs that are allowed to use Stripe
+// TEST-mode credentials instead of the live key. This set is the ONLY
+// gate -- any organization ID not in it (i.e. every real customer)
+// always uses the live key, exactly as before this was added. Safe to
+// delete this constant and its one call site entirely once test-mode
+// verification is no longer needed.
+const TEST_MODE_ORGANIZATION_IDS = new Set<string>([
+  "c1a1a1a1-0000-4000-8000-000000000001",
+]);
 
 const APP_ADDON_PRICES: Record<number, string> = {
   50: "price_1TxoU6DBB5irv1eWDPweb5J3",
@@ -237,7 +251,7 @@ function replaceItemDefinition(
   return result;
 }
 
-function getPositiveProrationAmount(
+export function getPositiveProrationAmount(
   invoice: Stripe.Invoice,
   targetSubscriptionItemId: string | null,
   targetPriceId: string | null,
@@ -685,227 +699,520 @@ async function getAuthorizedContext(
   };
 }
 
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: corsHeaders,
-    });
-  }
+// Guarded so importing this module for its exported functions (tests)
+// does not also start a listener, which needs net permission and isn't
+// available under `deno test`. Supabase's Edge Runtime executes this file
+// as the entrypoint, so import.meta.main is still true when actually
+// deployed.
+if (import.meta.main) {
+  Deno.serve(async (request) => {
+    if (request.method === "OPTIONS") {
+      return new Response("ok", {
+        headers: corsHeaders,
+      });
+    }
 
-  if (request.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed." }, 405);
-  }
+    if (request.method !== "POST") {
+      return jsonResponse({ error: "Method not allowed." }, 405);
+    }
 
-  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const portalUrl =
-    Deno.env.get("EVERWARD_ORGANIZATION_PORTAL_URL") ||
-    "https://everward.ainovations.net";
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const portalUrl =
+      Deno.env.get("EVERWARD_ORGANIZATION_PORTAL_URL") ||
+      "https://everward.ainovations.net";
 
-  if (!stripeSecretKey) {
-    return jsonResponse(
-      { error: "Stripe organization billing is not configured." },
-      500,
-    );
-  }
+    if (!stripeSecretKey) {
+      return jsonResponse(
+        { error: "Stripe organization billing is not configured." },
+        500,
+      );
+    }
 
-  let body: BillingRequest;
+    let body: BillingRequest;
 
-  try {
-    body = (await request.json()) as BillingRequest;
-  } catch {
-    return jsonResponse({ error: "Request body is not valid JSON." }, 400);
-  }
+    try {
+      body = (await request.json()) as BillingRequest;
+    } catch {
+      return jsonResponse({ error: "Request body is not valid JSON." }, 400);
+    }
 
-  const organizationId = normalizeString(body.organizationId);
-  const action = normalizeString(body.action) as BillingAction;
+    const organizationId = normalizeString(body.organizationId);
+    const action = normalizeString(body.action) as BillingAction;
 
-  if (!isUuid(organizationId)) {
-    return jsonResponse(
-      { error: "A valid organization ID is required." },
-      400,
-    );
-  }
+    if (!isUuid(organizationId)) {
+      return jsonResponse(
+        { error: "A valid organization ID is required." },
+        400,
+      );
+    }
 
-  if (
-    ![
-      "get_state",
-      "preview_change",
-      "update_seats",
-      "schedule_plan",
-      "update_addon",
-      "cancel_subscription",
-      "resume_subscription",
-      "open_portal",
-    ].includes(action)
-  ) {
-    return jsonResponse({ error: "A valid billing action is required." }, 400);
-  }
+    if (
+      ![
+        "get_state",
+        "preview_change",
+        "update_seats",
+        "schedule_plan",
+        "update_addon",
+        "cancel_subscription",
+        "resume_subscription",
+        "open_portal",
+      ].includes(action)
+    ) {
+      return jsonResponse({ error: "A valid billing action is required." }, 400);
+    }
 
-  try {
-    const {
-      caller,
-      adminClient,
-      organization,
-      usedSeatCount,
-    } = await getAuthorizedContext(request, organizationId);
+    try {
+      const {
+        caller,
+        adminClient,
+        organization,
+        usedSeatCount,
+      } = await getAuthorizedContext(request, organizationId);
 
-    const stripe = new Stripe(stripeSecretKey);
+      // See TEST_MODE_ORGANIZATION_IDS above: this only ever resolves to
+      // anything other than the live key for that one disposable test
+      // org, and only when a test key is actually configured. For every
+      // real organization this is identical to the line it replaced.
+      const stripeTestSecretKey = Deno.env.get("STRIPE_TEST_SECRET_KEY");
+      const resolvedStripeSecretKey =
+        TEST_MODE_ORGANIZATION_IDS.has(organizationId) && stripeTestSecretKey
+          ? stripeTestSecretKey
+          : stripeSecretKey;
+      const stripe = new Stripe(resolvedStripeSecretKey);
 
-    if (action === "open_portal") {
-      if (!organization.stripe_customer_id) {
+      if (action === "open_portal") {
+        if (!organization.stripe_customer_id) {
+          return jsonResponse(
+            {
+              error:
+                "The organization has not completed its first Stripe checkout.",
+            },
+            409,
+          );
+        }
+
+        const session = await stripe.billingPortal.sessions.create({
+          customer: organization.stripe_customer_id,
+          return_url: `${portalUrl}/?billing=returned`,
+        });
+
+        return jsonResponse({
+          billingPortalUrl: session.url,
+        });
+      }
+
+      if (!organization.stripe_subscription_id) {
         return jsonResponse(
           {
             error:
-              "The organization has not completed its first Stripe checkout.",
+              "The organization has not completed its first subscription checkout.",
+            requiresCheckout: true,
           },
           409,
         );
       }
 
-      const session = await stripe.billingPortal.sessions.create({
-        customer: organization.stripe_customer_id,
-        return_url: `${portalUrl}/?billing=returned`,
-      });
-
-      return jsonResponse({
-        billingPortalUrl: session.url,
-      });
-    }
-
-    if (!organization.stripe_subscription_id) {
-      return jsonResponse(
+      const subscription = await stripe.subscriptions.retrieve(
+        organization.stripe_subscription_id,
         {
-          error:
-            "The organization has not completed its first subscription checkout.",
-          requiresCheckout: true,
+          expand: ["items.data.price", "schedule"],
         },
-        409,
       );
-    }
 
-    const subscription = await stripe.subscriptions.retrieve(
-      organization.stripe_subscription_id,
-      {
-        expand: ["items.data.price", "schedule"],
-      },
-    );
-
-    const addonSubscription = organization.stripe_addon_subscription_id
-      ? await stripe.subscriptions.retrieve(
-          organization.stripe_addon_subscription_id,
-          {
-            expand: ["items.data.price", "schedule"],
-          },
-        )
-      : null;
-
-    const currentPortalAddonItem = addonSubscription?.items.data.find(
-      (item) => Object.values(PORTAL_ADDON_PRICES).includes(item.price.id)
-    );
-
-    const currentAppAddonItem = addonSubscription?.items.data.find(
-      (item) => Object.values(APP_ADDON_PRICES).includes(item.price.id)
-    );
-
-    const currentPortalAddonCredits = reversePriceLookup(
-      PORTAL_ADDON_PRICES,
-      currentPortalAddonItem?.price.id,
-    );
-
-    const currentAppAddonCredits = reversePriceLookup(
-      APP_ADDON_PRICES,
-      currentAppAddonItem?.price.id,
-    );
-
-    const pendingResult = await adminClient
-      .from("organization_billing_change_requests")
-      .select(
-        `
-          id,
-          change_type,
-          change_status,
-          current_plan_key,
-          requested_plan_key,
-          current_billing_interval,
-          requested_billing_interval,
-          current_seat_quantity,
-          requested_seat_quantity,
-          current_addon_quantity,
-          requested_addon_quantity,
-          effective_at,
-          metadata,
-          created_at
-        `,
-      )
-      .eq("organization_id", organizationId)
-      .eq("change_status", "scheduled")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (pendingResult.error) {
-      throw pendingResult.error;
-    }
-
-    if (action === "preview_change") {
-      const changeType = normalizeString(body.changeType);
-
-      const renewalDate =
-        organization.current_billing_period_end ??
-        unixToIso(getSubscriptionPeriodEnd(subscription));
-
-      if (changeType === "plan") {
-        const planKey = normalizeString(body.planKey);
-        const billingInterval =
-          normalizeString(body.billingInterval);
-
-        if (
-          !["organization_starter", "organization_pro"].includes(
-            planKey,
+      const addonSubscription = organization.stripe_addon_subscription_id
+        ? await stripe.subscriptions.retrieve(
+            organization.stripe_addon_subscription_id,
+            {
+              expand: ["items.data.price", "schedule"],
+            },
           )
-        ) {
-          return jsonResponse(
-            {
-              error:
-                "Select Organization Starter or Organization Pro.",
-            },
-            400,
+        : null;
+
+      const currentPortalAddonItem = addonSubscription?.items.data.find(
+        (item) => Object.values(PORTAL_ADDON_PRICES).includes(item.price.id)
+      );
+
+      const currentAppAddonItem = addonSubscription?.items.data.find(
+        (item) => Object.values(APP_ADDON_PRICES).includes(item.price.id)
+      );
+
+      const currentPortalAddonCredits = reversePriceLookup(
+        PORTAL_ADDON_PRICES,
+        currentPortalAddonItem?.price.id,
+      );
+
+      const currentAppAddonCredits = reversePriceLookup(
+        APP_ADDON_PRICES,
+        currentAppAddonItem?.price.id,
+      );
+
+      const pendingResult = await adminClient
+        .from("organization_billing_change_requests")
+        .select(
+          `
+            id,
+            change_type,
+            change_status,
+            current_plan_key,
+            requested_plan_key,
+            current_billing_interval,
+            requested_billing_interval,
+            current_seat_quantity,
+            requested_seat_quantity,
+            current_addon_quantity,
+            requested_addon_quantity,
+            effective_at,
+            metadata,
+            created_at
+          `,
+        )
+        .eq("organization_id", organizationId)
+        .eq("change_status", "scheduled")
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (pendingResult.error) {
+        throw pendingResult.error;
+      }
+
+      if (action === "preview_change") {
+        const changeType = normalizeString(body.changeType);
+
+        const renewalDate =
+          organization.current_billing_period_end ??
+          unixToIso(getSubscriptionPeriodEnd(subscription));
+
+        if (changeType === "plan") {
+          const planKey = normalizeString(body.planKey);
+          const billingInterval =
+            normalizeString(body.billingInterval);
+
+          if (
+            !["organization_starter", "organization_pro"].includes(
+              planKey,
+            )
+          ) {
+            return jsonResponse(
+              {
+                error:
+                  "Select Organization Starter or Organization Pro.",
+              },
+              400,
+            );
+          }
+
+          if (!["monthly", "annual"].includes(billingInterval)) {
+            return jsonResponse(
+              {
+                error:
+                  "Select monthly or annual billing.",
+              },
+              400,
+            );
+          }
+
+          await loadPlanPrices(
+            adminClient,
+            planKey,
+            billingInterval,
           );
+
+          return jsonResponse({
+            success: true,
+            changeType,
+            changeTiming: "renewal",
+            description:
+              `${formatPreviewLabel(planKey)} — ` +
+              `${formatPreviewLabel(billingInterval)} billing`,
+            amountDueToday: 0,
+            estimatedRenewalAmount: null,
+            currency: "usd",
+            effectiveAt: renewalDate,
+            estimateNote:
+              "This change takes effect at renewal. Stripe will calculate the final renewal invoice using the active discounts, taxes, seats, and add-ons at that time.",
+          });
         }
 
-        if (!["monthly", "annual"].includes(billingInterval)) {
-          return jsonResponse(
-            {
-              error:
-                "Select monthly or annual billing.",
-            },
-            400,
+        if (changeType === "seats") {
+          const requestedSeats = Number(body.seatQuantity);
+          const currentSeats = Math.max(
+            1,
+            Number(organization.paid_seat_count ?? 1),
           );
+
+          if (
+            !Number.isInteger(requestedSeats) ||
+            requestedSeats < 1 ||
+            requestedSeats > 10000
+          ) {
+            return jsonResponse(
+              {
+                error:
+                  "App-seat quantity must be a whole number between 1 and 10,000.",
+              },
+              400,
+            );
+          }
+
+          const allPriceIds =
+            await loadAllBaseAndSeatPriceIds(adminClient);
+
+          const seatItem = subscription.items.data.find(
+            (item) =>
+              allPriceIds.seatPriceIds.includes(item.price.id),
+          );
+
+          if (!seatItem) {
+            throw new Error(
+              "The Stripe app-seat subscription item could not be located.",
+            );
+          }
+
+          if (requestedSeats > currentSeats) {
+            const preview =
+              await stripe.invoices.createPreview({
+                customer:
+                  organization.stripe_customer_id ?? undefined,
+                subscription: subscription.id,
+                subscription_details: {
+                  proration_behavior: "create_prorations",
+                  items: [
+                    {
+                      id: seatItem.id,
+                      quantity: requestedSeats,
+                    },
+                  ],
+                },
+              });
+
+            return jsonResponse({
+              success: true,
+              changeType,
+              changeTiming: "immediate",
+              description:
+                `${requestedSeats.toLocaleString("en-US")} purchased app seats`,
+              amountDueToday:
+                getPositiveProrationAmount(
+                  preview,
+                  seatItem.id,
+                  seatItem.price.id,
+                ),
+              estimatedRenewalAmount: null,
+              currency: String(
+                preview.currency ?? "usd",
+              ).toLowerCase(),
+              effectiveAt: new Date().toISOString(),
+              estimateNote:
+                "The added seats become active immediately after Stripe confirms the prorated payment.",
+            });
+          }
+
+          return jsonResponse({
+            success: true,
+            changeType,
+            changeTiming: "renewal",
+            description:
+              `${requestedSeats.toLocaleString("en-US")} purchased app seats`,
+            amountDueToday: 0,
+            estimatedRenewalAmount: null,
+            currency: "usd",
+            effectiveAt: renewalDate,
+            estimateNote:
+              "Seat reductions take effect at renewal. Existing prepaid access remains active until then.",
+          });
         }
 
-        await loadPlanPrices(
-          adminClient,
-          planKey,
-          billingInterval,
+        if (changeType === "addon") {
+          const addonPool = normalizeString(body.addonPool);
+          const requestedCredits = Number(body.addonCredits);
+
+          if (!["portal", "app"].includes(addonPool)) {
+            return jsonResponse(
+              {
+                error:
+                  "Select the web portal or app-user credit pool.",
+              },
+              400,
+            );
+          }
+
+          const mappings =
+            addonPool === "portal"
+              ? PORTAL_ADDON_PRICES
+              : APP_ADDON_PRICES;
+
+          const currentItem =
+            addonPool === "portal"
+              ? currentPortalAddonItem
+              : currentAppAddonItem;
+
+          const currentCredits =
+            addonPool === "portal"
+              ? currentPortalAddonCredits
+              : currentAppAddonCredits;
+
+          const validCredits = [
+            0,
+            ...Object.keys(mappings).map(Number),
+          ];
+
+          if (
+            !Number.isInteger(requestedCredits) ||
+            !validCredits.includes(requestedCredits)
+          ) {
+            return jsonResponse(
+              {
+                error:
+                  "Select a valid recurring AI-credit package.",
+              },
+              400,
+            );
+          }
+
+          const poolLabel =
+            addonPool === "portal"
+              ? "web portal AI"
+              : "shared app AI";
+
+          const description =
+            requestedCredits === 0
+              ? `Cancel the recurring ${poolLabel} package`
+              : `${requestedCredits.toLocaleString("en-US")} recurring ${poolLabel} credits`;
+
+          if (requestedCredits > currentCredits) {
+            if (!addonSubscription) {
+              return jsonResponse(
+                {
+                  error:
+                    "This organization does not have an AI add-on subscription yet. Purchase one from AI access before requesting a change.",
+                  requiresAddonCheckout: true,
+                },
+                409,
+              );
+            }
+
+            const requestedPriceId =
+              mappings[requestedCredits];
+
+            if (!requestedPriceId) {
+              throw new Error(
+                "The requested AI-credit Stripe price could not be loaded.",
+              );
+            }
+
+            const previewItem = currentItem
+              ? {
+                  id: currentItem.id,
+                  price: requestedPriceId,
+                  quantity: 1,
+                }
+              : {
+                  price: requestedPriceId,
+                  quantity: 1,
+                };
+
+            const preview =
+              await stripe.invoices.createPreview({
+                customer:
+                  organization.stripe_customer_id ?? undefined,
+                subscription: addonSubscription.id,
+                subscription_details: {
+                  proration_behavior: "create_prorations",
+                  items: [previewItem],
+                },
+              });
+
+            return jsonResponse({
+              success: true,
+              changeType,
+              changeTiming: "immediate",
+              description,
+              amountDueToday:
+                getPositiveProrationAmount(
+                  preview,
+                  currentItem?.id ?? null,
+                  requestedPriceId,
+                ),
+              estimatedRenewalAmount: null,
+              currency: String(
+                preview.currency ?? "usd",
+              ).toLowerCase(),
+              effectiveAt: new Date().toISOString(),
+              estimateNote:
+                "The larger recurring AI package becomes active immediately after Stripe confirms the prorated payment.",
+            });
+          }
+
+          const addonRenewalDate = addonSubscription
+            ? unixToIso(getSubscriptionPeriodEnd(addonSubscription))
+            : renewalDate;
+
+          return jsonResponse({
+            success: true,
+            changeType,
+            changeTiming: "renewal",
+            description,
+            amountDueToday: 0,
+            estimatedRenewalAmount: null,
+            currency: "usd",
+            effectiveAt: addonRenewalDate,
+            estimateNote:
+              requestedCredits === 0
+                ? "The recurring AI package remains active through the prepaid term and cancels at renewal."
+                : "The smaller recurring AI package begins at renewal. The current package remains active until then.",
+          });
+        }
+
+        return jsonResponse(
+          {
+            error:
+              "A valid billing change type is required.",
+          },
+          400,
         );
+      }
+
+      if (action === "get_state") {
+        if (addonSubscription) {
+          await synchronizeOrganizationCreditAddons(
+            adminClient,
+            organizationId,
+            addonSubscription,
+          );
+        }
 
         return jsonResponse({
-          success: true,
-          changeType,
-          changeTiming: "renewal",
-          description:
-            `${formatPreviewLabel(planKey)} — ` +
-            `${formatPreviewLabel(billingInterval)} billing`,
-          amountDueToday: 0,
-          estimatedRenewalAmount: null,
-          currency: "usd",
-          effectiveAt: renewalDate,
-          estimateNote:
-            "This change takes effect at renewal. Stripe will calculate the final renewal invoice using the active discounts, taxes, seats, and add-ons at that time.",
+          organizationId,
+          organizationName: organization.name,
+          currentPlanKey: organization.current_plan_key,
+          billingInterval: organization.billing_interval,
+          pendingPlanKey: organization.pending_plan_key,
+          pendingBillingInterval:
+            organization.pending_billing_interval,
+          pendingPaidSeatCount:
+            organization.pending_paid_seat_count,
+          subscriptionStatus: organization.subscription_status,
+          purchasedSeatCount: Math.max(
+            0,
+            Number(organization.paid_seat_count ?? 0),
+          ),
+          usedSeatCount,
+          renewalDate:
+            organization.current_billing_period_end ??
+            unixToIso(getSubscriptionPeriodEnd(subscription)),
+          cancelAtPeriodEnd:
+            subscription.cancel_at_period_end === true,
+          hasAddonSubscription: Boolean(addonSubscription),
+          currentPortalAddonCredits,
+          currentAppAddonCredits,
+          pendingChanges: pendingResult.data ?? [],
+          portalAddonOptions: Object.keys(PORTAL_ADDON_PRICES).map(Number),
+          appAddonOptions: Object.keys(APP_ADDON_PRICES).map(Number),
         });
       }
 
-      if (changeType === "seats") {
+      if (action === "update_seats") {
         const requestedSeats = Number(body.seatQuantity);
         const currentSeats = Math.max(
           1,
@@ -926,12 +1233,16 @@ Deno.serve(async (request) => {
           );
         }
 
-        const allPriceIds =
-          await loadAllBaseAndSeatPriceIds(adminClient);
+        if (requestedSeats === currentSeats) {
+          return jsonResponse({
+            success: true,
+            message: "The app-seat quantity is already current.",
+          });
+        }
 
-        const seatItem = subscription.items.data.find(
-          (item) =>
-            allPriceIds.seatPriceIds.includes(item.price.id),
+        const allPriceIds = await loadAllBaseAndSeatPriceIds(adminClient);
+        const seatItem = subscription.items.data.find((item) =>
+          allPriceIds.seatPriceIds.includes(item.price.id)
         );
 
         if (!seatItem) {
@@ -941,69 +1252,258 @@ Deno.serve(async (request) => {
         }
 
         if (requestedSeats > currentSeats) {
-          const preview =
-            await stripe.invoices.createPreview({
-              customer:
-                organization.stripe_customer_id ?? undefined,
-              subscription: subscription.id,
-              subscription_details: {
-                proration_behavior: "create_prorations",
-                items: [
-                  {
-                    id: seatItem.id,
-                    quantity: requestedSeats,
+          if (!organization.stripe_customer_id) {
+            return jsonResponse(
+              {
+                error:
+                  "This organization does not have a Stripe customer attached.",
+              },
+              409,
+            );
+          }
+
+          const seatsBeingAdded = requestedSeats - currentSeats;
+
+          const preview = await stripe.invoices.createPreview({
+            customer: organization.stripe_customer_id,
+            subscription: subscription.id,
+            subscription_details: {
+              proration_behavior: "create_prorations",
+              items: [
+                {
+                  id: seatItem.id,
+                  quantity: requestedSeats,
+                },
+              ],
+            },
+          });
+
+          const checkoutAmount =
+            getPositiveProrationAmount(
+            preview,
+            seatItem.id,
+            seatItem.price.id,
+          );
+
+          const checkoutCurrency = String(
+            preview.currency ?? "usd",
+          ).toLowerCase();
+
+          const checkoutSession =
+            await stripe.checkout.sessions.create({
+              mode: "payment",
+              customer: organization.stripe_customer_id,
+              allow_promotion_codes: true,
+              line_items: [
+                {
+                  price_data: {
+                    currency: checkoutCurrency,
+                    unit_amount: checkoutAmount,
+                    product_data: {
+                      name:
+                        seatsBeingAdded === 1
+                          ? "Add 1 Everward app seat"
+                          : `Add ${seatsBeingAdded} Everward app seats`,
+                      description:
+                        `Increase purchased app seats from ${currentSeats} to ${requestedSeats}.`,
+                    },
                   },
-                ],
+                  quantity: 1,
+                },
+              ],
+              success_url:
+                "https://ptipedxvsekwoehfalux.supabase.co/functions/v1/" +
+                "complete-organization-seat-checkout" +
+                "?session_id={CHECKOUT_SESSION_ID}",
+              cancel_url:
+                "https://everward.ainovations.net" +
+                "?billing=seat-checkout-canceled",
+              metadata: {
+                action: "organization_seat_increase",
+                organization_id: organizationId,
+                subscription_id: subscription.id,
+                subscription_item_id: seatItem.id,
+                current_seat_quantity: String(currentSeats),
+                target_seat_quantity: String(requestedSeats),
+                requested_by_user_id: caller.id,
               },
             });
 
+          if (!checkoutSession.url) {
+            throw new Error(
+              "Stripe created Checkout without a redirect URL.",
+            );
+          }
+
+          await recordChange(adminClient, {
+            organization_id: organizationId,
+            requested_by_user_id: caller.id,
+            change_type: "seat_increase",
+            change_status: "processing",
+            current_seat_quantity: currentSeats,
+            requested_seat_quantity: requestedSeats,
+            effective_at: new Date().toISOString(),
+            applied_at: null,
+            stripe_subscription_id: subscription.id,
+            stripe_subscription_item_id: seatItem.id,
+            metadata: {
+              checkout_session_id: checkoutSession.id,
+              checkout_amount_total: checkoutAmount,
+              checkout_currency: checkoutCurrency,
+              billing_interval: organization.billing_interval,
+              subscription_quantity_unchanged_until_checkout: true,
+            },
+          });
+
           return jsonResponse({
             success: true,
-            changeType,
-            changeTiming: "immediate",
-            description:
-              `${requestedSeats.toLocaleString("en-US")} purchased app seats`,
-            amountDueToday:
-              getPositiveProrationAmount(
-                preview,
-                seatItem.id,
-                seatItem.price.id,
-              ),
-            estimatedRenewalAmount: null,
-            currency: String(
-              preview.currency ?? "usd",
-            ).toLowerCase(),
-            effectiveAt: new Date().toISOString(),
-            estimateNote:
-              "The added seats become active immediately after Stripe confirms the prorated payment.",
+            paymentRequired: true,
+            paymentUrl: checkoutSession.url,
+            checkoutSessionId: checkoutSession.id,
+            message:
+              checkoutAmount === 0
+                ? "Opening Stripe Checkout to confirm the discounted seat update."
+                : "Opening Stripe Checkout to complete the prorated seat payment.",
           });
         }
 
+        const future = await getFutureScheduleItems(stripe, subscription);
+        const futureItems = replaceItemDefinition(
+          future.items,
+          allPriceIds.seatPriceIds,
+          seatItem.price.id,
+          requestedSeats,
+        );
+
+        const scheduled = await scheduleItemsAtRenewal(
+          stripe,
+          subscription,
+          futureItems,
+        );
+
+        await adminClient
+          .from("organizations")
+          .update({
+            pending_paid_seat_count: requestedSeats,
+            pending_seat_effective_at: scheduled.effectiveAt,
+          })
+          .eq("id", organizationId);
+
+        await recordChange(adminClient, {
+          organization_id: organizationId,
+          requested_by_user_id: caller.id,
+          change_type: "seat_decrease",
+          change_status: "scheduled",
+          current_seat_quantity: currentSeats,
+          requested_seat_quantity: requestedSeats,
+          effective_at: scheduled.effectiveAt,
+          stripe_subscription_id: subscription.id,
+          stripe_subscription_item_id: seatItem.id,
+          stripe_schedule_id: scheduled.scheduleId,
+          metadata: {
+            no_refund: true,
+            access_continues_until_renewal: true,
+            removal_order: "latest_app_access_activated_at_first",
+            currently_used_seats: usedSeatCount,
+          },
+        });
+
         return jsonResponse({
           success: true,
-          changeType,
-          changeTiming: "renewal",
-          description:
-            `${requestedSeats.toLocaleString("en-US")} purchased app seats`,
-          amountDueToday: 0,
-          estimatedRenewalAmount: null,
-          currency: "usd",
-          effectiveAt: renewalDate,
-          estimateNote:
-            "Seat reductions take effect at renewal. Existing prepaid access remains active until then.",
+          message: `The app-seat quantity will decrease to ${requestedSeats} at renewal. There is no refund or credit for the prepaid period. App access remains active until renewal.`,
         });
       }
 
-      if (changeType === "addon") {
+      if (action === "schedule_plan") {
+        const planKey = normalizeString(body.planKey);
+        const billingInterval = normalizeString(body.billingInterval);
+
+        if (
+          !["organization_starter", "organization_pro"].includes(planKey)
+        ) {
+          return jsonResponse(
+            { error: "Select Organization Starter or Organization Pro." },
+            400,
+          );
+        }
+
+        if (!["monthly", "annual"].includes(billingInterval)) {
+          return jsonResponse(
+            { error: "Select monthly or annual billing." },
+            400,
+          );
+        }
+
+        const targetPrices = await loadPlanPrices(
+          adminClient,
+          planKey,
+          billingInterval,
+        );
+
+        const allPriceIds = await loadAllBaseAndSeatPriceIds(adminClient);
+        const future = await getFutureScheduleItems(stripe, subscription);
+
+        let futureItems = replaceItemDefinition(
+          future.items,
+          allPriceIds.portalPriceIds,
+          targetPrices.portalBasePriceId,
+          1,
+        );
+
+        futureItems = replaceItemDefinition(
+          futureItems,
+          allPriceIds.seatPriceIds,
+          targetPrices.userSeatPriceId,
+          Math.max(1, Number(organization.paid_seat_count ?? 1)),
+        );
+
+        const scheduled = await scheduleItemsAtRenewal(
+          stripe,
+          subscription,
+          futureItems,
+        );
+
+        await adminClient
+          .from("organizations")
+          .update({
+            pending_plan_key: planKey,
+            pending_billing_interval: billingInterval,
+            pending_plan_effective_at: scheduled.effectiveAt,
+          })
+          .eq("id", organizationId);
+
+        await recordChange(adminClient, {
+          organization_id: organizationId,
+          requested_by_user_id: caller.id,
+          change_type: "plan_change",
+          change_status: "scheduled",
+          current_plan_key: organization.current_plan_key,
+          requested_plan_key: planKey,
+          current_billing_interval: organization.billing_interval,
+          requested_billing_interval: billingInterval,
+          effective_at: scheduled.effectiveAt,
+          stripe_subscription_id: subscription.id,
+          stripe_schedule_id: scheduled.scheduleId,
+          metadata: {
+            effective_at_renewal: true,
+            no_midterm_refund: true,
+          },
+        });
+
+        return jsonResponse({
+          success: true,
+          message:
+            "The plan change is scheduled for the current subscription renewal date.",
+        });
+      }
+
+      if (action === "update_addon") {
         const addonPool = normalizeString(body.addonPool);
         const requestedCredits = Number(body.addonCredits);
 
         if (!["portal", "app"].includes(addonPool)) {
           return jsonResponse(
-            {
-              error:
-                "Select the web portal or app-user credit pool.",
-            },
+            { error: "Select the web portal or app-user credit pool." },
             400,
           );
         }
@@ -1012,6 +1512,18 @@ Deno.serve(async (request) => {
           addonPool === "portal"
             ? PORTAL_ADDON_PRICES
             : APP_ADDON_PRICES;
+
+        const validCredits = [0, ...Object.keys(mappings).map(Number)];
+
+        if (
+          !Number.isInteger(requestedCredits) ||
+          !validCredits.includes(requestedCredits)
+        ) {
+          return jsonResponse(
+            { error: "Select a valid recurring AI-credit package." },
+            400,
+          );
+        }
 
         const currentItem =
           addonPool === "portal"
@@ -1023,33 +1535,18 @@ Deno.serve(async (request) => {
             ? currentPortalAddonCredits
             : currentAppAddonCredits;
 
-        const validCredits = [
-          0,
-          ...Object.keys(mappings).map(Number),
-        ];
-
-        if (
-          !Number.isInteger(requestedCredits) ||
-          !validCredits.includes(requestedCredits)
-        ) {
-          return jsonResponse(
-            {
-              error:
-                "Select a valid recurring AI-credit package.",
-            },
-            400,
-          );
+        if (requestedCredits === currentCredits) {
+          return jsonResponse({
+            success: true,
+            message: "That AI-credit package is already active.",
+          });
         }
 
-        const poolLabel =
-          addonPool === "portal"
-            ? "web portal AI"
-            : "shared app AI";
-
-        const description =
-          requestedCredits === 0
-            ? `Cancel the recurring ${poolLabel} package`
-            : `${requestedCredits.toLocaleString("en-US")} recurring ${poolLabel} credits`;
+        const allPoolPriceIds = Object.values(mappings);
+        const requestedPriceId =
+          requestedCredits > 0
+            ? mappings[requestedCredits]
+            : null;
 
         if (requestedCredits > currentCredits) {
           if (!addonSubscription) {
@@ -1063,636 +1560,203 @@ Deno.serve(async (request) => {
             );
           }
 
-          const requestedPriceId =
-            mappings[requestedCredits];
+          if (addonSubscription.pending_update) {
+            const existingInvoiceState =
+              await loadLatestInvoiceState(stripe, addonSubscription);
 
-          if (!requestedPriceId) {
+            if (existingInvoiceState.paymentUrl) {
+              return jsonResponse({
+                success: true,
+                paymentRequired: !existingInvoiceState.paid,
+                paymentUrl: existingInvoiceState.paymentUrl,
+                invoiceId: existingInvoiceState.invoiceId,
+                invoiceStatus: existingInvoiceState.invoiceStatus,
+                message:
+                  "A prorated billing invoice is already waiting for payment. Opening Stripe now.",
+              });
+            }
+
+            return jsonResponse(
+              {
+                error:
+                  "A Stripe subscription update is already pending. Complete or resolve the current invoice before requesting another billing change.",
+              },
+              409,
+            );
+          }
+
+          let updatedSubscription: Stripe.Subscription;
+
+          if (currentItem && requestedPriceId) {
+            updatedSubscription =
+              await stripe.subscriptions.update(addonSubscription.id, {
+                items: [
+                  {
+                    id: currentItem.id,
+                    price: requestedPriceId,
+                    quantity: 1,
+                  },
+                ],
+                proration_behavior: "always_invoice",
+                payment_behavior: "pending_if_incomplete",
+                expand: ["latest_invoice"],
+              });
+          } else if (requestedPriceId) {
+            updatedSubscription =
+              await stripe.subscriptions.update(addonSubscription.id, {
+                items: [
+                  {
+                    price: requestedPriceId,
+                    quantity: 1,
+                  },
+                ],
+                proration_behavior: "always_invoice",
+                payment_behavior: "pending_if_incomplete",
+                expand: ["latest_invoice"],
+              });
+          } else {
             throw new Error(
               "The requested AI-credit Stripe price could not be loaded.",
             );
           }
 
-          const previewItem = currentItem
-            ? {
-                id: currentItem.id,
-                price: requestedPriceId,
-                quantity: 1,
-              }
-            : {
-                price: requestedPriceId,
-                quantity: 1,
-              };
+          const invoiceState = await loadLatestInvoiceState(
+            stripe,
+            updatedSubscription,
+          );
 
-          const preview =
-            await stripe.invoices.createPreview({
-              customer:
-                organization.stripe_customer_id ?? undefined,
-              subscription: addonSubscription.id,
-              subscription_details: {
-                proration_behavior: "create_prorations",
-                items: [previewItem],
-              },
-            });
+          await recordChange(adminClient, {
+            organization_id: organizationId,
+            requested_by_user_id: caller.id,
+            change_type:
+              addonPool === "portal"
+                ? "portal_credit_change"
+                : "app_credit_change",
+            change_status: invoiceState.paid ? "applied" : "processing",
+            current_addon_quantity: currentCredits,
+            requested_addon_quantity: requestedCredits,
+            effective_at: new Date().toISOString(),
+            applied_at: invoiceState.paid
+              ? new Date().toISOString()
+              : null,
+            stripe_subscription_id: addonSubscription.id,
+            stripe_subscription_item_id: currentItem?.id ?? null,
+            stripe_invoice_id: invoiceState.invoiceId,
+            metadata: {
+              addon_pool: addonPool,
+              proration_behavior: "always_invoice",
+              billing_cycle_anchor_preserved: true,
+              invoice_status: invoiceState.invoiceStatus,
+              payment_required: !invoiceState.paid,
+            },
+          });
+
+          if (invoiceState.paid) {
+            const synchronizedSubscription =
+              await stripe.subscriptions.retrieve(
+                addonSubscription.id,
+              );
+
+            await synchronizeOrganizationCreditAddons(
+              adminClient,
+              organizationId,
+              synchronizedSubscription,
+            );
+          }
 
           return jsonResponse({
             success: true,
-            changeType,
-            changeTiming: "immediate",
-            description,
-            amountDueToday:
-              getPositiveProrationAmount(
-                preview,
-                currentItem?.id ?? null,
-                requestedPriceId,
-              ),
-            estimatedRenewalAmount: null,
-            currency: String(
-              preview.currency ?? "usd",
-            ).toLowerCase(),
-            effectiveAt: new Date().toISOString(),
-            estimateNote:
-              "The larger recurring AI package becomes active immediately after Stripe confirms the prorated payment.",
+            paymentRequired: !invoiceState.paid,
+            paymentUrl: invoiceState.paid
+              ? null
+              : invoiceState.paymentUrl,
+            invoiceId: invoiceState.invoiceId,
+            invoiceStatus: invoiceState.invoiceStatus,
+            message: invoiceState.paid
+              ? "The recurring AI-credit package is active."
+              : "Stripe created the prorated AI-credit invoice through the existing billing date.",
           });
         }
 
-        const addonRenewalDate = addonSubscription
-          ? unixToIso(getSubscriptionPeriodEnd(addonSubscription))
-          : renewalDate;
-
-        return jsonResponse({
-          success: true,
-          changeType,
-          changeTiming: "renewal",
-          description,
-          amountDueToday: 0,
-          estimatedRenewalAmount: null,
-          currency: "usd",
-          effectiveAt: addonRenewalDate,
-          estimateNote:
-            requestedCredits === 0
-              ? "The recurring AI package remains active through the prepaid term and cancels at renewal."
-              : "The smaller recurring AI package begins at renewal. The current package remains active until then.",
-        });
-      }
-
-      return jsonResponse(
-        {
-          error:
-            "A valid billing change type is required.",
-        },
-        400,
-      );
-    }
-
-    if (action === "get_state") {
-      if (addonSubscription) {
-        await synchronizeOrganizationCreditAddons(
-          adminClient,
-          organizationId,
-          addonSubscription,
-        );
-      }
-
-      return jsonResponse({
-        organizationId,
-        organizationName: organization.name,
-        currentPlanKey: organization.current_plan_key,
-        billingInterval: organization.billing_interval,
-        pendingPlanKey: organization.pending_plan_key,
-        pendingBillingInterval:
-          organization.pending_billing_interval,
-        pendingPaidSeatCount:
-          organization.pending_paid_seat_count,
-        subscriptionStatus: organization.subscription_status,
-        purchasedSeatCount: Math.max(
-          0,
-          Number(organization.paid_seat_count ?? 0),
-        ),
-        usedSeatCount,
-        renewalDate:
-          organization.current_billing_period_end ??
-          unixToIso(getSubscriptionPeriodEnd(subscription)),
-        cancelAtPeriodEnd:
-          subscription.cancel_at_period_end === true,
-        hasAddonSubscription: Boolean(addonSubscription),
-        currentPortalAddonCredits,
-        currentAppAddonCredits,
-        pendingChanges: pendingResult.data ?? [],
-        portalAddonOptions: Object.keys(PORTAL_ADDON_PRICES).map(Number),
-        appAddonOptions: Object.keys(APP_ADDON_PRICES).map(Number),
-      });
-    }
-
-    if (action === "update_seats") {
-      const requestedSeats = Number(body.seatQuantity);
-      const currentSeats = Math.max(
-        1,
-        Number(organization.paid_seat_count ?? 1),
-      );
-
-      if (
-        !Number.isInteger(requestedSeats) ||
-        requestedSeats < 1 ||
-        requestedSeats > 10000
-      ) {
-        return jsonResponse(
-          {
-            error:
-              "App-seat quantity must be a whole number between 1 and 10,000.",
-          },
-          400,
-        );
-      }
-
-      if (requestedSeats === currentSeats) {
-        return jsonResponse({
-          success: true,
-          message: "The app-seat quantity is already current.",
-        });
-      }
-
-      const allPriceIds = await loadAllBaseAndSeatPriceIds(adminClient);
-      const seatItem = subscription.items.data.find((item) =>
-        allPriceIds.seatPriceIds.includes(item.price.id)
-      );
-
-      if (!seatItem) {
-        throw new Error(
-          "The Stripe app-seat subscription item could not be located.",
-        );
-      }
-
-      if (requestedSeats > currentSeats) {
-        if (!organization.stripe_customer_id) {
-          return jsonResponse(
-            {
-              error:
-                "This organization does not have a Stripe customer attached.",
-            },
-            409,
-          );
-        }
-
-        const seatsBeingAdded = requestedSeats - currentSeats;
-
-        const preview = await stripe.invoices.createPreview({
-          customer: organization.stripe_customer_id,
-          subscription: subscription.id,
-          subscription_details: {
-            proration_behavior: "create_prorations",
-            items: [
-              {
-                id: seatItem.id,
-                quantity: requestedSeats,
-              },
-            ],
-          },
-        });
-
-        const checkoutAmount =
-          getPositiveProrationAmount(
-          preview,
-          seatItem.id,
-          seatItem.price.id,
-        );
-
-        const checkoutCurrency = String(
-          preview.currency ?? "usd",
-        ).toLowerCase();
-
-        const checkoutSession =
-          await stripe.checkout.sessions.create({
-            mode: "payment",
-            customer: organization.stripe_customer_id,
-            line_items: [
-              {
-                price_data: {
-                  currency: checkoutCurrency,
-                  unit_amount: checkoutAmount,
-                  product_data: {
-                    name:
-                      seatsBeingAdded === 1
-                        ? "Add 1 Everward app seat"
-                        : `Add ${seatsBeingAdded} Everward app seats`,
-                    description:
-                      `Increase purchased app seats from ${currentSeats} to ${requestedSeats}.`,
-                  },
-                },
-                quantity: 1,
-              },
-            ],
-            success_url:
-              "https://ptipedxvsekwoehfalux.supabase.co/functions/v1/" +
-              "complete-organization-seat-checkout" +
-              "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url:
-              "https://everward.ainovations.net" +
-              "?billing=seat-checkout-canceled",
-            metadata: {
-              action: "organization_seat_increase",
-              organization_id: organizationId,
-              subscription_id: subscription.id,
-              subscription_item_id: seatItem.id,
-              current_seat_quantity: String(currentSeats),
-              target_seat_quantity: String(requestedSeats),
-              requested_by_user_id: caller.id,
-            },
-          });
-
-        if (!checkoutSession.url) {
-          throw new Error(
-            "Stripe created Checkout without a redirect URL.",
-          );
-        }
-
-        await recordChange(adminClient, {
-          organization_id: organizationId,
-          requested_by_user_id: caller.id,
-          change_type: "seat_increase",
-          change_status: "processing",
-          current_seat_quantity: currentSeats,
-          requested_seat_quantity: requestedSeats,
-          effective_at: new Date().toISOString(),
-          applied_at: null,
-          stripe_subscription_id: subscription.id,
-          stripe_subscription_item_id: seatItem.id,
-          metadata: {
-            checkout_session_id: checkoutSession.id,
-            checkout_amount_total: checkoutAmount,
-            checkout_currency: checkoutCurrency,
-            billing_interval: organization.billing_interval,
-            subscription_quantity_unchanged_until_checkout: true,
-          },
-        });
-
-        return jsonResponse({
-          success: true,
-          paymentRequired: true,
-          paymentUrl: checkoutSession.url,
-          checkoutSessionId: checkoutSession.id,
-          message:
-            checkoutAmount === 0
-              ? "Opening Stripe Checkout to confirm the discounted seat update."
-              : "Opening Stripe Checkout to complete the prorated seat payment.",
-        });
-      }
-
-      const future = await getFutureScheduleItems(stripe, subscription);
-      const futureItems = replaceItemDefinition(
-        future.items,
-        allPriceIds.seatPriceIds,
-        seatItem.price.id,
-        requestedSeats,
-      );
-
-      const scheduled = await scheduleItemsAtRenewal(
-        stripe,
-        subscription,
-        futureItems,
-      );
-
-      await adminClient
-        .from("organizations")
-        .update({
-          pending_paid_seat_count: requestedSeats,
-          pending_seat_effective_at: scheduled.effectiveAt,
-        })
-        .eq("id", organizationId);
-
-      await recordChange(adminClient, {
-        organization_id: organizationId,
-        requested_by_user_id: caller.id,
-        change_type: "seat_decrease",
-        change_status: "scheduled",
-        current_seat_quantity: currentSeats,
-        requested_seat_quantity: requestedSeats,
-        effective_at: scheduled.effectiveAt,
-        stripe_subscription_id: subscription.id,
-        stripe_subscription_item_id: seatItem.id,
-        stripe_schedule_id: scheduled.scheduleId,
-        metadata: {
-          no_refund: true,
-          access_continues_until_renewal: true,
-          removal_order: "latest_app_access_activated_at_first",
-          currently_used_seats: usedSeatCount,
-        },
-      });
-
-      return jsonResponse({
-        success: true,
-        message: `The app-seat quantity will decrease to ${requestedSeats} at renewal. There is no refund or credit for the prepaid period. App access remains active until renewal.`,
-      });
-    }
-
-    if (action === "schedule_plan") {
-      const planKey = normalizeString(body.planKey);
-      const billingInterval = normalizeString(body.billingInterval);
-
-      if (
-        !["organization_starter", "organization_pro"].includes(planKey)
-      ) {
-        return jsonResponse(
-          { error: "Select Organization Starter or Organization Pro." },
-          400,
-        );
-      }
-
-      if (!["monthly", "annual"].includes(billingInterval)) {
-        return jsonResponse(
-          { error: "Select monthly or annual billing." },
-          400,
-        );
-      }
-
-      const targetPrices = await loadPlanPrices(
-        adminClient,
-        planKey,
-        billingInterval,
-      );
-
-      const allPriceIds = await loadAllBaseAndSeatPriceIds(adminClient);
-      const future = await getFutureScheduleItems(stripe, subscription);
-
-      let futureItems = replaceItemDefinition(
-        future.items,
-        allPriceIds.portalPriceIds,
-        targetPrices.portalBasePriceId,
-        1,
-      );
-
-      futureItems = replaceItemDefinition(
-        futureItems,
-        allPriceIds.seatPriceIds,
-        targetPrices.userSeatPriceId,
-        Math.max(1, Number(organization.paid_seat_count ?? 1)),
-      );
-
-      const scheduled = await scheduleItemsAtRenewal(
-        stripe,
-        subscription,
-        futureItems,
-      );
-
-      await adminClient
-        .from("organizations")
-        .update({
-          pending_plan_key: planKey,
-          pending_billing_interval: billingInterval,
-          pending_plan_effective_at: scheduled.effectiveAt,
-        })
-        .eq("id", organizationId);
-
-      await recordChange(adminClient, {
-        organization_id: organizationId,
-        requested_by_user_id: caller.id,
-        change_type: "plan_change",
-        change_status: "scheduled",
-        current_plan_key: organization.current_plan_key,
-        requested_plan_key: planKey,
-        current_billing_interval: organization.billing_interval,
-        requested_billing_interval: billingInterval,
-        effective_at: scheduled.effectiveAt,
-        stripe_subscription_id: subscription.id,
-        stripe_schedule_id: scheduled.scheduleId,
-        metadata: {
-          effective_at_renewal: true,
-          no_midterm_refund: true,
-        },
-      });
-
-      return jsonResponse({
-        success: true,
-        message:
-          "The plan change is scheduled for the current subscription renewal date.",
-      });
-    }
-
-    if (action === "update_addon") {
-      const addonPool = normalizeString(body.addonPool);
-      const requestedCredits = Number(body.addonCredits);
-
-      if (!["portal", "app"].includes(addonPool)) {
-        return jsonResponse(
-          { error: "Select the web portal or app-user credit pool." },
-          400,
-        );
-      }
-
-      const mappings =
-        addonPool === "portal"
-          ? PORTAL_ADDON_PRICES
-          : APP_ADDON_PRICES;
-
-      const validCredits = [0, ...Object.keys(mappings).map(Number)];
-
-      if (
-        !Number.isInteger(requestedCredits) ||
-        !validCredits.includes(requestedCredits)
-      ) {
-        return jsonResponse(
-          { error: "Select a valid recurring AI-credit package." },
-          400,
-        );
-      }
-
-      const currentItem =
-        addonPool === "portal"
-          ? currentPortalAddonItem
-          : currentAppAddonItem;
-
-      const currentCredits =
-        addonPool === "portal"
-          ? currentPortalAddonCredits
-          : currentAppAddonCredits;
-
-      if (requestedCredits === currentCredits) {
-        return jsonResponse({
-          success: true,
-          message: "That AI-credit package is already active.",
-        });
-      }
-
-      const allPoolPriceIds = Object.values(mappings);
-      const requestedPriceId =
-        requestedCredits > 0
-          ? mappings[requestedCredits]
-          : null;
-
-      if (requestedCredits > currentCredits) {
         if (!addonSubscription) {
-          return jsonResponse(
-            {
-              error:
-                "This organization does not have an AI add-on subscription yet. Purchase one from AI access before requesting a change.",
-              requiresAddonCheckout: true,
-            },
-            409,
-          );
-        }
-
-        if (addonSubscription.pending_update) {
-          const existingInvoiceState =
-            await loadLatestInvoiceState(stripe, addonSubscription);
-
-          if (existingInvoiceState.paymentUrl) {
-            return jsonResponse({
-              success: true,
-              paymentRequired: !existingInvoiceState.paid,
-              paymentUrl: existingInvoiceState.paymentUrl,
-              invoiceId: existingInvoiceState.invoiceId,
-              invoiceStatus: existingInvoiceState.invoiceStatus,
-              message:
-                "A prorated billing invoice is already waiting for payment. Opening Stripe now.",
-            });
-          }
-
-          return jsonResponse(
-            {
-              error:
-                "A Stripe subscription update is already pending. Complete or resolve the current invoice before requesting another billing change.",
-            },
-            409,
-          );
-        }
-
-        let updatedSubscription: Stripe.Subscription;
-
-        if (currentItem && requestedPriceId) {
-          updatedSubscription =
-            await stripe.subscriptions.update(addonSubscription.id, {
-              items: [
-                {
-                  id: currentItem.id,
-                  price: requestedPriceId,
-                  quantity: 1,
-                },
-              ],
-              proration_behavior: "always_invoice",
-              payment_behavior: "pending_if_incomplete",
-              expand: ["latest_invoice"],
-            });
-        } else if (requestedPriceId) {
-          updatedSubscription =
-            await stripe.subscriptions.update(addonSubscription.id, {
-              items: [
-                {
-                  price: requestedPriceId,
-                  quantity: 1,
-                },
-              ],
-              proration_behavior: "always_invoice",
-              payment_behavior: "pending_if_incomplete",
-              expand: ["latest_invoice"],
-            });
-        } else {
           throw new Error(
-            "The requested AI-credit Stripe price could not be loaded.",
+            "Reached an AI add-on decrease with no add-on subscription on file. This should be unreachable because a decrease requires currentCredits > 0.",
           );
         }
 
-        const invoiceState = await loadLatestInvoiceState(
-          stripe,
-          updatedSubscription,
+        const future = await getFutureScheduleItems(stripe, addonSubscription);
+        const futureItems = replaceItemDefinition(
+          future.items,
+          allPoolPriceIds,
+          requestedPriceId,
+          requestedCredits > 0 ? 1 : 0,
         );
 
-        await recordChange(adminClient, {
-          organization_id: organizationId,
-          requested_by_user_id: caller.id,
-          change_type:
-            addonPool === "portal"
-              ? "portal_credit_change"
-              : "app_credit_change",
-          change_status: invoiceState.paid ? "applied" : "processing",
-          current_addon_quantity: currentCredits,
-          requested_addon_quantity: requestedCredits,
-          effective_at: new Date().toISOString(),
-          applied_at: invoiceState.paid
-            ? new Date().toISOString()
-            : null,
-          stripe_subscription_id: addonSubscription.id,
-          stripe_subscription_item_id: currentItem?.id ?? null,
-          stripe_invoice_id: invoiceState.invoiceId,
-          metadata: {
-            addon_pool: addonPool,
-            proration_behavior: "always_invoice",
-            billing_cycle_anchor_preserved: true,
-            invoice_status: invoiceState.invoiceStatus,
-            payment_required: !invoiceState.paid,
-          },
-        });
+        if (futureItems.length === 0) {
+          // The add-on subscription only ever carries add-on items (no plan or
+          // seat items), so removing the last one would leave a schedule phase
+          // with zero items, which Stripe rejects. Cancel the whole add-on
+          // subscription at period end instead, same no-refund terms as any
+          // other scheduled decrease.
+          const existingScheduleId =
+            typeof addonSubscription.schedule === "string"
+              ? addonSubscription.schedule
+              : addonSubscription.schedule?.id ?? null;
 
-        if (invoiceState.paid) {
-          const synchronizedSubscription =
-            await stripe.subscriptions.retrieve(
-              addonSubscription.id,
-            );
+          if (existingScheduleId) {
+            const existingSchedule =
+              await stripe.subscriptionSchedules.retrieve(
+                existingScheduleId,
+              );
 
-          await synchronizeOrganizationCreditAddons(
-            adminClient,
-            organizationId,
-            synchronizedSubscription,
-          );
-        }
-
-        return jsonResponse({
-          success: true,
-          paymentRequired: !invoiceState.paid,
-          paymentUrl: invoiceState.paid
-            ? null
-            : invoiceState.paymentUrl,
-          invoiceId: invoiceState.invoiceId,
-          invoiceStatus: invoiceState.invoiceStatus,
-          message: invoiceState.paid
-            ? "The recurring AI-credit package is active."
-            : "Stripe created the prorated AI-credit invoice through the existing billing date.",
-        });
-      }
-
-      if (!addonSubscription) {
-        throw new Error(
-          "Reached an AI add-on decrease with no add-on subscription on file. This should be unreachable because a decrease requires currentCredits > 0.",
-        );
-      }
-
-      const future = await getFutureScheduleItems(stripe, addonSubscription);
-      const futureItems = replaceItemDefinition(
-        future.items,
-        allPoolPriceIds,
-        requestedPriceId,
-        requestedCredits > 0 ? 1 : 0,
-      );
-
-      if (futureItems.length === 0) {
-        // The add-on subscription only ever carries add-on items (no plan or
-        // seat items), so removing the last one would leave a schedule phase
-        // with zero items, which Stripe rejects. Cancel the whole add-on
-        // subscription at period end instead, same no-refund terms as any
-        // other scheduled decrease.
-        const existingScheduleId =
-          typeof addonSubscription.schedule === "string"
-            ? addonSubscription.schedule
-            : addonSubscription.schedule?.id ?? null;
-
-        if (existingScheduleId) {
-          const existingSchedule =
-            await stripe.subscriptionSchedules.retrieve(
-              existingScheduleId,
-            );
-
-          if (existingSchedule.status !== "released") {
-            await stripe.subscriptionSchedules.release(
-              existingScheduleId,
-            );
+            if (existingSchedule.status !== "released") {
+              await stripe.subscriptionSchedules.release(
+                existingScheduleId,
+              );
+            }
           }
-        }
 
-        const canceledAddonSubscription =
-          await stripe.subscriptions.update(addonSubscription.id, {
-            cancel_at_period_end: true,
+          const canceledAddonSubscription =
+            await stripe.subscriptions.update(addonSubscription.id, {
+              cancel_at_period_end: true,
+            });
+
+          const addonCancelEffectiveAt = unixToIso(
+            getSubscriptionPeriodEnd(canceledAddonSubscription),
+          );
+
+          await recordChange(adminClient, {
+            organization_id: organizationId,
+            requested_by_user_id: caller.id,
+            change_type:
+              addonPool === "portal"
+                ? "portal_credit_change"
+                : "app_credit_change",
+            change_status: "scheduled",
+            current_addon_quantity: currentCredits,
+            requested_addon_quantity: requestedCredits,
+            effective_at: addonCancelEffectiveAt,
+            stripe_subscription_id: addonSubscription.id,
+            stripe_subscription_item_id: currentItem?.id ?? null,
+            metadata: {
+              addon_pool: addonPool,
+              no_refund: true,
+              effective_at_existing_renewal: true,
+              addon_subscription_canceled: true,
+            },
           });
 
-        const addonCancelEffectiveAt = unixToIso(
-          getSubscriptionPeriodEnd(canceledAddonSubscription),
+          return jsonResponse({
+            success: true,
+            message:
+              "The recurring AI-credit package will cancel at the existing renewal date. There is no refund for the prepaid period.",
+          });
+        }
+
+        const scheduled = await scheduleItemsAtRenewal(
+          stripe,
+          addonSubscription,
+          futureItems,
         );
 
         await recordChange(adminClient, {
@@ -1705,137 +1769,99 @@ Deno.serve(async (request) => {
           change_status: "scheduled",
           current_addon_quantity: currentCredits,
           requested_addon_quantity: requestedCredits,
-          effective_at: addonCancelEffectiveAt,
+          effective_at: scheduled.effectiveAt,
           stripe_subscription_id: addonSubscription.id,
           stripe_subscription_item_id: currentItem?.id ?? null,
+          stripe_schedule_id: scheduled.scheduleId,
           metadata: {
             addon_pool: addonPool,
             no_refund: true,
             effective_at_existing_renewal: true,
-            addon_subscription_canceled: true,
           },
         });
 
         return jsonResponse({
           success: true,
           message:
-            "The recurring AI-credit package will cancel at the existing renewal date. There is no refund for the prepaid period.",
+            requestedCredits === 0
+              ? "The recurring AI-credit package will cancel at the existing renewal date."
+              : "The smaller AI-credit package will begin at the existing renewal date.",
         });
       }
 
-      const scheduled = await scheduleItemsAtRenewal(
-        stripe,
-        addonSubscription,
-        futureItems,
-      );
+      if (action === "cancel_subscription") {
+        const updatedSubscription = await stripe.subscriptions.update(
+          subscription.id,
+          {
+            cancel_at_period_end: true,
+          },
+        );
 
-      await recordChange(adminClient, {
-        organization_id: organizationId,
-        requested_by_user_id: caller.id,
-        change_type:
-          addonPool === "portal"
-            ? "portal_credit_change"
-            : "app_credit_change",
-        change_status: "scheduled",
-        current_addon_quantity: currentCredits,
-        requested_addon_quantity: requestedCredits,
-        effective_at: scheduled.effectiveAt,
-        stripe_subscription_id: addonSubscription.id,
-        stripe_subscription_item_id: currentItem?.id ?? null,
-        stripe_schedule_id: scheduled.scheduleId,
-        metadata: {
-          addon_pool: addonPool,
-          no_refund: true,
-          effective_at_existing_renewal: true,
-        },
-      });
+        await adminClient
+          .from("organizations")
+          .update({
+            stripe_cancel_at_period_end: true,
+            pending_subscription_cancel_at: unixToIso(
+              getSubscriptionPeriodEnd(updatedSubscription),
+            ),
+          })
+          .eq("id", organizationId);
 
-      return jsonResponse({
-        success: true,
-        message:
-          requestedCredits === 0
-            ? "The recurring AI-credit package will cancel at the existing renewal date."
-            : "The smaller AI-credit package will begin at the existing renewal date.",
-      });
-    }
-
-    if (action === "cancel_subscription") {
-      const updatedSubscription = await stripe.subscriptions.update(
-        subscription.id,
-        {
-          cancel_at_period_end: true,
-        },
-      );
-
-      await adminClient
-        .from("organizations")
-        .update({
-          stripe_cancel_at_period_end: true,
-          pending_subscription_cancel_at: unixToIso(
+        await recordChange(adminClient, {
+          organization_id: organizationId,
+          requested_by_user_id: caller.id,
+          change_type: "subscription_cancellation",
+          change_status: "scheduled",
+          effective_at: unixToIso(
             getSubscriptionPeriodEnd(updatedSubscription),
           ),
-        })
-        .eq("id", organizationId);
+          stripe_subscription_id: subscription.id,
+          metadata: {
+            no_refund: true,
+            access_continues_until_renewal: true,
+          },
+        });
 
-      await recordChange(adminClient, {
-        organization_id: organizationId,
-        requested_by_user_id: caller.id,
-        change_type: "subscription_cancellation",
-        change_status: "scheduled",
-        effective_at: unixToIso(
-          getSubscriptionPeriodEnd(updatedSubscription),
-        ),
-        stripe_subscription_id: subscription.id,
-        metadata: {
-          no_refund: true,
-          access_continues_until_renewal: true,
-        },
-      });
+        return jsonResponse({
+          success: true,
+          message:
+            "The organization subscription will cancel at the end of the prepaid term. No refund or early credit will be issued.",
+        });
+      }
 
-      return jsonResponse({
-        success: true,
-        message:
-          "The organization subscription will cancel at the end of the prepaid term. No refund or early credit will be issued.",
-      });
+      if (action === "resume_subscription") {
+        await stripe.subscriptions.update(subscription.id, {
+          cancel_at_period_end: false,
+        });
+
+        await adminClient
+          .from("organizations")
+          .update({
+            stripe_cancel_at_period_end: false,
+            pending_subscription_cancel_at: null,
+          })
+          .eq("id", organizationId);
+
+        await adminClient
+          .from("organization_billing_change_requests")
+          .update({
+            change_status: "canceled",
+            canceled_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("organization_id", organizationId)
+          .eq("change_type", "subscription_cancellation")
+          .eq("change_status", "scheduled");
+
+        return jsonResponse({
+          success: true,
+          message: "The scheduled subscription cancellation was removed.",
+        });
+      }
+
+      return jsonResponse({ error: "Unsupported billing action." }, 400);
+    } catch (error) {
+      return jsonResponse({ error: sanitizeError(error) }, 500);
     }
-
-    if (action === "resume_subscription") {
-      await stripe.subscriptions.update(subscription.id, {
-        cancel_at_period_end: false,
-      });
-
-      await adminClient
-        .from("organizations")
-        .update({
-          stripe_cancel_at_period_end: false,
-          pending_subscription_cancel_at: null,
-        })
-        .eq("id", organizationId);
-
-      await adminClient
-        .from("organization_billing_change_requests")
-        .update({
-          change_status: "canceled",
-          canceled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("organization_id", organizationId)
-        .eq("change_type", "subscription_cancellation")
-        .eq("change_status", "scheduled");
-
-      return jsonResponse({
-        success: true,
-        message: "The scheduled subscription cancellation was removed.",
-      });
-    }
-
-    return jsonResponse({ error: "Unsupported billing action." }, 400);
-  } catch (error) {
-    return jsonResponse(
-      {
-        error: sanitizeError(error),
-      },
-      500,
-    );
-  }
-});
+  });
+}

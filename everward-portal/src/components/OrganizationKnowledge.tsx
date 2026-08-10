@@ -95,6 +95,15 @@ type PortalCreditSummary = {
   portal_credit_renewal_date: string | null;
 };
 
+type StorageUsageSummary = {
+  document_count: number;
+  total_bytes: number;
+  document_limit: number;
+  free_tier_bytes: number;
+  billable_bytes: number;
+  estimated_daily_storage_cost_cents: number;
+};
+
 function formatFileSize(sizeInBytes: number) {
   if (!Number.isFinite(sizeInBytes) || sizeInBytes <= 0) {
     return "0 bytes";
@@ -202,6 +211,10 @@ function OrganizationKnowledge({
     useState<PortalCreditSummary | null>(null);
   const [isLoadingPortalCredits, setIsLoadingPortalCredits] = useState(false);
 
+  const [storageUsage, setStorageUsage] =
+    useState<StorageUsageSummary | null>(null);
+  const [isLoadingStorageUsage, setIsLoadingStorageUsage] = useState(false);
+
   const [questionHistory, setQuestionHistory] = useState<KnowledgeQuestion[]>(
     [],
   );
@@ -266,11 +279,54 @@ function OrganizationKnowledge({
     setIsLoadingPortalCredits(false);
   }, [organizationId]);
 
+  const loadStorageUsage = useCallback(async () => {
+    setIsLoadingStorageUsage(true);
+
+    const { data, error } = await supabase.rpc(
+      "get_organization_document_storage_usage",
+      {
+        p_organization_id: organizationId,
+      },
+    );
+
+    if (error) {
+      console.error(
+        "Company Knowledge storage usage could not be loaded:",
+        error,
+      );
+      setStorageUsage(null);
+      setIsLoadingStorageUsage(false);
+      return;
+    }
+
+    const summary = data?.[0];
+
+    if (!summary) {
+      setStorageUsage(null);
+      setIsLoadingStorageUsage(false);
+      return;
+    }
+
+    setStorageUsage({
+      document_count: Number(summary.document_count ?? 0),
+      total_bytes: Number(summary.total_bytes ?? 0),
+      document_limit: Number(summary.document_limit ?? 0),
+      free_tier_bytes: Number(summary.free_tier_bytes ?? 0),
+      billable_bytes: Number(summary.billable_bytes ?? 0),
+      estimated_daily_storage_cost_cents: Number(
+        summary.estimated_daily_storage_cost_cents ?? 0,
+      ),
+    });
+
+    setIsLoadingStorageUsage(false);
+  }, [organizationId]);
+
   useEffect(() => {
     if (hasKnowledgeAccess === true) {
       void loadPortalCreditSummary();
+      void loadStorageUsage();
     }
-  }, [hasKnowledgeAccess, loadPortalCreditSummary]);
+  }, [hasKnowledgeAccess, loadPortalCreditSummary, loadStorageUsage]);
 
   const loadDocuments = useCallback(async () => {
     setIsLoadingDocuments(true);
@@ -478,6 +534,7 @@ function OrganizationKnowledge({
       );
 
       await loadDocuments();
+      void loadStorageUsage();
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -487,6 +544,7 @@ function OrganizationKnowledge({
       console.error("Company Knowledge upload failed:", error);
       setDocumentMessage(errorMessage);
       await loadDocuments();
+      void loadStorageUsage();
     } finally {
       setIsUploadingDocument(false);
     }
@@ -535,6 +593,7 @@ function OrganizationKnowledge({
       );
 
       await loadDocuments();
+      void loadStorageUsage();
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -544,6 +603,7 @@ function OrganizationKnowledge({
       console.error("Company Knowledge document deletion failed:", error);
       setDocumentMessage(errorMessage);
       await loadDocuments();
+      void loadStorageUsage();
     }
   }
 
@@ -791,6 +851,31 @@ function OrganizationKnowledge({
               {readyDocuments.length} ready
             </span>
           </div>
+
+          {storageUsage ? (
+            <p className="company-knowledge-credit-note">
+              {storageUsage.document_count} of {storageUsage.document_limit}{" "}
+              documents used
+              {" · "}
+              {formatFileSize(storageUsage.total_bytes)} stored
+              {storageUsage.billable_bytes > 0 ? (
+                <>
+                  {" · "}
+                  <strong>
+                    Over the free storage tier -- roughly $
+                    {(storageUsage.estimated_daily_storage_cost_cents / 100).toFixed(2)}
+                    /day in storage cost
+                  </strong>
+                </>
+              ) : (
+                <>{" · "}within the free storage tier, no extra storage cost</>
+              )}
+            </p>
+          ) : isLoadingStorageUsage ? (
+            <p className="company-knowledge-credit-note">
+              Loading storage usage...
+            </p>
+          ) : null}
 
           {canManageKnowledgeDocuments ? (
             <form
