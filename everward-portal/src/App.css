@@ -3348,6 +3348,7 @@
   margin-top: 6px;
   padding: 0 22px;
   text-decoration: none;
+  justify-self: center;
 }
 
 .billing-credit-card {
