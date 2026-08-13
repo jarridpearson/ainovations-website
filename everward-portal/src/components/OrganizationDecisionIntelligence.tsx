@@ -75,6 +75,140 @@ function getConflictCheckCost(
   return (sideACount + sideBCount) * 1;
 }
 
+type CalibrationCategoryBreakdown = {
+  category: string;
+  total: number;
+  overconfident: number;
+  underconfident: number;
+  well_calibrated: number;
+};
+
+type CalibrationMonthBreakdown = {
+  month: string;
+  total: number;
+  well_calibrated: number;
+};
+
+type CalibrationMember = {
+  user_id: string;
+  band: "Overconfident" | "Underconfident" | "Well-Calibrated" | null;
+  score: number | null;
+  total_checkins: number;
+  overconfident_count?: number;
+  underconfident_count?: number;
+  well_calibrated_count?: number;
+  by_category: CalibrationCategoryBreakdown[];
+  by_month: CalibrationMonthBreakdown[];
+  open_loop_count: number;
+};
+
+type CalibrationAggregate = {
+  band: string;
+  score: number | null;
+  totalCheckins: number;
+  overconfident: number;
+  underconfident: number;
+  wellCalibrated: number;
+  openLoopCount: number;
+  topCategories: CalibrationCategoryBreakdown[];
+  byMonth: CalibrationMonthBreakdown[];
+};
+
+function aggregateCalibrationMembers(
+  members: CalibrationMember[],
+): CalibrationAggregate {
+  let totalCheckins = 0;
+  let overconfident = 0;
+  let underconfident = 0;
+  let wellCalibrated = 0;
+  let openLoopCount = 0;
+
+  const categoryTotals = new Map<string, CalibrationCategoryBreakdown>();
+  const monthTotals = new Map<string, CalibrationMonthBreakdown>();
+
+  members.forEach((member) => {
+    totalCheckins += member.total_checkins ?? 0;
+    overconfident += member.overconfident_count ?? 0;
+    underconfident += member.underconfident_count ?? 0;
+    wellCalibrated += member.well_calibrated_count ?? 0;
+    openLoopCount += member.open_loop_count ?? 0;
+
+    (member.by_category ?? []).forEach((category) => {
+      const existing = categoryTotals.get(category.category) ?? {
+        category: category.category,
+        total: 0,
+        overconfident: 0,
+        underconfident: 0,
+        well_calibrated: 0,
+      };
+
+      existing.total += category.total;
+      existing.overconfident += category.overconfident;
+      existing.underconfident += category.underconfident;
+      existing.well_calibrated += category.well_calibrated;
+
+      categoryTotals.set(category.category, existing);
+    });
+
+    (member.by_month ?? []).forEach((month) => {
+      const existing = monthTotals.get(month.month) ?? {
+        month: month.month,
+        total: 0,
+        well_calibrated: 0,
+      };
+
+      existing.total += month.total;
+      existing.well_calibrated += month.well_calibrated;
+
+      monthTotals.set(month.month, existing);
+    });
+  });
+
+  let band = "No Data";
+
+  if (totalCheckins > 0) {
+    if (overconfident > underconfident && overconfident > wellCalibrated) {
+      band = "Overconfident";
+    } else if (underconfident > overconfident && underconfident > wellCalibrated) {
+      band = "Underconfident";
+    } else {
+      band = "Well-Calibrated";
+    }
+  }
+
+  return {
+    band,
+    score: totalCheckins > 0 ? Math.round((wellCalibrated / totalCheckins) * 1000) / 10 : null,
+    totalCheckins,
+    overconfident,
+    underconfident,
+    wellCalibrated,
+    openLoopCount,
+    topCategories: Array.from(categoryTotals.values()).sort(
+      (a, b) => b.total - a.total,
+    ),
+    byMonth: Array.from(monthTotals.values()).sort((a, b) =>
+      a.month.localeCompare(b.month),
+    ),
+  };
+}
+
+function getCalibrationBandColor(band: string) {
+  if (band === "Well-Calibrated") {
+    return "#2f7e7e";
+  }
+
+  if (band === "Overconfident") {
+    return "#b91c1c";
+  }
+
+  if (band === "Underconfident") {
+    return "#b45309";
+  }
+
+  return "#647575";
+}
+
 function OrganizationDecisionIntelligence({
   organizationId,
   canTrigger,
@@ -98,6 +232,18 @@ function OrganizationDecisionIntelligence({
 
   const [history, setHistory] = useState<ConflictCheckHistoryRow[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  const [calibrationMembers, setCalibrationMembers] = useState<
+    CalibrationMember[]
+  >([]);
+  const [isLoadingCalibration, setIsLoadingCalibration] = useState(false);
+  const [calibrationError, setCalibrationError] = useState("");
+  const [comparisonSideAUserIds, setComparisonSideAUserIds] = useState<
+    Set<string>
+  >(new Set());
+  const [comparisonSideBUserIds, setComparisonSideBUserIds] = useState<
+    Set<string>
+  >(new Set());
 
   const loadPortalCreditSummary = useCallback(async () => {
     setIsLoadingCredits(true);
@@ -153,10 +299,96 @@ function OrganizationDecisionIntelligence({
     setIsLoadingHistory(false);
   }, [organizationId]);
 
+  const loadCalibrationReport = useCallback(async () => {
+    if (reportableUsers.length === 0) {
+      setCalibrationMembers([]);
+      return;
+    }
+
+    setIsLoadingCalibration(true);
+    setCalibrationError("");
+
+    const { data, error } = await supabase.rpc(
+      "get_organization_calibration_report",
+      {
+        p_organization_id: organizationId,
+        p_user_ids: reportableUsers.map((user) => user.user_id),
+      },
+    );
+
+    if (error) {
+      console.error("Calibration report could not be loaded:", error);
+      setCalibrationError(error.message);
+      setCalibrationMembers([]);
+      setIsLoadingCalibration(false);
+      return;
+    }
+
+    setCalibrationMembers((data?.members ?? []) as CalibrationMember[]);
+    setIsLoadingCalibration(false);
+  }, [organizationId, reportableUsers]);
+
   useEffect(() => {
     void loadPortalCreditSummary();
     void loadHistory();
-  }, [loadPortalCreditSummary, loadHistory]);
+    void loadCalibrationReport();
+  }, [loadPortalCreditSummary, loadHistory, loadCalibrationReport]);
+
+  function toggleComparisonSideAUser(userId: string) {
+    setComparisonSideAUserIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+
+      return next;
+    });
+  }
+
+  function toggleComparisonSideBUser(userId: string) {
+    setComparisonSideBUserIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+
+      return next;
+    });
+  }
+
+  const calibrationMemberByUserId = new Map(
+    calibrationMembers.map((member) => [member.user_id, member]),
+  );
+
+  const fullNameByUserId = new Map(
+    reportableUsers.map((user) => [user.user_id, user.full_name]),
+  );
+
+  const orgWideCalibration = aggregateCalibrationMembers(calibrationMembers);
+
+  const comparisonSideAAggregate =
+    comparisonSideAUserIds.size > 0
+      ? aggregateCalibrationMembers(
+          Array.from(comparisonSideAUserIds)
+            .map((userId) => calibrationMemberByUserId.get(userId))
+            .filter((member): member is CalibrationMember => Boolean(member)),
+        )
+      : null;
+
+  const comparisonSideBAggregate =
+    comparisonSideBUserIds.size > 0
+      ? aggregateCalibrationMembers(
+          Array.from(comparisonSideBUserIds)
+            .map((userId) => calibrationMemberByUserId.get(userId))
+            .filter((member): member is CalibrationMember => Boolean(member)),
+        )
+      : null;
 
   function toggleSideAUser(userId: string) {
     setSideAUserIds((current) => {
@@ -695,6 +927,298 @@ function OrganizationDecisionIntelligence({
               </article>
             ))}
           </div>
+        )}
+      </section>
+
+      <section style={{ marginTop: "40px" }}>
+        <div className="dashboard-section-heading">
+          <div>
+            <p className="eyebrow">Decision Intelligence</p>
+            <h2>Calibration Reporting</h2>
+            <p>
+              How well each person's decision predictions matched what
+              actually happened. This is a read-only report -- viewing it
+              never uses a portal AI credit.
+            </p>
+          </div>
+
+          <button
+            className="text-button"
+            type="button"
+            disabled={isLoadingCalibration}
+            onClick={() => {
+              void loadCalibrationReport();
+            }}
+          >
+            {isLoadingCalibration ? "Refreshing..." : "Refresh report"}
+          </button>
+        </div>
+
+        {calibrationError ? (
+          <p className="field-error">{calibrationError}</p>
+        ) : null}
+
+        {isLoadingCalibration ? (
+          <p className="form-message">Loading calibration report...</p>
+        ) : (
+          <>
+            <div
+              style={{
+                backgroundColor: "white",
+                border: "1px solid #d8e2e2",
+                borderRadius: "14px",
+                padding: "18px",
+                marginBottom: "20px",
+              }}
+            >
+              <span className="dashboard-card-label">Org-wide</span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginTop: "6px" }}>
+                <strong
+                  style={{
+                    fontSize: "22px",
+                    color: getCalibrationBandColor(orgWideCalibration.band),
+                  }}
+                >
+                  {orgWideCalibration.band}
+                </strong>
+                {orgWideCalibration.score !== null ? (
+                  <span style={{ fontSize: "20px", fontWeight: 800, color: "#315f5f" }}>
+                    {orgWideCalibration.score}%
+                  </span>
+                ) : null}
+              </div>
+              <p style={{ color: "#647575", margin: "8px 0 0" }}>
+                {orgWideCalibration.totalCheckins} check-in
+                {orgWideCalibration.totalCheckins === 1 ? "" : "s"} completed
+                {" · "}
+                {orgWideCalibration.openLoopCount} open-loop decision
+                {orgWideCalibration.openLoopCount === 1 ? "" : "s"}
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gap: "12px", marginBottom: "28px" }}>
+              {calibrationMembers.length === 0 ? (
+                <p className="form-message">No calibration data yet.</p>
+              ) : (
+                calibrationMembers.map((member) => (
+                  <article
+                    key={member.user_id}
+                    style={{
+                      backgroundColor: "white",
+                      border: "1px solid #d8e2e2",
+                      borderRadius: "14px",
+                      padding: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ display: "block", fontSize: "15px" }}>
+                        {fullNameByUserId.get(member.user_id) ?? "Unnamed user"}
+                      </strong>
+                      <p style={{ color: "#647575", margin: "6px 0 0" }}>
+                        {member.total_checkins} check-in
+                        {member.total_checkins === 1 ? "" : "s"}
+                        {" · "}
+                        {member.open_loop_count} open-loop
+                      </p>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      <strong
+                        style={{
+                          display: "block",
+                          color: getCalibrationBandColor(member.band ?? "No Data"),
+                        }}
+                      >
+                        {member.band ?? "No Data"}
+                      </strong>
+                      {member.score !== null ? (
+                        <span style={{ color: "#315f5f", fontWeight: 800 }}>
+                          {member.score}%
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+
+            <div className="billing-availability-notice" style={{ marginBottom: "18px" }}>
+              <strong>Compare two people or teams</strong>
+              <p>
+                Select people for each side to compare their calibration
+                side by side. Select multiple people on a side to compare
+                as a team.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: "18px",
+                marginBottom: "18px",
+              }}
+            >
+              <section className="report-selection-panel">
+                <div className="report-selection-heading">
+                  <div>
+                    <strong>Side A</strong>
+                    <span>{comparisonSideAUserIds.size} selected</span>
+                  </div>
+
+                  <button
+                    className="text-button"
+                    type="button"
+                    disabled={comparisonSideAUserIds.size === 0}
+                    onClick={() => setComparisonSideAUserIds(new Set())}
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="report-checkbox-list">
+                  {reportableUsers.map((user) => (
+                    <label key={user.user_id} className="report-checkbox-option">
+                      <input
+                        type="checkbox"
+                        checked={comparisonSideAUserIds.has(user.user_id)}
+                        onChange={() => toggleComparisonSideAUser(user.user_id)}
+                      />
+                      <span>
+                        <strong>{user.full_name}</strong>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+
+              <section className="report-selection-panel">
+                <div className="report-selection-heading">
+                  <div>
+                    <strong>Side B</strong>
+                    <span>{comparisonSideBUserIds.size} selected</span>
+                  </div>
+
+                  <button
+                    className="text-button"
+                    type="button"
+                    disabled={comparisonSideBUserIds.size === 0}
+                    onClick={() => setComparisonSideBUserIds(new Set())}
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="report-checkbox-list">
+                  {reportableUsers.map((user) => (
+                    <label key={user.user_id} className="report-checkbox-option">
+                      <input
+                        type="checkbox"
+                        checked={comparisonSideBUserIds.has(user.user_id)}
+                        onChange={() => toggleComparisonSideBUser(user.user_id)}
+                      />
+                      <span>
+                        <strong>{user.full_name}</strong>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            {comparisonSideAAggregate || comparisonSideBAggregate ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "18px",
+                }}
+              >
+                {[
+                  { label: "Side A", aggregate: comparisonSideAAggregate },
+                  { label: "Side B", aggregate: comparisonSideBAggregate },
+                ].map(({ label, aggregate }) =>
+                  aggregate ? (
+                    <div
+                      key={label}
+                      style={{
+                        backgroundColor: "white",
+                        border: "1px solid #d8e2e2",
+                        borderRadius: "14px",
+                        padding: "18px",
+                      }}
+                    >
+                      <span className="dashboard-card-label">{label}</span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          gap: "10px",
+                          margin: "6px 0 10px",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            fontSize: "18px",
+                            color: getCalibrationBandColor(aggregate.band),
+                          }}
+                        >
+                          {aggregate.band}
+                        </strong>
+                        {aggregate.score !== null ? (
+                          <span style={{ fontWeight: 800, color: "#315f5f" }}>
+                            {aggregate.score}%
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p style={{ color: "#647575", margin: "0 0 10px" }}>
+                        {aggregate.totalCheckins} check-in
+                        {aggregate.totalCheckins === 1 ? "" : "s"} completed
+                        {" · "}
+                        {aggregate.openLoopCount} open-loop
+                      </p>
+
+                      {aggregate.topCategories.length > 0 ? (
+                        <>
+                          <strong style={{ display: "block", fontSize: "13px", marginBottom: "6px" }}>
+                            Top categories
+                          </strong>
+                          {aggregate.topCategories.slice(0, 4).map((category) => (
+                            <p
+                              key={category.category}
+                              style={{ color: "#647575", margin: "2px 0", fontSize: "13px" }}
+                            >
+                              {category.category}: {category.overconfident} over ·{" "}
+                              {category.underconfident} under ·{" "}
+                              {category.well_calibrated} well-calibrated
+                            </p>
+                          ))}
+                        </>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div
+                      key={label}
+                      style={{
+                        border: "1px dashed #d8e2e2",
+                        borderRadius: "14px",
+                        padding: "18px",
+                        color: "#647575",
+                      }}
+                    >
+                      {label}: select at least one person to compare.
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : null}
+          </>
         )}
       </section>
     </section>
