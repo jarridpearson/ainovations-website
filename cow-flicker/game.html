@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#bfe3f2">
+<meta name="description" content="Cow Flicker — flick the cow, discover 20 secret animations. She never dies, she just gets madder.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20100%20100%27%3E%3Ctext%20y=%27.9em%27%20font-size=%2790%27%3E%F0%9F%90%84%3C/text%3E%3C/svg%3E">
+<title>Cow Flicker — Prototype</title>
+<style>
+  :root{
+    --sky-top:#bfe3f2; --sky-bot:#e8f6ff;
+    --grass:#6da544; --grass-dark:#5a8f38; --mound:#7cb84f;
+    --milk:#fbf6ec; --ink:#2a2a2e; --spot:#26262b;
+    --angry:#e4572e; --angry-deep:#c53d1a;
+    --gold:#f2c14e; --gold-deep:#d99e2b;
+    --panel:#fffdf7; --panel-line:#e7ddc7;
+    --shadow:rgba(40,30,10,.22); --adh:0px;
+    --font-display:"Arial Rounded MT Bold","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#e8f6ff}
+  #ad-top{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;justify-content:center;align-items:center;background:transparent;min-height:0}
+  #ad-top:empty{display:none}
+  #game{
+    position:relative; width:100%; min-height:100vh; overflow:hidden;
+    font-family:var(--font-body); color:var(--ink);
+    background:linear-gradient(#bfe3f2 0%,#d9f0fa 45%,#e8f6ff 60%);
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  .ground{position:absolute;left:0;right:0;bottom:0;height:34%;
+    background:linear-gradient(var(--mound),var(--grass) 40%,var(--grass-dark));
+    border-top:6px solid #4e7d30;}
+  .ground::before{content:"";position:absolute;inset:0;
+    background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.12) 0 6px,transparent 7px),
+      radial-gradient(circle at 70% 60%,rgba(0,0,0,.05) 0 5px,transparent 6px);
+    background-size:120px 120px;}
+
+  /* drifting clouds */
+  .cloud{position:absolute;z-index:4;width:78px;height:24px;background:#fff;border-radius:20px;
+    opacity:.92;pointer-events:none;animation:drift linear infinite;filter:drop-shadow(0 6px 6px rgba(120,150,180,.15))}
+  .cloud::before{content:"";position:absolute;top:-13px;left:12px;width:34px;height:34px;background:#fff;border-radius:50%}
+  .cloud::after{content:"";position:absolute;top:-8px;left:38px;width:26px;height:26px;background:#fff;border-radius:50%}
+  .cloud.c1{top:14%;transform:scale(1);animation-duration:34s}
+  .cloud.c2{top:24%;transform:scale(.7);animation-duration:46s;animation-delay:-12s;opacity:.8}
+  .cloud.c3{top:9%;transform:scale(1.25);animation-duration:58s;animation-delay:-30s;opacity:.85}
+  @keyframes drift{from{left:-120px}to{left:100%}}
+  @media (prefers-reduced-motion:reduce){.cloud{animation:none}}
+
+  /* gentle idle breathe (independent of the strike animations on .cow-svg) */
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  /* coin count pop */
+  @keyframes chippop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+  .chip.coins.pop{animation:chippop .3s}
+
+  /* desktop: center as a phone-shaped column on a soft backdrop */
+  @media (min-width:600px){
+    body{background:radial-gradient(circle at 50% -10%,#d7efff,#aed6f0 55%,#8fc0e2)}
+    #game{max-width:460px;margin:0 auto;box-shadow:0 24px 70px rgba(30,50,80,.28)}
+  }
+
+  .hud{position:absolute;top:var(--adh);left:0;right:0;z-index:20;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px;}
+  .brand{display:flex;flex-direction:column;line-height:.95}
+  .brand h1{margin:0;font-family:var(--font-display);letter-spacing:.5px;
+    font-size:clamp(22px,6vw,40px);color:var(--milk);
+    text-shadow:0 2px 0 var(--ink),0 4px 0 rgba(0,0,0,.25),0 6px 12px var(--shadow);}
+  .brand small{font-family:var(--font-display);color:#eafff0;
+    text-shadow:0 1px 0 rgba(0,0,0,.4);font-size:12px;letter-spacing:1.5px}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .chip{background:var(--panel);border:2px solid var(--panel-line);
+    border-radius:14px;padding:6px 12px;box-shadow:0 3px 0 var(--panel-line),0 6px 10px var(--shadow);
+    font-family:var(--font-display);display:flex;align-items:center;gap:6px;
+    font-variant-numeric:tabular-nums;font-size:15px}
+  .chip.coins{color:var(--gold-deep)}
+  .iconbtn{cursor:pointer;background:var(--panel);border:2px solid var(--panel-line);
+    border-radius:14px;padding:6px 10px;font-family:var(--font-display);font-size:14px;
+    box-shadow:0 3px 0 var(--panel-line),0 6px 10px var(--shadow);color:var(--ink)}
+  .iconbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--panel-line)}
+
+  .angerwrap{position:absolute;z-index:15;top:calc(78px + var(--adh));left:50%;transform:translateX(-50%);
+    width:min(320px,72vw);text-align:center}
+  .angerlabel{font-family:var(--font-display);font-size:12px;letter-spacing:2px;
+    color:var(--angry-deep);text-shadow:0 1px 0 #fff;margin-bottom:4px}
+  .angerbar{height:16px;border-radius:12px;background:#fff;border:3px solid var(--ink);
+    overflow:hidden;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+  .angerfill{height:100%;width:0%;border-radius:8px;
+    background:linear-gradient(90deg,#ffd166,#f3722c 55%,var(--angry-deep));transition:width .18s ease}
+
+  .stage{position:absolute;left:0;right:0;bottom:14%;top:calc(120px + var(--adh));z-index:10;
+    display:flex;align-items:flex-end;justify-content:center}
+  .cowhit{position:relative;cursor:pointer;filter:drop-shadow(0 12px 10px var(--shadow));transform-origin:50% 100%;
+    animation:breathe 3.6s ease-in-out infinite;}
+  .cow-svg{width:min(360px,74vw);height:auto;display:block;transition:filter .2s}
+  .cowhit.mad .cow-svg{filter:saturate(1.3) hue-rotate(-6deg)}
+  #head{transform-box:view-box;transform-origin:150px 120px;transition:transform .3s ease}
+  #head.tilt{transform:rotate(-14deg)}
+  #armR{transform-box:view-box;transform-origin:224px 120px;transition:transform .4s cubic-bezier(.34,1.3,.5,1)}
+  #armR.reach{transform:rotate(30deg);transition:transform .24s ease-in}
+  #armR.raise{transform:rotate(115deg)}
+  #armR.wind{transform:rotate(134deg)}
+  #armR.throwing{transform:rotate(-12deg);transition:transform .15s ease-in}
+  .cowshadow{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);
+    width:60%;height:22px;background:radial-gradient(rgba(0,0,0,.28),transparent 70%);z-index:-1}
+
+  .bubble{position:absolute;z-index:16;left:50%;top:calc(118px + var(--adh));transform:translate(-50%,0) scale(.6);
+    background:#fff;border:3px solid var(--ink);border-radius:18px;padding:10px 16px;
+    font-family:var(--font-display);font-size:clamp(15px,4.4vw,22px);max-width:78vw;text-align:center;
+    box-shadow:0 6px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:transform .18s,opacity .18s}
+  .bubble.show{opacity:1;transform:translate(-50%,-6px) scale(1)}
+  .bubble::after{content:"";position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);
+    border:9px solid transparent;border-top-color:var(--ink)}
+  .bubble.special{background:#eaf6ff;border-color:#2f7dc0;color:#1c5a91}
+
+  .floater{position:absolute;z-index:17;font-family:var(--font-display);font-size:20px;
+    color:var(--gold-deep);text-shadow:0 2px 0 #fff;pointer-events:none;animation:floatUp .8s ease-out forwards}
+  @keyframes floatUp{to{transform:translateY(-60px);opacity:0}}
+
+  .dock{position:absolute;z-index:20;left:0;right:0;bottom:0;
+    display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(transparent,rgba(0,0,0,.12));}
+  .weapon{cursor:pointer;background:var(--panel);border:3px solid var(--panel-line);
+    border-radius:16px;padding:8px 10px 6px;min-width:78px;text-align:center;
+    box-shadow:0 4px 0 var(--panel-line),0 8px 12px var(--shadow);position:relative;transition:transform .08s}
+  .weapon:active{transform:translateY(2px)}
+  .weapon .emoji{font-size:26px;line-height:1}
+  .weapon .wname{font-family:var(--font-display);font-size:12px;margin-top:2px}
+  .weapon .cost{font-size:11px;color:var(--gold-deep);font-family:var(--font-display)}
+  .weapon.equipped{border-color:var(--angry);box-shadow:0 4px 0 var(--angry-deep),0 0 0 3px rgba(228,87,46,.15)}
+  .weapon.locked{filter:grayscale(.8) opacity(.75)}
+  .weapon .lock{position:absolute;top:4px;right:6px;font-size:12px}
+
+  .overlay{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+    background:rgba(20,15,5,.55);padding:18px}
+  .overlay.show{display:flex}
+  .card{background:var(--panel);border:3px solid var(--ink);border-radius:22px;
+    max-width:420px;width:100%;padding:20px;box-shadow:0 12px 0 rgba(0,0,0,.2)}
+  .card h2{font-family:var(--font-display);margin:.1em 0 .3em}
+  .ach-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;margin:12px 0}
+  .ach{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;
+    border:2px solid var(--panel-line);background:#fff}
+  .ach.done{border-color:var(--grass);background:#f2fbe9}
+  .ach .a-emoji{font-size:22px;width:28px;text-align:center;filter:grayscale(1) opacity(.5)}
+  .ach.done .a-emoji{filter:none}
+  .ach .a-txt{font-size:13px}
+  .ach .a-txt b{font-family:var(--font-display)}
+  .btn{cursor:pointer;font-family:var(--font-display);border:3px solid var(--ink);
+    border-radius:14px;padding:10px 16px;font-size:16px;background:var(--gold);color:var(--ink);
+    box-shadow:0 4px 0 var(--gold-deep);width:100%}
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--gold-deep)}
+  .btn.ghost{background:#fff;box-shadow:0 4px 0 var(--panel-line);margin-top:8px}
+
+  .adbox{text-align:center}
+  .adtag{font-family:var(--font-display);font-size:11px;letter-spacing:2px;color:#888;margin-bottom:8px}
+  .adart{height:150px;border-radius:14px;border:2px dashed #bbb;display:flex;align-items:center;
+    justify-content:center;font-family:var(--font-display);font-size:20px;color:#aa8;
+    background:repeating-linear-gradient(45deg,#f3eede,#f3eede 12px,#ece4cf 12px,#ece4cf 24px);margin-bottom:12px}
+  .adnote{font-size:12px;color:#7a7a7a;margin-top:10px}
+  .htitle{font-family:var(--font-display);font-size:16px;text-align:center;margin-bottom:10px}
+  .hslots{display:flex;gap:6px;justify-content:center;margin:6px 0 8px}
+  .hslot{flex:1;min-width:0;aspect-ratio:1/1.15;border:2px dashed var(--panel-line);border-radius:12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:26px;background:#fff;color:#bbb}
+  .hslot b{font-family:var(--font-display);font-size:20px;color:#c9bfa8}
+  .hslot.rev{border-style:solid;border-color:var(--grass);background:#f2fbe9;color:var(--ink)}
+  .hslot span{display:block;font-size:10px;font-family:var(--font-display);color:#6b6b6b;margin-top:2px}
+  .hprog{text-align:center;font-size:12px;color:#777;margin:6px 0 10px;font-variant-numeric:tabular-nums}
+  .hnote{text-align:center;font-size:12px;color:var(--angry-deep);margin:4px 0}
+  .canvas-fx{position:absolute;inset:0;z-index:18;pointer-events:none}
+
+  @keyframes shakeIt{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-10px) rotate(-3deg)}
+    40%{transform:translateX(10px) rotate(3deg)}60%{transform:translateX(-8px) rotate(-2deg)}80%{transform:translateX(8px) rotate(2deg)}}
+  .anim-shake{animation:shakeIt .4s}
+  @keyframes hopMad{0%{transform:translateY(0)}30%{transform:translateY(-42px) rotate(-4deg)}
+    55%{transform:translateY(0)}70%{transform:translateY(-14px)}100%{transform:translateY(0)}}
+  .anim-hop{animation:hopMad .7s}
+  @keyframes stomp{0%{transform:scale(1,1)}22%{transform:scale(1.22,.76)}55%{transform:scale(.9,1.16)}78%{transform:scale(1.04,.97)}100%{transform:scale(1,1)}}
+  .anim-stomp{animation:stomp .6s}
+  @keyframes boing{0%{transform:scale(1,1)}20%{transform:scale(.8,1.2) translateY(-10px)}45%{transform:scale(1.15,.85)}70%{transform:scale(.95,1.05)}100%{transform:scale(1,1)}}
+  .anim-boing{animation:boing .5s}
+  @keyframes dizzy{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  .anim-dizzy .cow-svg{animation:dizzy .6s ease-in-out}
+  @keyframes tipOver{0%{transform:rotate(0)}30%{transform:rotate(-6deg)}100%{transform:rotate(-82deg) translateY(6px)}}
+  .anim-tip{animation:tipOver .8s cubic-bezier(.6,0,.9,.4) forwards}
+  @keyframes tipBack{0%{transform:rotate(-82deg) translateY(6px)}100%{transform:rotate(0)}}
+  .anim-tipback{animation:tipBack .5s ease-out}
+  @keyframes microflick{0%,100%{transform:rotate(0)}40%{transform:rotate(5deg) translateX(9px)}70%{transform:rotate(-2deg)}}
+  .anim-flick{animation:microflick .45s}
+  /* per-weapon cow recoils — slow + exaggerated */
+  @keyframes poke{0%,100%{transform:translateX(0)}45%{transform:translateX(-28px) rotate(-4deg)}72%{transform:translateX(9px)}}
+  .anim-poke{animation:poke .5s}
+  @keyframes knock{0%{transform:translateX(0) rotate(0)}38%{transform:translateX(-36px) rotate(-10deg)}70%{transform:translateX(13px) rotate(4deg)}100%{transform:translateX(0)}}
+  .anim-knock{animation:knock .55s}
+  @keyframes tipwob{0%{transform:rotate(0)}45%{transform:rotate(-34deg)}72%{transform:rotate(13deg)}100%{transform:rotate(0)}}
+  .anim-tipwobble{animation:tipwob .8s ease-in-out;transform-origin:50% 92%}
+  /* weapon props — big, slow, with wind-up → impact → follow-through */
+  .weaponprop{position:fixed;z-index:19;pointer-events:none;line-height:1;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+  .wp-flick{animation:wpFlick .7s cubic-bezier(.3,.7,.3,1) both}
+  @keyframes wpFlick{0%{transform:translateX(64px) scale(.9);opacity:0}
+    18%{opacity:1;transform:translateX(76px) rotate(10deg)}
+    48%{transform:translateX(-22px) rotate(-8deg) scale(1.15)}
+    66%{transform:translateX(-6px) rotate(-3deg)}
+    100%{transform:translateX(64px);opacity:0}}
+  .wp-stick{animation:wpStick .78s cubic-bezier(.4,.6,.3,1) both}
+  @keyframes wpStick{0%{transform:translateX(96px) rotate(-30deg);opacity:0}
+    20%{opacity:1;transform:translateX(108px) rotate(-36deg)}
+    52%{transform:translateX(-30px) rotate(-8deg)}
+    68%{transform:translateX(-12px) rotate(-13deg)}
+    100%{transform:translateX(96px) rotate(-30deg);opacity:0}}
+  .wp-bat{animation:wpBat .88s cubic-bezier(.4,.05,.35,1) both;transform-origin:72% 92%}
+  @keyframes wpBat{0%{transform:rotate(-58deg);opacity:0}
+    22%{opacity:1;transform:rotate(-102deg)}
+    38%{transform:rotate(-108deg)}
+    64%{transform:rotate(42deg)}
+    76%{transform:rotate(30deg)}
+    100%{transform:rotate(36deg);opacity:0}}
+  .wp-glove{animation:wpGlove .74s cubic-bezier(.3,.7,.3,1) both}
+  @keyframes wpGlove{0%{transform:translateX(86px) scale(.8);opacity:0}
+    24%{opacity:1;transform:translateX(102px) scale(.82)}
+    54%{transform:translateX(-26px) scale(1.55)}
+    68%{transform:translateX(-8px) scale(1.35)}
+    100%{transform:translateX(86px) scale(.82);opacity:0}}
+  .wp-tip{animation:wpTip .92s ease-in-out both}
+  @keyframes wpTip{0%{transform:translateX(100px) rotate(8deg);opacity:0}
+    26%{opacity:1;transform:translateX(34px)}
+    56%{transform:translateX(-20px) rotate(-7deg)}
+    76%{transform:translateX(-10px)}
+    100%{transform:translateX(92px);opacity:0}}
+
+  .steam{position:absolute;z-index:14;font-size:22px;pointer-events:none;animation:steamRise .9s ease-out forwards}
+  @keyframes steamRise{0%{opacity:0;transform:translateY(0) scale(.6)}30%{opacity:.9}100%{opacity:0;transform:translateY(-70px) scale(1.3)}}
+
+  /* ---- milk toss "on you" ---- */
+  .milkglass{position:fixed;z-index:34;font-size:36px;pointer-events:none;
+    transform:translate(-50%,-50%) scale(.4);animation:glassFly .36s ease-in forwards;
+    filter:drop-shadow(0 3px 4px rgba(80,80,100,.3))}
+  @keyframes glassFly{
+    0%{transform:translate(-50%,-50%) scale(.4) rotate(0deg);opacity:1}
+    100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(2.5) rotate(310deg);opacity:1}}
+  .milkflash{position:fixed;inset:0;z-index:32;background:#fff;opacity:.5;pointer-events:none;animation:mflash .45s ease-out forwards}
+  @keyframes mflash{to{opacity:0}}
+  .milksplash{position:fixed;inset:0;z-index:33;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;transition:opacity .9s ease}
+  .milksplash.fade{opacity:0}
+  .milksplash svg{width:min(620px,98vw);height:auto;transform:scale(.15);transform-origin:center;
+    animation:splatIn .32s cubic-bezier(.2,1.5,.4,1) forwards;
+    filter:drop-shadow(0 6px 10px rgba(150,150,170,.22))}
+  @keyframes splatIn{to{transform:scale(1)}}
+  .milkdrip{position:fixed;top:0;border-radius:0 0 40% 40%/0 0 14px 14px;
+    background:linear-gradient(#ffffff,#eef1ed);transform-origin:top center;transform:scaleY(0);
+    animation:dripDown .7s cubic-bezier(.4,0,.5,1) forwards;box-shadow:0 2px 4px rgba(150,150,170,.15)}
+  @keyframes dripDown{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+  /* held glass through the pull-out → inspect → toss beat */
+  .milkhold{position:fixed;z-index:34;font-size:30px;pointer-events:none;
+    transform:translateY(34px) scale(.4);opacity:0;
+    transition:transform .5s cubic-bezier(.3,1.5,.5,1),opacity .35s ease;
+    filter:drop-shadow(0 3px 4px rgba(80,80,100,.3))}
+  .milkhold.lifted{transform:translateY(-8px) scale(1.1);opacity:1}
+  .milkhold.inspect{transform:translateY(-10px) rotate(-14deg) scale(1.18)}
+  .milkhold.toss{animation:glassFly2 .3s ease-in forwards}
+  @keyframes glassFly2{
+    0%{transform:translate(0,0) scale(1.18) rotate(-14deg);opacity:1}
+    100%{transform:translate(var(--dx),var(--dy)) scale(2.6) rotate(300deg);opacity:1}}
+  #lidL,#lidR{transition:height .16s ease}
+  /* ---- combo scene FX ---- */
+  #game.shake{animation:gameShake .47s}
+  @keyframes gameShake{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,4px)}30%{transform:translate(7px,-4px)}45%{transform:translate(-6px,-4px)}60%{transform:translate(6px,4px)}80%{transform:translate(-3px,2px)}}
+  @keyframes spin{to{transform:rotate(720deg)}}
+  .bigtext{position:fixed;z-index:31;left:50%;top:38%;transform:translate(-50%,-50%);
+    font-family:var(--font-display);font-size:clamp(36px,12vw,88px);color:#fff;
+    -webkit-text-stroke:3px #26262b;text-shadow:0 6px 0 rgba(0,0,0,.25);
+    pointer-events:none;white-space:nowrap;animation:bigpop 1.4s cubic-bezier(.2,1.4,.4,1) forwards}
+  @keyframes bigpop{0%{transform:translate(-50%,-50%) scale(.2) rotate(-8deg);opacity:0}
+    20%{transform:translate(-50%,-50%) scale(1.12) rotate(-3deg);opacity:1}
+    72%{transform:translate(-50%,-50%) scale(1) rotate(-3deg);opacity:1}
+    100%{transform:translate(-50%,-62%) scale(1) rotate(-3deg);opacity:0}}
+  .fxstar{position:fixed;z-index:22;font-size:22px;pointer-events:none;animation:starorbit 1s ease-out forwards}
+  @keyframes starorbit{0%{transform:rotate(var(--a)) translateX(0) scale(.3);opacity:0}
+    30%{opacity:1}100%{transform:rotate(calc(var(--a) + 200deg)) translateX(64px) scale(1.1);opacity:0}}
+  .fxconf{position:fixed;top:-24px;z-index:30;width:10px;height:14px;border-radius:2px;pointer-events:none;animation:conffall 1.8s linear forwards}
+  @keyframes conffall{to{transform:translateY(114vh) rotate(720deg)}}
+  .fxflash{position:fixed;inset:0;z-index:29;opacity:.45;pointer-events:none;animation:fxflash .36s ease-out forwards}
+  @keyframes fxflash{to{opacity:0}}
+
+  .hint{position:absolute;z-index:12;left:50%;bottom:calc(14% + 8px);transform:translateX(-50%);
+    font-family:var(--font-display);color:#fffbe9;text-shadow:0 2px 4px rgba(0,0,0,.4);
+    font-size:14px;letter-spacing:.5px;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important}}
+</style>
+<!-- MONETIZATION: replace ca-pub-XXXX (both places) + bannerSlot with your AdSense H5 ids. -->
+<script>window.COWFLICKER_ADS = { client:"ca-pub-XXXXXXXXXXXXXXXX", bannerSlot:"XXXXXXXXXX" };</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+</head>
+<body>
+
+
+<div id="ad-top"></div>
+<div id="game">
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+  <div class="ground"></div>
+
+  <div class="hud">
+    <div class="brand">
+      <h1>COW FLICKER</h1>
+      <small>SHE NEVER DIES. SHE JUST GETS MADDER.</small>
+    </div>
+    <div class="stats">
+      <div class="chip coins"><span class="ico">🪙</span><span id="coins">0</span></div>
+      <div class="chip"><span class="ico">👆</span><span id="flicks">0</span></div>
+      <div class="iconbtn" id="achBtn">🏆 <span id="achCount">0</span>/<span id="achTotal">0</span></div>
+      <div class="iconbtn" id="hintBtn">🔍 Hints</div>
+      <div class="iconbtn" id="sndBtn">🔊</div>
+      <div class="iconbtn" id="freeBtn">📺 Free</div>
+    </div>
+  </div>
+
+  <div class="angerwrap">
+    <div class="angerlabel">😤 ANGER — next reaction in <span id="toReact">5</span></div>
+    <div class="angerbar"><div class="angerfill" id="angerFill"></div></div>
+  </div>
+
+  <div class="stage">
+    <div class="cowhit" id="cow">
+      <div class="cowshadow"></div>
+      <svg class="cow-svg" id="cowSvg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg">
+        <rect x="86" y="150" width="22" height="60" rx="8" fill="#f4efe6"/>
+        <rect x="190" y="150" width="22" height="60" rx="8" fill="#f4efe6"/>
+        <rect x="86" y="196" width="22" height="16" rx="4" fill="#26262b"/>
+        <rect x="190" y="196" width="22" height="16" rx="4" fill="#26262b"/>
+        <ellipse cx="150" cy="140" rx="92" ry="62" fill="#fbf7ef" stroke="#26262b" stroke-width="4"/>
+        <path d="M96 120 q-16 26 8 44 q26 10 30-18 q2-30-38-26z" fill="#2a2a2e"/>
+        <path d="M188 108 q30 4 26 34 q-6 24-32 14 q-16-30 6-48z" fill="#2a2a2e"/>
+        <ellipse cx="150" cy="176" rx="20" ry="12" fill="#2a2a2e" opacity=".85"/>
+        <g id="udder">
+          <ellipse cx="150" cy="190" rx="30" ry="22" fill="#f6b9c2" stroke="#d98a97" stroke-width="2.5"/>
+          <ellipse cx="140" cy="183" rx="9" ry="6" fill="#fcd3da" opacity=".85"/>
+          <rect x="129" y="203" width="8" height="15" rx="4" fill="#eda4b0"/>
+          <rect x="146" y="206" width="8" height="17" rx="4" fill="#eda4b0"/>
+          <rect x="163" y="203" width="8" height="15" rx="4" fill="#eda4b0"/>
+        </g>
+        <g id="head">
+          <ellipse cx="150" cy="86" rx="56" ry="48" fill="#fbf7ef" stroke="#26262b" stroke-width="4"/>
+          <ellipse cx="98" cy="66" rx="16" ry="10" fill="#fbf7ef" stroke="#26262b" stroke-width="3" transform="rotate(-24 98 66)"/>
+          <ellipse cx="202" cy="66" rx="16" ry="10" fill="#fbf7ef" stroke="#26262b" stroke-width="3" transform="rotate(24 202 66)"/>
+          <path d="M116 46 q-8-16 4-24" stroke="#d9c9a3" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path d="M184 46 q8-16-4-24" stroke="#d9c9a3" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <g id="eyes">
+            <circle cx="128" cy="80" r="10" fill="#fff" stroke="#26262b" stroke-width="2"/>
+            <circle cx="172" cy="80" r="10" fill="#fff" stroke="#26262b" stroke-width="2"/>
+            <circle id="pupilL" cx="128" cy="82" r="4.5" fill="#26262b"/>
+            <circle id="pupilR" cx="172" cy="82" r="4.5" fill="#26262b"/>
+          </g>
+          <g id="lids">
+            <rect id="lidL" x="117" y="67" width="22" height="0" rx="5" fill="#fbf7ef"/>
+            <rect id="lidR" x="161" y="67" width="22" height="0" rx="5" fill="#fbf7ef"/>
+          </g>
+          <g id="brows" opacity="0">
+            <path d="M118 66 l20 8" stroke="#26262b" stroke-width="4" stroke-linecap="round"/>
+            <path d="M182 66 l-20 8" stroke="#26262b" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <ellipse cx="150" cy="108" rx="30" ry="20" fill="#f4b8bf" stroke="#26262b" stroke-width="3"/>
+          <circle cx="140" cy="106" r="4" fill="#26262b"/>
+          <circle cx="160" cy="106" r="4" fill="#26262b"/>
+          <path id="mouth" d="M138 118 q12 8 24 0" stroke="#26262b" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- arms: same cream-limb + black-hoof design as the legs -->
+        <g id="armL">
+          <rect x="66" y="120" width="19" height="48" rx="9" fill="#f4efe6"/>
+          <rect x="66" y="156" width="19" height="14" rx="5" fill="#26262b"/>
+        </g>
+        <g id="armR">
+          <rect x="215" y="120" width="19" height="48" rx="9" fill="#f4efe6"/>
+          <g id="handGlass" opacity="0">
+            <rect x="214" y="146" width="21" height="27" rx="3" fill="#eaf3ff" stroke="#26262b" stroke-width="2.5"/>
+            <rect x="212" y="143" width="25" height="8" rx="3" fill="#ffffff" stroke="#26262b" stroke-width="2.5"/>
+          </g>
+          <rect x="215" y="156" width="19" height="14" rx="5" fill="#26262b"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <canvas class="canvas-fx" id="fx"></canvas>
+  <div class="bubble" id="bubble"></div>
+  <div class="hint" id="hint">Tap the cow to flick her 👆</div>
+
+  <div class="dock" id="dock"></div>
+
+  <div class="overlay" id="achOverlay">
+    <div class="card">
+      <h2>🏆 Reaction Collection</h2>
+      <p style="margin:.2em 0;font-size:13px;color:#6b6b6b">Hidden combos! Mix and match your 5 weapons over 5 taps to trigger unique reactions. ⭐ = special scene. Discover them all.</p>
+      <div class="ach-list" id="achList"></div>
+      <button class="btn ghost" id="achClose">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="adOverlay">
+    <div class="card adbox">
+      <div class="adtag" id="adTag">▶ ADVERTISEMENT · FREE MODE</div>
+      <div class="adart" id="adArt">YOUR AD HERE</div>
+      <div id="adTimer" style="font-family:var(--font-display);font-size:16px">Skip in 5…</div>
+      <button class="btn" id="adSkip" disabled style="margin-top:12px;opacity:.5">Please wait…</button>
+      <button class="btn ghost" id="adDecline" style="display:none">No thanks</button>
+      <div class="adnote" id="adNote"></div>
+    </div>
+  </div>
+
+  <!-- Hint ladder -->
+  <div class="overlay" id="hintOverlay">
+    <div class="card">
+      <div id="hintBody"></div>
+      <button class="btn ghost" id="hintClose" style="margin-top:10px">Close</button>
+    </div>
+  </div>
+
+  <!-- Reward offer -->
+  <div class="overlay" id="rewardOverlay">
+    <div class="card"><div id="rewardBody"></div></div>
+  </div>
+
+  <!-- First-secret celebration -->
+  <div class="overlay" id="celebOverlay">
+    <div class="card" style="text-align:center" id="celebBody"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $=(s)=>document.querySelector(s);
+  const cow=$('#cow'), cowSvg=$('#cowSvg'), bubble=$('#bubble'), game=$('#game');
+  const coinsEl=$('#coins'), flicksEl=$('#flicks'), angerFill=$('#angerFill'), toReactEl=$('#toReact');
+  const brows=$('#brows'), pupilL=$('#pupilL'), pupilR=$('#pupilR'), mouth=$('#mouth');
+  const lidL=$('#lidL'), lidR=$('#lidR');
+  const dock=$('#dock'), achCountEl=$('#achCount'), hint=$('#hint');
+
+  const AD_INTERVAL_MS=60000; // shipped: gate forced ads to ~1/min, never per-reaction
+
+  const weapons=[
+    {id:'flick', name:'Finger', emoji:'👆', cost:0,    power:1, unlocked:true},
+    {id:'stick', name:'Stick',  emoji:'🥍', cost:60,   power:2, unlocked:false},
+    {id:'bat',   name:'Bat',    emoji:'🏏', cost:220,  power:4, unlocked:false},
+    {id:'glove', name:'Glove',  emoji:'🥊', cost:600,  power:6, unlocked:false},
+    {id:'tip',   name:'Tipper', emoji:'🐄', cost:1200, power:5, unlocked:false},
+  ];
+  // ================= SOUND (synthesized — no assets needed) =================
+  const Sound=(function(){
+    let ctx=null, muted=false;
+    function ac(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null; ctx=new AC(); }
+      if(ctx.state==='suspended') ctx.resume(); return ctx; }
+    function tone(freq,dur,type,vol,slideTo){ if(muted)return; const c=ac(); if(!c)return;
+      const o=c.createOscillator(),g=c.createGain(); o.type=type||'sine';
+      o.frequency.setValueAtTime(freq,c.currentTime);
+      if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20,slideTo),c.currentTime+dur);
+      g.gain.setValueAtTime(vol||0.2,c.currentTime); g.gain.exponentialRampToValueAtTime(0.0008,c.currentTime+dur);
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+dur+0.02); }
+    function noise(dur,vol,cutoff){ if(muted)return; const c=ac(); if(!c)return;
+      const n=Math.max(1,c.sampleRate*dur|0), buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0);
+      for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+      const s=c.createBufferSource(); s.buffer=buf; const g=c.createGain(); g.gain.value=vol||0.3;
+      if(cutoff){ const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=cutoff; s.connect(f); f.connect(g); }
+      else s.connect(g);
+      g.connect(c.destination); s.start(); s.stop(c.currentTime+dur+0.02); }
+    function moo(){ if(muted)return; const c=ac(); if(!c)return;
+      const o=c.createOscillator(),o2=c.createOscillator(),g=c.createGain(),lfo=c.createOscillator(),lg=c.createGain(),f=c.createBiquadFilter();
+      o.type='sawtooth'; o2.type='sawtooth'; o.frequency.setValueAtTime(300,c.currentTime); o2.frequency.setValueAtTime(306,c.currentTime);
+      o.frequency.exponentialRampToValueAtTime(150,c.currentTime+0.55); o2.frequency.exponentialRampToValueAtTime(153,c.currentTime+0.55);
+      lfo.type='sine'; lfo.frequency.value=11; lg.gain.value=13; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+      f.type='lowpass'; f.frequency.value=1300;
+      g.gain.setValueAtTime(0.0001,c.currentTime); g.gain.exponentialRampToValueAtTime(0.22,c.currentTime+0.06); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.6);
+      o.connect(f); o2.connect(f); f.connect(g); g.connect(c.destination);
+      lfo.start(); o.start(); o2.start(); const t=c.currentTime+0.62; o.stop(t); o2.stop(t); lfo.stop(t); }
+    function whir(){ if(muted)return; const c=ac(); if(!c)return; const o=c.createOscillator(),g=c.createGain();
+      o.type='sawtooth'; o.frequency.setValueAtTime(120,c.currentTime); o.frequency.exponentialRampToValueAtTime(760,c.currentTime+1.2);
+      g.gain.setValueAtTime(0.10,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1.25);
+      o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+1.3); }
+    return {
+      resume:()=>ac(), isMuted:()=>muted, toggle(){ muted=!muted; if(!muted) ac(); return muted; },
+      tick:()=>tone(520,0.05,'square',0.14,760),
+      whoosh:()=>noise(0.22,0.22,1400),
+      thwack:()=>{ noise(0.11,0.5,2600); tone(120,0.16,'square',0.3,60); },
+      punch:()=>{ noise(0.08,0.45,1700); tone(95,0.15,'sine',0.34,48); },
+      thud:()=>{ noise(0.14,0.4,320); tone(72,0.2,'sine',0.34,42); },
+      boing:()=>tone(200,0.34,'sine',0.28,620),
+      splat:()=>noise(0.34,0.5,720),
+      pop:()=>tone(600,0.11,'triangle',0.22,900),
+      ding:()=>{ tone(880,0.35,'sine',0.24); setTimeout(()=>tone(1320,0.45,'sine',0.2),90); },
+      sparkle:()=>{ [880,1175,1568,2093].forEach((f,i)=>setTimeout(()=>tone(f,0.16,'triangle',0.16),i*70)); },
+      charge:()=>tone(180,0.5,'sawtooth',0.14,520),
+      moo, whir,
+    };
+  })();
+
+  // ================= scene-FX helpers =================
+  function say(txt,special,dur){ if(txt==null){ bubble.classList.remove('show'); return; }
+    bubble.textContent=txt; bubble.classList.toggle('special',!!special); bubble.classList.add('show');
+    clearTimeout(say._t); say._t=setTimeout(()=>bubble.classList.remove('show'), dur||2600); }
+  function hit(id){ const r=cow.getBoundingClientRect(); strike(id, r.left+r.width*0.5, r.top+r.height*0.5); }
+  function bigText(txt,color){ const t=document.createElement('div'); t.className='bigtext'; t.textContent=txt;
+    if(color) t.style.color=color; game.appendChild(t); setTimeout(()=>t.remove(),1400); }
+  function stars(n){ const r=cow.getBoundingClientRect(); n=n||6;
+    for(let i=0;i<n;i++){ const s=document.createElement('div'); s.className='fxstar'; s.textContent='⭐';
+      s.style.left=(r.left+r.width*0.5-11)+'px'; s.style.top=(r.top+r.height*0.16)+'px';
+      s.style.setProperty('--a',(i/n*360)+'deg'); s.style.animationDelay=(i*35)+'ms';
+      game.appendChild(s); setTimeout(()=>s.remove(),1200); } }
+  function confetti(n){ n=n||24; const cols=['#f2c14e','#e4572e','#6da544','#2f7dc0','#c05aa0','#fff'];
+    for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='fxconf';
+      c.style.left=(Math.random()*100)+'%'; c.style.background=cols[i%cols.length];
+      c.style.animationDelay=(Math.random()*350)+'ms'; game.appendChild(c); setTimeout(()=>c.remove(),2200); } }
+  function screenShake(){ game.classList.remove('shake'); void game.offsetWidth; game.classList.add('shake'); setTimeout(()=>game.classList.remove('shake'),490); }
+  function flashScreen(color){ const f=document.createElement('div'); f.className='fxflash'; f.style.background=color||'#fff'; game.appendChild(f); setTimeout(()=>f.remove(),380); }
+  function spitMilk(){ const r=cow.getBoundingClientRect(); flyGlassFrom(r.left+r.width*0.5, r.top+r.height*0.3); }
+  function launchCow(){ cowSvg.style.transition='transform .45s cubic-bezier(.3,0,.7,1)'; cowSvg.style.transform='translateY(-300px) scale(.42) rotate(22deg)'; }
+  function dropCow(){ cowSvg.style.transition='transform .35s cubic-bezier(.5,0,.9,.5)'; cowSvg.style.transform='translateY(0) scale(1)';
+    setTimeout(()=>{ cowSvg.style.transition=''; cowSvg.style.transform=''; },380); }
+  function spinCow(ms){ cowSvg.style.transition='none'; cowSvg.style.animation='spin '+ms+'ms linear'; setTimeout(()=>{ cowSvg.style.animation=''; },ms+20); }
+  function greenFace(on){ cowSvg.style.filter=on?'hue-rotate(85deg) saturate(1.5)':''; }
+
+  // ================= 20 HIDDEN COMBOS (each is a secret 5-poke CODE) =================
+  const WINFO={ flick:{n:'Finger',e:'👈'}, stick:{n:'Stick',e:'🥍'}, bat:{n:'Bat',e:'🏏'}, glove:{n:'Glove',e:'🥊'}, tip:{n:'Tipper',e:'🤚'} };
+  function codeEmojis(code){ return code.map(w=>WINFO[w].e).join(' '); }
+  function mHits(ws,gap,start){ start=start||0; gap=gap||440; ws.forEach((w,i)=> setTimeout(()=>hit(w), start+i*gap)); return start+(ws.length-1)*gap; }
+  function makeScene(f){ return function(done){
+    const e=mHits(this.code, f.gap||440);
+    setTimeout(()=>{ if(f.text) bigText(f.text,f.color); Sound.moo();
+      if(f.flash) flashScreen('#fff'); if(f.confetti){ confetti(f.confetti); Sound.sparkle(); }
+      if(f.stars) stars(f.stars); if(f.milk){ spitMilk(); Sound.splat(); } }, e+140);
+    setTimeout(done, e + (f.end||1500)); }; }
+
+  const COMBOS=[
+    { id:'c01', title:'Finger Frenzy', special:false, dur:3400, code:['flick','flick','flick','flick','flick'],
+      phrase:"OW—quit poking me!! 👈",
+      scene(done){ [0,220,440,660].forEach(t=>setTimeout(()=>hit('flick'),t));
+        setTimeout(()=>{ playAnim('anim-shake'); steam(); steam(); Sound.moo(); },1000); setTimeout(done,3400); } },
+    { id:'c02', title:'Escalation', special:false, dur:3400, code:['flick','flick','flick','flick','stick'],
+      phrase:"A stick now? Rude escalation.", scene:makeScene({text:'POKE!',color:'#2f7dc0',stars:5}) },
+    { id:'c03', title:'Whackfest', special:false, dur:3600, code:['stick','stick','stick','stick','stick'],
+      phrase:"Sticks?! Barbaric! 🥍", scene:makeScene({text:'WHACK!',color:'#c05aa0',stars:6}) },
+    { id:'c04', title:'Grand Slam', special:true, dur:4600, code:['bat','bat','bat','bat','bat'],
+      phrase:"⚾ Outta the park... ow.",
+      scene(done){ Sound.charge();
+        setTimeout(()=>{ hit('bat'); screenShake(); },480);
+        setTimeout(()=>{ launchCow(); Sound.whoosh(); },700);
+        setTimeout(()=>bigText('HOME RUN!','#f2c14e'),1000);
+        setTimeout(()=>{ dropCow(); Sound.thud(); },2300);
+        setTimeout(()=>{ playAnim('anim-stomp'); Sound.moo(); },2750); setTimeout(done,4600); } },
+    { id:'c05', title:'Knockout', special:true, dur:4600, code:['glove','glove','glove','glove','glove'],
+      phrase:"🥊 Ding ding! Still standing.",
+      scene(done){ [0,260,520].forEach(t=>setTimeout(()=>{ hit('glove'); screenShake(); },t));
+        setTimeout(()=>{ playAnim('anim-dizzy'); stars(8); },820);
+        setTimeout(()=>{ bigText('K.O.!','#e4572e'); Sound.ding(); },1250);
+        setTimeout(()=>{ playAnim('anim-boing'); Sound.moo(); },3000); setTimeout(done,4600); } },
+    { id:'c06', title:'Terrible Tornado', special:true, dur:5000, code:['tip','tip','tip','tip','tip'],
+      phrase:"Round and round... 🌀 gonna hurl.",
+      scene(done){ Sound.whir(); spinCow(1300);
+        setTimeout(()=>stars(6),1350);
+        setTimeout(()=>{ playAnim('anim-tipwobble'); greenFace(true); Sound.moo(); },1650);
+        setTimeout(()=>greenFace(false),3600); setTimeout(done,5000); } },
+    { id:'c07', title:'Tap Dance', special:false, dur:3400, code:['flick','stick','flick','stick','flick'],
+      phrase:"Fancy footwork? Still rude.", scene:makeScene({text:'TAP!',color:'#6da544',confetti:16}) },
+    { id:'c08', title:'Sportsball', special:false, dur:3600, code:['bat','glove','bat','glove','bat'],
+      phrase:"Pick a sport, weirdo! ⚾🥊", scene:makeScene({text:'SPORTS!',color:'#f2c14e',confetti:18,stars:5}) },
+    { id:'c09', title:'Rope-a-Dope', special:false, dur:3800, code:['glove','glove','glove','flick','flick'],
+      phrase:"Float like a butterfly... moo.",
+      scene(done){ setTimeout(()=>playAnim('anim-shake'),0);
+        setTimeout(()=>hit('glove'),400); setTimeout(()=>hit('glove'),900);
+        setTimeout(()=>{ hit('glove'); playAnim('anim-knock'); },1500);
+        setTimeout(()=>Sound.moo(),2200); setTimeout(done,3800); } },
+    { id:'c10', title:'Poke ’n’ Topple', special:false, dur:3600, code:['flick','flick','tip','tip','tip'],
+      phrase:"Rude AND pushy!",
+      scene(done){ [0,250,500].forEach(t=>setTimeout(()=>hit('flick'),t));
+        setTimeout(()=>hit('tip'),900);
+        setTimeout(()=>{ playAnim('anim-tipwobble'); Sound.moo(); },1200); setTimeout(done,3600); } },
+    { id:'c11', title:'Timber!', special:true, dur:4800, code:['tip','tip','bat','bat','bat'],
+      phrase:"Tip me over, pour me out! 🥛",
+      scene(done){ setTimeout(()=>hit('tip'),0); setTimeout(()=>hit('bat'),520);
+        setTimeout(()=>{ playAnim('anim-tip'); Sound.thud(); screenShake(); },820);
+        setTimeout(()=>{ spitMilk(); Sound.splat(); },1700);
+        setTimeout(()=>{ cowSvg.classList.remove('anim-tip'); playAnim('anim-tipback'); Sound.boing(); Sound.moo(); },2800);
+        setTimeout(done,4800); } },
+    { id:'c12', title:'Whac-a-Cow', special:false, dur:3400, code:['flick','bat','flick','bat','flick'],
+      phrase:"Up, down, up—STOP it!", scene:makeScene({text:'BONK!',color:'#e4572e',stars:6}) },
+    { id:'c13', title:'Total Chaos', special:true, dur:6400, code:['stick','bat','glove','tip','flick'],
+      phrase:"You used EVERYTHING?! 🌪️ MOOOO!",
+      scene(done){ ['stick','bat','glove','tip','flick'].forEach((w,i)=>setTimeout(()=>{ hit(w); screenShake(); },i*520));
+        setTimeout(()=>{ bigText('MENACE!','#e4572e'); flashScreen('#fff'); Sound.moo(); },3000);
+        setTimeout(()=>{ spitMilk(); Sound.splat(); },3600);
+        setTimeout(()=>{ spitMilk(); Sound.splat(); },4100);
+        setTimeout(()=>{ spitMilk(); Sound.splat(); confetti(30); Sound.sparkle(); },4600);
+        setTimeout(done,6400); } },
+    { id:'c14', title:'Backwards Chaos', special:true, dur:4000, code:['glove','tip','bat','stick','flick'],
+      phrase:"In REVERSE?! You monster!", scene:makeScene({text:'CHAOS!',color:'#e4572e',flash:true,confetti:26,milk:true,end:1900}) },
+    { id:'c15', title:'Heavy Hitter', special:false, dur:3600, code:['bat','bat','glove','glove','tip'],
+      phrase:"Bring the pain, why don'tcha.", scene:makeScene({text:'BOOM!',color:'#e4572e',flash:true,stars:6}) },
+    { id:'c16', title:'Jab Combo', special:false, dur:3600, code:['stick','stick','glove','glove','flick'],
+      phrase:"One-two-three—OW!", scene:makeScene({text:'COMBO!',color:'#2f7dc0',confetti:18}) },
+    { id:'c17', title:'Push-Poke Polka', special:false, dur:3400, code:['tip','flick','tip','flick','tip'],
+      phrase:"Quit shoving me!!", scene:makeScene({text:'SHOVE!',color:'#6da544',stars:5}) },
+    { id:'c18', title:'The Finisher', special:true, dur:4800, code:['glove','glove','glove','glove','bat'],
+      phrase:"Finish HER?! I'm a COW.",
+      scene(done){ [0,240,480].forEach(t=>setTimeout(()=>{ hit('glove'); screenShake(); },t));
+        setTimeout(()=>{ hit('bat'); launchCow(); Sound.whoosh(); },760);
+        setTimeout(()=>bigText('FINISH!','#e4572e'),1050);
+        setTimeout(()=>{ dropCow(); Sound.thud(); stars(8); },2300);
+        setTimeout(()=>{ playAnim('anim-boing'); Sound.ding(); Sound.moo(); },2800); setTimeout(done,4800); } },
+    { id:'c19', title:'Slugger', special:true, dur:3900, code:['bat','bat','bat','glove','glove'],
+      phrase:"Swing, batter... 🥊", scene:makeScene({text:'SLAM!',color:'#f2c14e',flash:true,confetti:22,end:1700}) },
+    { id:'c20', title:'Sneaky Sucker', special:true, dur:5200, code:['flick','flick','flick','glove','bat'],
+      phrase:"You SNAKE! MOOOO!",
+      scene(done){ [0,220,440].forEach(t=>setTimeout(()=>hit('flick'),t));
+        setTimeout(()=>hit('glove'),780);
+        setTimeout(()=>{ hit('bat'); launchCow(); Sound.whoosh(); screenShake(); },1100);
+        setTimeout(()=>bigText('SUCKER PUNCH!','#c05aa0'),1400);
+        setTimeout(()=>{ dropCow(); Sound.thud(); },2600);
+        setTimeout(()=>{ spitMilk(); Sound.splat(); confetti(30); Sound.sparkle(); Sound.moo(); },3000);
+        setTimeout(done,5200); } },
+  ];
+  const MOOS=["MOOO! 😠","Rude!","I felt that.","You'll pay for this.","Grrr... moo.","Was that necessary?"];
+  const MILK={ id:null, special:false, dur:2400, phrase:null,
+    scene(done){ milkSequence(function(){ Sound.splat(); Sound.moo(); }); setTimeout(done,2200); } };
+
+  let state={coins:0, flicks:0, weapon:'flick', combo:[], anger:0, free:true, mult:1,
+    unlocked:new Set(), lastAd:Date.now(), hints:{}, hintTarget:0};
+
+  function renderDock(){
+    dock.innerHTML='';
+    weapons.forEach(w=>{
+      const el=document.createElement('div');
+      el.className='weapon'+(w.id===state.weapon?' equipped':'')+(w.unlocked?'':' locked');
+      const costLabel=w.unlocked?(w.id===state.weapon?'EQUIPPED':'tap'):(state.coins>=w.cost?('🪙'+w.cost):'🎁 or 🪙'+w.cost);
+      el.innerHTML=`${w.unlocked?'':'<span class="lock">🔒</span>'}
+        <div class="emoji">${w.emoji}</div><div class="wname">${w.name}</div>
+        <div class="cost">${costLabel}</div>`;
+      el.onclick=()=>selectWeapon(w.id);
+      dock.appendChild(el);
+    });
+  }
+  function selectWeapon(id){
+    const w=weapons.find(x=>x.id===id);
+    if(!w.unlocked){
+      if(state.coins>=w.cost){ state.coins-=w.cost; w.unlocked=true; state.weapon=id; toast('Unlocked '+w.name+'!'); }
+      else { offerRewardUnlock(w); return; }
+    } else state.weapon=id;
+    sync(); renderDock();
+  }
+  function offerRewardUnlock(w){
+    rewardedAd({ name:'unlock', art:w.emoji+' UNLOCK', label:w.name,
+      note:'Rewarded ads are opt-in — the player <b>chooses</b> to watch for a perk. Always available, even on No-Ads.',
+      onReward:()=>{ w.unlocked=true; state.weapon=w.id; toast('Unlocked '+w.name+'!'); sync(); renderDock(); } });
+  }
+
+  function flick(x,y){
+    const w=weapons.find(z=>z.id===state.weapon);
+    const gain=w.power*(state.mult||1);
+    state.flicks++; state.coins+=gain; state.anger=Math.min(100,state.anger+20);
+    state.combo.push(state.weapon); if(state.combo.length>5) state.combo.shift();
+    hint.style.display='none';
+    floater(x,y,'+'+gain);
+    strike(state.weapon, x, y); faceMad(state.anger);
+    const code=matchCode();
+    if(code){ state.combo=[]; state.anger=0; react(code); }       // secret code completed!
+    else if(state.flicks%5===0){ state.anger=0; react(MILK); }    // default anger reaction
+    if(state.flicks%20===0) maybeRewardOffer();                    // rewarded-ad bonus offer
+    sync();
+  }
+
+  function matchCode(){
+    const b=state.combo; if(b.length<5) return null;
+    const last5=b.slice(-5);
+    for(const combo of COMBOS){ if(arrEq(last5,combo.code)) return combo; }
+    return null;
+  }
+  function react(combo){
+    if(combo.id) unlock(combo.id);
+    const text = combo.phrase!=null ? combo.phrase : MOOS[Math.random()*MOOS.length|0];
+    say(text, combo.special, Math.min(combo.dur, 3400));
+    if(react.busy){ spitMilk(); Sound.splat(); return; }   // a scene is already playing — don't overlap
+    react.busy=true;
+    combo.scene(function(){
+      react.busy=false;
+      if(state.free && Date.now()-state.lastAd>=AD_INTERVAL_MS){ state.lastAd=Date.now(); setTimeout(interstitialAd,300); }
+    });
+  }
+
+  function comboTitle(id){ if(id==='grand') return 'Cow Whisperer'; const c=COMBOS.find(x=>x.id===id); return c?c.title:''; }
+  function discoveredCount(){ return COMBOS.filter(c=>state.unlocked.has(c.id)).length; }
+  function unlock(id){
+    if(!id||state.unlocked.has(id)) return;
+    const firstEver = discoveredCount()===0;
+    state.unlocked.add(id);
+    if(COMBOS.every(x=>state.unlocked.has(x.id))) state.unlocked.add('grand');
+    confetti(26); Sound.sparkle(); bigText('SECRET '+discoveredCount()+'/20!','#6da544');
+    toast('🏆 '+comboTitle(id));
+    advanceHintTarget(); renderAch();
+    if(firstEver) setTimeout(()=>showCelebration(comboTitle(id)), 950);
+    sync();
+  }
+  function renderAch(){
+    const list=$('#achList'); list.innerHTML='';
+    COMBOS.forEach((a,i)=>{
+      const done=state.unlocked.has(a.id);
+      const el=document.createElement('div'); el.className='ach'+(done?' done':'');
+      el.innerHTML='<div class="a-emoji">'+(done?(a.special?'⭐':'🏆'):'❔')+'</div>'+
+        '<div class="a-txt"><b>#'+(i+1)+' '+(done?a.title:'???')+'</b><br>'+
+        (done?('<span style="letter-spacing:3px;font-size:15px">'+codeEmojis(a.code)+'</span>'):'Hidden — find the 5-poke code')+'</div>';
+      list.appendChild(el);
+    });
+    const g=state.unlocked.has('grand'); const gd=document.createElement('div');
+    gd.className='ach'+(g?' done':'');
+    gd.innerHTML='<div class="a-emoji">'+(g?'👑':'❔')+'</div><div class="a-txt"><b>Cow Whisperer</b><br>Discover all 20 secrets</div>';
+    list.appendChild(gd);
+  }
+
+  function faceMad(a){
+    const mad=a>=40;
+    cow.classList.toggle('mad',mad);
+    brows.setAttribute('opacity', mad?'1':'0');
+    mouth.setAttribute('d', mad?'M138 120 q12 -8 24 0':'M138 118 q12 8 24 0');
+    const s=mad?5.5:4.5; pupilL.setAttribute('r',s); pupilR.setAttribute('r',s);
+  }
+  function playAnim(cls){
+    cowSvg.classList.remove(cls); void cowSvg.offsetWidth; cowSvg.classList.add(cls);
+    if(cls!=='anim-tip') setTimeout(()=>cowSvg.classList.remove(cls),1000);
+  }
+  function steam(){
+    const s=document.createElement('div'); s.className='steam'; s.textContent=Math.random()<.5?'💢':'💨';
+    const r=cow.getBoundingClientRect();
+    s.style.left=(r.left+r.width*(.3+Math.random()*.4))+'px'; s.style.top=(r.top+10)+'px';
+    game.appendChild(s); setTimeout(()=>s.remove(),900);
+  }
+  function floater(x,y,txt){
+    const f=document.createElement('div'); f.className='floater'; f.textContent='🪙'+txt;
+    f.style.left=x+'px'; f.style.top=y+'px'; game.appendChild(f); setTimeout(()=>f.remove(),800);
+  }
+  function toast(msg){
+    const f=document.createElement('div'); f.className='floater'; f.style.color='#e4572e';
+    f.style.left='50%'; f.style.top='150px'; f.style.transform='translateX(-50%)'; f.textContent=msg;
+    game.appendChild(f); setTimeout(()=>f.remove(),820);
+  }
+
+  const fx=$('#fx'), ctx=fx.getContext('2d'); let parts=[];
+  function sizeFx(){ fx.width=game.clientWidth; fx.height=game.clientHeight; }
+  function burst(x,y,cols){
+    for(let i=0;i<14;i++) parts.push({x,y,vx:(Math.random()-.5)*5,vy:-Math.random()*4-1,
+      life:1,c:cols[i%cols.length],star:Math.random()<.5});
+  }
+  function loop(){
+    ctx.clearRect(0,0,fx.width,fx.height);
+    parts=parts.filter(p=>p.life>0);
+    parts.forEach(p=>{ p.x+=p.vx;p.y+=p.vy;p.vy+=.14;p.life-=.035;
+      ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.c;
+      ctx.beginPath(); ctx.arc(p.x,p.y,5*p.life+2,0,7); ctx.fill(); });
+    ctx.globalAlpha=1; requestAnimationFrame(loop);
+  }
+
+  // ---- per-weapon strike: prop hits the cow, matched to its name ----
+  const strikeFx={
+    flick:{emoji:'👈', cls:'wp-flick', cow:'anim-flick',     ox:.74, oy:.42, size:72, snd:'tick',  impact:300},
+    stick:{emoji:'🥍', cls:'wp-stick', cow:'anim-poke',      ox:.82, oy:.50, size:88, snd:'whoosh',impact:380},
+    bat:  {emoji:'🏏', cls:'wp-bat',   cow:'anim-stomp',     ox:.66, oy:.12, size:96, snd:'thwack',impact:540},
+    glove:{emoji:'🥊', cls:'wp-glove', cow:'anim-knock',     ox:.78, oy:.50, size:92, snd:'punch', impact:400},
+    tip:  {emoji:'🤚', cls:'wp-tip',   cow:'anim-tipwobble', ox:.86, oy:.55, size:84, snd:'thud',  impact:430},
+  };
+  function strike(id,x,y){
+    const s=strikeFx[id]||strikeFx.flick;
+    playAnim(s.cow);
+    if(s.snd) setTimeout(()=>Sound[s.snd](), s.impact||300);
+    if(strike._el) strike._el.remove();               // one prop on screen at a time
+    const r=cow.getBoundingClientRect();
+    const cx=r.left+r.width*s.ox, cy=r.top+r.height*s.oy;
+    const el=document.createElement('div'); el.className='weaponprop '+s.cls;
+    el.textContent=s.emoji; el.style.fontSize=s.size+'px';
+    el.style.left=(cx-s.size*0.5)+'px'; el.style.top=(cy-s.size*0.6)+'px';
+    game.appendChild(el); strike._el=el;
+    setTimeout(()=>{ el.remove(); if(strike._el===el) strike._el=null; },1000);
+    if(id==='glove') burst(x,y,['#ffd166','#f2c14e']);
+    if(id==='bat')   burst(x,y,['#e8e2d4','#cfc6b0']);
+  }
+
+  // ---- milk toss: cow hurls a glass at "you" every reaction ----
+  const splatSVG='<svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg">'
+    +'<g fill="#fbfbf7">'
+    +'<ellipse cx="210" cy="165" rx="150" ry="112"/>'
+    +'<ellipse cx="118" cy="120" rx="62" ry="50"/><ellipse cx="302" cy="120" rx="72" ry="54"/>'
+    +'<ellipse cx="150" cy="228" rx="58" ry="44"/><ellipse cx="288" cy="226" rx="62" ry="48"/>'
+    +'<circle cx="66" cy="86" r="22"/><circle cx="362" cy="86" r="26"/>'
+    +'<circle cx="38" cy="172" r="15"/><circle cx="392" cy="182" r="17"/>'
+    +'<circle cx="106" cy="296" r="19"/><circle cx="322" cy="290" r="21"/><circle cx="212" cy="306" r="15"/>'
+    +'<circle cx="24" cy="120" r="9"/><circle cx="404" cy="130" r="10"/><circle cx="250" cy="20" r="12"/>'
+    +'</g>'
+    +'<g fill="#eef1ec" opacity=".55"><ellipse cx="178" cy="152" rx="92" ry="62"/></g>'
+    +'<g fill="#ffffff"><ellipse cx="242" cy="140" rx="42" ry="27"/><circle cx="150" cy="128" r="13"/></g>'
+    +'</svg>';
+
+  function lookAt(on){
+    const dx=on?3:0, dy=on?2:0;
+    pupilL.setAttribute('cx',128+dx); pupilR.setAttribute('cx',172+dx);
+    pupilL.setAttribute('cy',82+dy); pupilR.setAttribute('cy',82+dy);
+  }
+  function squint(on){ lidL.style.height=on?'22px':'0px'; lidR.style.height=on?'22px':'0px'; }
+
+  function milkSequence(onToss){
+    if(milkSequence.busy){ if(onToss) onToss(); return; }
+    milkSequence.busy=true;
+    const arm=$('#armR'), hand=$('#handGlass'), head=$('#head');
+    hand.setAttribute('opacity','0');
+    arm.setAttribute('class','reach');                                  // 1) reach behind her back
+    setTimeout(()=>{ arm.setAttribute('class','raise'); hand.setAttribute('opacity','1'); }, 320); // 2) bring the glass up
+    setTimeout(()=>lookAt(1), 720);                                     //    look at it
+    setTimeout(()=>{ squint(true); head.classList.add('tilt'); arm.setAttribute('class','raise wind'); }, 1000); // 3) squint + tilt + wind up
+    setTimeout(()=>{                                                    // 4) hurl it at you
+      const hb=hand.getBoundingClientRect();
+      hand.setAttribute('opacity','0');
+      squint(false); lookAt(0); head.classList.remove('tilt');
+      arm.setAttribute('class','throwing');
+      flyGlassFrom(hb.left+hb.width/2, hb.top+hb.height/2, onToss);
+      setTimeout(()=>{ arm.setAttribute('class',''); milkSequence.busy=false; }, 320);
+    }, 1560);
+  }
+  function flyGlassFrom(cx,cy,onDone){
+    const g=document.createElement('div'); g.className='milkglass'; g.textContent='🥛';
+    g.style.left=cx+'px'; g.style.top=cy+'px';
+    g.style.setProperty('--dx',(game.clientWidth*0.5 - cx)+'px');
+    g.style.setProperty('--dy',(game.clientHeight*0.60 - cy)+'px');
+    game.appendChild(g);
+    setTimeout(()=>{ g.remove(); splashMilk(); if(onDone) onDone(); }, 300);
+  }
+  function splashMilk(){
+    const flash=document.createElement('div'); flash.className='milkflash'; game.appendChild(flash);
+    setTimeout(()=>flash.remove(),450);
+    const s=document.createElement('div'); s.className='milksplash';
+    let drips='';
+    for(let i=0;i<8;i++){
+      const x=6+Math.random()*88, w=9+Math.random()*9, h=45+Math.random()*140, d=(Math.random()*160)|0;
+      drips+=`<div class="milkdrip" style="left:${x}%;width:${w}px;height:${h}px;animation-delay:${d}ms"></div>`;
+    }
+    s.innerHTML=splatSVG+drips;
+    game.appendChild(s);
+    setTimeout(()=>s.classList.add('fade'),1000);
+    setTimeout(()=>s.remove(),2100);
+  }
+
+  // ================= AD LAYER: real Google H5 ads when configured, else simulated =================
+  // Hosting page sets window.COWFLICKER_ADS = { client:'ca-pub-XXXXXXXXXXXXXXXX', bannerSlot:'1234567890' }
+  const CFG = window.COWFLICKER_ADS || {};
+  const PORTAL = (CFG.portal||'').toLowerCase();   // '' = Google H5 / self-host, or 'poki' / 'crazygames'
+  const Ads = { ready:false };
+  (function initAds(){
+    try{
+      if(PORTAL==='poki' && window.PokiSDK){
+        window.PokiSDK.init().then(()=>{ Ads.ready=true; }).catch(()=>{});
+        if(window.PokiSDK.gameLoadingFinished) window.PokiSDK.gameLoadingFinished();
+      } else if(PORTAL==='crazygames' && window.CrazyGames && window.CrazyGames.SDK){
+        window.CrazyGames.SDK.init().then(()=>{ Ads.ready=true; }).catch(()=>{});
+      } else if(CFG.client){                          // Google H5 Games Ads (self-host on your own domain)
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adBreak  = window.adBreak  || function(o){ window.adsbygoogle.push(o); };
+        window.adConfig = window.adConfig || function(o){ window.adsbygoogle.push(o); };
+        window.adConfig({ preloadAdBreaks:'on', sound:'on', onReady:()=>{ Ads.ready=true; } });
+      }
+    }catch(e){ Ads.ready=false; }
+  })();
+  function interstitialAd(){            // forced ad break (free tier only — gated ~1/min)
+    try{
+      if(PORTAL==='poki' && window.PokiSDK){ react.busy=true; window.PokiSDK.commercialBreak().then(()=>{react.busy=false;}).catch(()=>{react.busy=false;}); return; }
+      if(PORTAL==='crazygames' && window.CrazyGames){ react.busy=true; window.CrazyGames.SDK.ad.requestAd('midgame',{adFinished:()=>{react.busy=false;},adError:()=>{react.busy=false;}}); return; }
+      if(Ads.ready){ window.adBreak({ type:'next', name:'reaction_break',
+        beforeAd:()=>{react.busy=true;}, afterAd:()=>{react.busy=false;}, adBreakDone:()=>{react.busy=false;} }); return; }
+    }catch(e){ react.busy=false; }
+    showInterstitial();                 // simulated overlay fallback
+  }
+  function rewardedAd(opts){            // opts:{art,label,note,onReward,name} — always available, every tier
+    try{
+      if(PORTAL==='poki' && window.PokiSDK){ window.PokiSDK.rewardedBreak().then(ok=>{ if(ok) opts.onReward&&opts.onReward(); }).catch(()=>{}); return; }
+      if(PORTAL==='crazygames' && window.CrazyGames){ window.CrazyGames.SDK.ad.requestAd('rewarded',{adFinished:()=>{opts.onReward&&opts.onReward();},adError:()=>{}}); return; }
+      if(Ads.ready){ window.adBreak({ type:'reward', name:opts.name||'reward',
+        beforeReward:(show)=>{ show(); }, adViewed:()=>{ opts.onReward&&opts.onReward(); }, adDismissed:()=>{}, adBreakDone:()=>{} }); return; }
+    }catch(e){}
+    openAd({ rewarded:true, seconds:4, art:opts.art||'🎁 REWARD', rewardLabel:opts.label||'Reward',
+      note:opts.note||'Rewarded ad — always available, even with No-Ads on.', onComplete:opts.onReward });
+  }
+
+  // ---- ads: one parameterized overlay for interstitial + rewarded (simulated) ----
+  function openAd(opts){
+    const ov=$('#adOverlay');
+    $('#adTag').textContent = opts.rewarded ? '🎁 REWARDED AD · OPTIONAL' : '▶ ADVERTISEMENT · FREE MODE';
+    $('#adArt').textContent = opts.art || 'YOUR AD HERE';
+    $('#adNote').innerHTML = opts.note || '';
+    $('#adDecline').style.display = opts.rewarded ? 'block':'none';
+    ov.classList.add('show');
+    let t=opts.seconds||5; const timer=$('#adTimer'), btn=$('#adSkip');
+    const pre = opts.rewarded?'Reward in ':'Skip in ';
+    btn.disabled=true; btn.style.opacity=.5; btn.textContent='Please wait…'; timer.textContent=pre+t+'…';
+    clearInterval(openAd._i);
+    openAd._i=setInterval(()=>{ t--; if(t<=0){ clearInterval(openAd._i);
+        timer.textContent=opts.rewarded?'Reward ready!':'Ad complete';
+        btn.disabled=false; btn.style.opacity=1; btn.textContent=opts.rewarded?('Claim '+opts.rewardLabel):'Continue';
+      } else timer.textContent=pre+t+'…'; },1000);
+    openAd._onComplete=opts.onComplete||null;
+  }
+  function showInterstitial(){
+    openAd({rewarded:false, seconds:5,
+      note:'In the shipped game, forced ads are gated to about <b>one per minute</b> — never per reaction. Toggle 📺 off to feel the paid "Remove Ads" experience.'});
+  }
+  $('#adSkip').onclick=()=>{ if($('#adSkip').disabled) return;
+    $('#adOverlay').classList.remove('show');
+    const f=openAd._onComplete; openAd._onComplete=null; if(f) f(); };
+  $('#adDecline').onclick=()=>{ openAd._onComplete=null; $('#adOverlay').classList.remove('show'); };
+
+  // ================= HINT LADDER (rewarded ads reveal the next code) =================
+  function advanceHintTarget(){ let i=0; while(i<COMBOS.length && state.unlocked.has(COMBOS[i].id)) i++; state.hintTarget=i; }
+  function revealHint(free){
+    const t=state.hintTarget; if(t>=COMBOS.length) return;
+    const id=COMBOS[t].id; const cur=state.hints[id]||0; if(cur>=5) return;
+    if(free){ state.hints[id]=cur+1; renderHint(); return; }
+    rewardedAd({ name:'hint', art:'🔍 HINT', label:'Poke '+(cur+1),
+      note:'Hint ads are <b>rewarded</b> ads — they play even on the No-Ads tier. (No-Ads only removes the forced interstitials.)',
+      onReward:()=>{ state.hints[id]=(state.hints[id]||0)+1; renderHint(); } });
+  }
+  function renderHint(){
+    const t=state.hintTarget, wrap=$('#hintBody');
+    if(t>=COMBOS.length){ wrap.innerHTML='<p style="text-align:center;font-family:var(--font-display)">🎉 You found all 20! You are the Cow Whisperer. 👑</p>'; return; }
+    const combo=COMBOS[t], shown=state.hints[combo.id]||0; let slots='';
+    for(let i=0;i<5;i++){ const rev=i<shown;
+      slots+='<div class="hslot'+(rev?' rev':'')+'">'+(rev?WINFO[combo.code[i]].e+'<span>'+WINFO[combo.code[i]].n+'</span>':'<b>'+(i+1)+'</b>')+'</div>'; }
+    let locked=''; if(shown>0){ const need=[...new Set(combo.code.slice(0,shown).filter(w=>{ const wp=weapons.find(x=>x.id===w); return wp && !wp.unlocked; }))];
+      if(need.length) locked='<div class="hnote">🔒 Unlock first: '+need.map(w=>WINFO[w].n).join(', ')+'</div>'; }
+    const btn = shown<5
+      ? '<button class="btn" id="hintReveal">▶ Watch ad — reveal poke '+(shown+1)+' / 5</button>'
+      : '<button class="btn ghost" id="hintClose2">Full code! Go nail the combo 🐄</button>';
+    wrap.innerHTML='<div class="htitle">Next secret · #'+(t+1)+' of 20</div><div class="hslots">'+slots+'</div>'+locked+
+      '<div class="hprog">'+shown+' / 5 pokes revealed</div>'+btn+
+      '<div class="adnote">Rewarded ads — always available, even with No-Ads on.</div>';
+    const rb=$('#hintReveal'); if(rb) rb.onclick=()=>revealHint(false);
+    const cb=$('#hintClose2'); if(cb) cb.onclick=()=>$('#hintOverlay').classList.remove('show');
+  }
+  function openHint(){ advanceHintTarget(); renderHint(); $('#hintOverlay').classList.add('show'); }
+
+  // ================= REWARD OFFER (every 20th tap) =================
+  const REWARDS=[
+    { label:'💰 +300 coins', grant(){ state.coins+=300; toast('+300 🪙'); sync(); } },
+    { label:'✨ 2× coins · 60s', grant(){ state.mult=2; toast('2× coins ON!'); clearTimeout(state._mult); state._mult=setTimeout(()=>{ state.mult=1; toast('2× ended'); },60000); } },
+    { label:'🔍 Free poke hint', grant(){ revealHint(true); openHint(); } },
+    { label:'🐄 Auto-flick · 30s', grant(){ startAuto(30000); } },
+  ];
+  function startAuto(ms){ if(state._auto) return; toast('🐄 Auto-flick ON');
+    state._auto=setInterval(()=>{ const r=cow.getBoundingClientRect(); flick(r.left+r.width*0.5, r.top+r.height*0.5); },420);
+    setTimeout(()=>{ clearInterval(state._auto); state._auto=null; toast('Auto-flick off'); },ms); }
+  function anyOverlay(){ return !!document.querySelector('.overlay.show'); }
+  function maybeRewardOffer(){
+    if(anyOverlay()||state._auto) return;
+    const picks=REWARDS.slice().sort(()=>Math.random()-0.5).slice(0,3), wrap=$('#rewardBody');
+    wrap.innerHTML='<div class="htitle" style="text-align:center">🎁 Bonus round!</div>'+
+      '<p style="font-size:12px;color:#6b6b6b;text-align:center;margin:.3em 0 .6em">Watch a short rewarded ad to claim one:</p>';
+    picks.forEach((rw,i)=>{ const b=document.createElement('button'); b.className='btn'+(i?' ghost':''); b.textContent=rw.label;
+      b.onclick=()=>{ $('#rewardOverlay').classList.remove('show');
+        rewardedAd({ name:'bonus', art:'🎁 REWARD', label:'Reward',
+          note:'Rewarded ads are opt-in and stay available on every tier — including No-Ads.', onReward:()=>rw.grant() }); };
+      wrap.appendChild(b); });
+    const no=document.createElement('button'); no.className='btn ghost'; no.textContent='No thanks'; no.style.marginTop='4px';
+    no.onclick=()=>$('#rewardOverlay').classList.remove('show'); wrap.appendChild(no);
+    $('#rewardOverlay').classList.add('show');
+  }
+
+  // ================= first-secret celebration =================
+  function showCelebration(title){
+    $('#celebBody').innerHTML='<div style="font-size:52px">🎉🐄🎉</div><h2>First Secret Found!</h2>'+
+      '<p style="font-size:16px;font-family:var(--font-display);color:var(--angry-deep);margin:.2em 0">“'+title+'”</p>'+
+      '<p style="font-size:14px;color:#555">There are <b>20 hidden animations</b>. Each is a secret 5-poke combo — mix and match your weapons to find them all!</p>'+
+      '<p style="font-size:13px;color:#777">Stuck? Tap 🔍 <b>Hints</b> to reveal the next code, one poke at a time.</p>'+
+      '<button class="btn" id="celebClose">Let’s go! 🐄</button>';
+    $('#celebOverlay').classList.add('show'); Sound.ding();
+    $('#celebClose').onclick=()=>$('#celebOverlay').classList.remove('show');
+  }
+
+  // ================= persistence (return players keep progress) =================
+  const SAVE_KEY='cowflicker_v1'; let _saveT, _lastCoins=0;
+  function scheduleSave(){ clearTimeout(_saveT); _saveT=setTimeout(saveGame,600); }
+  function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
+    coins:state.coins, flicks:state.flicks, free:state.free, muted:Sound.isMuted(),
+    unlocked:[...state.unlocked], hints:state.hints,
+    weapons:weapons.filter(w=>w.unlocked).map(w=>w.id) })); }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(!s) return;
+    state.coins=s.coins||0; state.flicks=s.flicks||0; state.free=(s.free!==false);
+    state.unlocked=new Set(s.unlocked||[]); state.hints=s.hints||{};
+    (s.weapons||[]).forEach(id=>{ const w=weapons.find(x=>x.id===id); if(w) w.unlocked=true; });
+    if(s.muted) Sound.toggle();
+    if(state.flicks>0) hint.style.display='none';
+  }catch(e){} }
+  function blink(){ if(react.busy) return; lidL.style.height='19px'; lidR.style.height='19px';
+    setTimeout(()=>{ lidL.style.height='0px'; lidR.style.height='0px'; },110); }
+
+  function sync(){
+    if(state.coins!==_lastCoins){ const c=coinsEl.parentElement; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); _lastCoins=state.coins; }
+    coinsEl.textContent=state.coins; flicksEl.textContent=state.flicks;
+    angerFill.style.width=state.anger+'%';
+    toReactEl.textContent=5-(state.flicks%5);
+    achCountEl.textContent=discoveredCount();
+    renderDock(); scheduleSave();
+  }
+  function arrEq(a,b){ return a.length===b.length && a.every((v,i)=>v===b[i]); }
+
+  cow.addEventListener('pointerdown',(e)=>{ e.preventDefault(); Sound.resume(); flick(e.clientX, e.clientY); });
+  $('#sndBtn').onclick=(e)=>{ const m=Sound.toggle(); e.currentTarget.textContent=m?'🔇':'🔊'; };
+  $('#achBtn').onclick=()=>{ renderAch(); $('#achOverlay').classList.add('show'); };
+  $('#achClose').onclick=()=>$('#achOverlay').classList.remove('show');
+  $('#hintBtn').onclick=()=>openHint();
+  $('#hintClose').onclick=()=>$('#hintOverlay').classList.remove('show');
+  $('#freeBtn').onclick=(e)=>{ state.free=!state.free;
+    e.currentTarget.textContent=state.free?'📺 Free':'💎 No-Ads';
+    e.currentTarget.style.background=state.free?'':'#eafbe9';
+    toast(state.free?'Forced ads ON':'No forced ads 💎 — rewarded still on'); };
+  ['#achOverlay','#hintOverlay','#rewardOverlay','#celebOverlay'].forEach(s=>
+    $(s).addEventListener('click',ev=>{ if(ev.target===$(s)) $(s).classList.remove('show'); }));
+
+  window.addEventListener('resize',sizeFx);
+  $('#achTotal').textContent=COMBOS.length;
+  loadGame();
+  if(!state.free){ const fb=$('#freeBtn'); fb.textContent='💎 No-Ads'; fb.style.background='#eafbe9'; }
+  if(Sound.isMuted()){ $('#sndBtn').textContent='🔇'; }
+  _lastCoins=state.coins; advanceHintTarget();
+  setInterval(()=>{ if(!react.busy && Math.random()<0.55) blink(); }, 3800);
+  window.addEventListener('beforeunload',saveGame);
+  sizeFx(); renderDock(); renderAch(); sync(); loop();
+})();
+</script>
+
+<script>
+(function(){ var C=window.COWFLICKER_ADS||{};
+  if(!/^ca-pub-[0-9]+$/.test(C.client||"")) return;
+  var slot=document.getElementById("ad-top"); if(!slot) return;
+  var ins=document.createElement("ins"); ins.className="adsbygoogle";
+  ins.style.display="block"; ins.style.width="100%";
+  ins.setAttribute("data-ad-client",C.client);
+  if(C.bannerSlot) ins.setAttribute("data-ad-slot",C.bannerSlot);
+  ins.setAttribute("data-ad-format","horizontal"); ins.setAttribute("data-full-width-responsive","true");
+  slot.appendChild(ins); try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+  function setH(){ document.documentElement.style.setProperty("--adh",(slot.offsetHeight||0)+"px"); }
+  if(window.ResizeObserver){ new ResizeObserver(setH).observe(slot); } setH();
+})();
+</script>
+</body>
+</html>

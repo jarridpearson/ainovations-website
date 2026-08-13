@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SSSRNSG9P2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SSSRNSG9P2');
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cow Flicker — Free Web Game | Flick the Cow, Find 20 Secrets</title>
+<meta name="description" content="Play Cow Flicker free in your browser. Flick, whack, bat, box and tip a cow that never dies — she just gets madder. Crack 20 hidden combo animations. An AInovations game." />
+<meta name="theme-color" content="#05121f" />
+<link rel="canonical" href="https://cowflicker.ainovations.net/" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20100%20100%27%3E%3Ctext%20y=%27.9em%27%20font-size=%2790%27%3E%F0%9F%90%84%3C/text%3E%3C/svg%3E" />
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="AInovations" />
+<meta property="og:title" content="Cow Flicker — Flick the Cow, Find 20 Secrets" />
+<meta property="og:description" content="A free browser game. She never dies — she just gets madder. Discover all 20 hidden combo animations." />
+<meta property="og:url" content="https://cowflicker.ainovations.net/" />
+<meta property="og:image" content="https://cowflicker.ainovations.net/assets/cover.svg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Cow Flicker — Flick the Cow, Find 20 Secrets" />
+<meta name="twitter:description" content="Free browser game by AInovations. Flick a cow that never dies, crack 20 secret combos." />
+<meta name="twitter:image" content="https://cowflicker.ainovations.net/assets/cover.svg" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+
+<style>
+:root{
+  --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.09);
+  --text:#f7fbff; --muted:#b8cad7; --teal:#1dc8c6; --teal-dark:#078c92; --teal-soft:#72e6df;
+  --blue:#46a6ff; --border:rgba(255,255,255,.13); --shadow:0 28px 80px rgba(0,0,0,.38); --ink:#071c2f;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;overflow-x:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,Helvetica,sans-serif;color:var(--text);
+  background:radial-gradient(circle at 12% 4%,rgba(29,200,198,.2),transparent 26%),radial-gradient(circle at 86% 12%,rgba(70,166,255,.15),transparent 24%),linear-gradient(180deg,#09263b 0%,var(--bg) 46%,var(--bg-deep) 100%);}
+a{color:inherit}
+img{max-width:100%;display:block}
+.skip-link{position:absolute;top:-60px;left:18px;z-index:100;padding:12px 16px;border-radius:10px;background:#fff;color:var(--ink);font-weight:800;text-decoration:none}
+.skip-link:focus{top:18px}
+.page{width:min(1180px,calc(100% - 40px));margin:0 auto}
+/* nav */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:20px 0}
+.brand{display:inline-flex;align-items:center;width:min(280px,42vw);min-width:200px;text-decoration:none}
+.brand img{width:100%;height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 12px 30px rgba(0,0,0,.28))}
+.nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nav-links a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
+.nav-links a:hover,.nav-links a:focus-visible{border-color:var(--border);background:rgba(255,255,255,.06)}
+.nav-links a.cta{background:var(--teal);color:#03212a}
+.nav-links a.cta:hover{background:var(--teal-soft)}
+/* hero + game */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;margin-top:14px;
+  padding:clamp(26px,4vw,50px);border:1px solid var(--border);border-radius:28px;
+  background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:var(--shadow)}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:20px;padding:9px 14px;border:1px solid rgba(114,230,223,.38);border-radius:999px;background:rgba(29,200,198,.11);color:#d5fffc;font-size:13px;font-weight:900}
+.eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--teal-soft);box-shadow:0 0 18px rgba(114,230,223,.9)}
+.hero h1{margin:0;font-size:clamp(44px,7vw,84px);line-height:.95;letter-spacing:-.045em}
+.hero h1 .hl{color:var(--teal-soft)}
+.hero .lead{max-width:44ch;margin:20px 0 0;color:var(--muted);font-size:clamp(16px,1.7vw,20px);line-height:1.55}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.tag{padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.05);font-size:13px;font-weight:800;color:#cfe3ee}
+/* game frame */
+.stage{display:flex;justify-content:center}
+.device{width:min(430px,94vw);height:min(84vh,860px);border-radius:34px;overflow:hidden;
+  border:1px solid var(--border);box-shadow:0 40px 90px rgba(0,0,0,.5),0 0 0 6px rgba(255,255,255,.03);background:#e8f6ff}
+.device iframe{width:100%;height:100%;border:0;display:block}
+.playhint{margin-top:14px;text-align:center;color:#93a9b8;font-size:13.5px;font-weight:700}
+/* info band */
+.section{margin-top:72px}
+.section-head{max-width:760px;margin:0 auto 30px;text-align:center}
+.kicker{margin:0 0 12px;color:var(--teal-soft);font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.section-head h2{margin:0;font-size:clamp(30px,4.4vw,48px);line-height:1.05;letter-spacing:-.04em}
+.section-head p{margin:14px auto 0;max-width:60ch;color:var(--muted);font-size:17px;line-height:1.55}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px}
+.card{padding:24px;border:1px solid var(--border);border-radius:22px;background:linear-gradient(180deg,var(--panel-2),var(--panel));box-shadow:var(--shadow)}
+.card .emoji{font-size:34px}
+.card h3{margin:12px 0 6px;font-size:20px;letter-spacing:-.02em}
+.card p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 26px;border-radius:14px;font-weight:850;font-size:17px;text-decoration:none;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+.btn-primary{background:var(--teal);color:#03212a}
+.btn-primary:hover{background:var(--teal-soft);transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff}
+.btn-ghost:hover{border-color:var(--teal-soft);transform:translateY(-2px)}
+/* footer */
+.footer{margin-top:72px;padding:44px 0 60px;border-top:1px solid var(--border);text-align:center}
+.footer .home{display:inline-flex;align-items:center;gap:10px;margin-bottom:18px;min-height:52px;padding:0 24px;border-radius:14px;background:var(--teal);color:#03212a;font-weight:850;text-decoration:none}
+.footer .home:hover{background:var(--teal-soft);transform:translateY(-2px)}
+.footer-links{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.footer-links a{color:#c6dbe5;text-decoration:none;font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px}
+.footer-links a:hover{color:#fff;background:rgba(255,255,255,.06)}
+.footer p{color:#7f97a6;font-size:13.5px;margin:6px 0 0}
+@media(max-width:900px){ .hero{grid-template-columns:1fr;text-align:center} .hero .lead{margin-left:auto;margin-right:auto} .tags{justify-content:center} .cards{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#play">Skip to game</a>
+
+<div class="page">
+  <nav class="nav" aria-label="Main navigation">
+    <a class="brand" href="https://ainovations.net/"><img src="https://ainovations.net/ainovationslogo.png" alt="AInovations logo" /></a>
+    <div class="nav-links">
+      <a href="#play">Play</a>
+      <a href="#how">How to Play</a>
+      <a class="cta" href="https://ainovations.net/">↖ AInovations.net</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="eyebrow">🐄 New · Free Web Game</span>
+      <h1>COW <span class="hl">FLICKER</span></h1>
+      <p class="lead">She never dies. She just gets <em>madder</em>. Flick, whack, bat, box and tip her — then crack all <strong>20 hidden combo animations</strong>.</p>
+      <div class="tags">
+        <span class="tag">🎮 Plays in your browser</span>
+        <span class="tag">🆓 Free</span>
+        <span class="tag">👨‍👩‍👧 Everyone</span>
+        <span class="tag">🔓 20 secrets</span>
+      </div>
+    </div>
+    <div id="play" class="stage">
+      <div>
+        <div class="device">
+          <iframe src="game.html" title="Cow Flicker game" allow="autoplay; fullscreen"></iframe>
+        </div>
+        <p class="playhint">👆 Tap the cow. Sound is on — hit 🔊 to mute.</p>
+      </div>
+    </div>
+  </header>
+
+  <section id="how" class="section">
+    <div class="section-head">
+      <span class="kicker">How to Play</span>
+      <h2>Poke. React. Discover.</h2>
+      <p>Every 5 pokes she reacts — and hidden inside are 20 secret animations, each a special combination of pokes. Find them all to become the Cow Whisperer.</p>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="emoji">👆</div><h3>Flick her</h3><p>Tap the cow. Earn coins, then unlock the stick, bat, boxing glove, and cow-tipper.</p></div>
+      <div class="card"><div class="emoji">🥛</div><h3>Watch her snap</h3><p>She squints, launches for a home run, spins into a tornado, or hurls a glass of milk right at your screen.</p></div>
+      <div class="card"><div class="emoji">🏆</div><h3>Crack 20 secrets</h3><p>Each secret is a 5-poke code. Stuck? The in-game 🔍 Hints reveal them one poke at a time.</p></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <a class="home" href="https://ainovations.net/">← Back to AInovations home</a>
+    <div class="footer-links">
+      <a href="https://ainovations.net/">AInovations.net</a>
+      <a href="#play">Play</a>
+      <a href="#how">How to Play</a>
+      <a href="https://ainovations.net/privacy">Privacy</a>
+    </div>
+    <p>© 2026 AInovations LLC · Cow Flicker is a family-friendly game. No cows were harmed — she just gets dramatic. 🐄</p>
+  </footer>
+</div>
+</body>
+</html>
