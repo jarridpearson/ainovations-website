@@ -83,7 +83,7 @@
   /* desktop: center as a phone-shaped column on a soft backdrop */
   @media (min-width:600px){
     body{background:radial-gradient(circle at 50% -10%,#d7efff,#aed6f0 55%,#8fc0e2)}
-    #game{max-width:460px;margin:0 auto;box-shadow:0 24px 70px rgba(30,50,80,.28)}
+    #game{max-width:960px;margin:0 auto;box-shadow:0 24px 70px rgba(30,50,80,.28)}
   }
 
   .hud{position:relative;z-index:20;flex:none;margin-top:var(--adh);
@@ -114,10 +114,10 @@
     background:linear-gradient(90deg,#ffd166,#f3722c 55%,var(--angry-deep));transition:width .18s ease}
 
   .stage{position:relative;z-index:10;flex:1 1 auto;min-height:0;
-    display:flex;align-items:center;justify-content:center;padding:4px 0}
+    display:flex;align-items:flex-end;justify-content:center;padding:0}
   .cowhit{position:relative;cursor:pointer;filter:drop-shadow(0 12px 10px var(--shadow));transform-origin:50% 100%;
     animation:breathe 3.6s ease-in-out infinite;}
-  .cow-svg{width:min(360px,74vw);height:auto;display:block;transition:filter .2s}
+  .cow-svg{width:min(380px,70vw);height:auto;display:block;transition:filter .2s}
   .cowhit.mad .cow-svg{filter:saturate(1.3) hue-rotate(-6deg)}
   #head{transform-box:view-box;transform-origin:150px 120px;transition:transform .3s ease}
   #head.tilt{transform:rotate(-14deg)}
@@ -338,7 +338,6 @@
       <div class="iconbtn" id="achBtn">🏆 <span id="achCount">0</span>/<span id="achTotal">0</span></div>
       <div class="iconbtn" id="hintBtn">🔍 Hints</div>
       <div class="iconbtn" id="sndBtn">🔊</div>
-      <div class="iconbtn" id="freeBtn">📺 Free</div>
     </div>
   </div>
 
@@ -462,7 +461,7 @@
   const lidL=$('#lidL'), lidR=$('#lidR');
   const dock=$('#dock'), achCountEl=$('#achCount'), hint=$('#hint');
 
-  const AD_INTERVAL_MS=60000; // shipped: gate forced ads to ~1/min, never per-reaction
+  const AD_INTERVAL_MS=90000; // forced ads gated to ~1 / 90s (no ad-removal purchase on web)
 
   const weapons=[
     {id:'flick', name:'Finger', emoji:'👆', cost:0,     power:1,  unlocked:true},
@@ -673,7 +672,7 @@
   }
   function offerRewardUnlock(w){
     rewardedAd({ name:'unlock', art:w.emoji+' UNLOCK', label:w.name,
-      note:'Rewarded ads are opt-in — the player <b>chooses</b> to watch for a perk. Always available, even on No-Ads.',
+      note:'Watch a short ad to unlock this weapon early.',
       onReward:()=>{ w.unlocked=true; state.weapon=w.id; toast('Unlocked '+w.name+'!'); sync(); renderDock(); } });
   }
 
@@ -706,7 +705,7 @@
     react.busy=true;
     combo.scene(function(){
       react.busy=false;
-      if(state.free && Date.now()-state.lastAd>=AD_INTERVAL_MS){ state.lastAd=Date.now(); setTimeout(interstitialAd,300); }
+      if(Date.now()-state.lastAd>=AD_INTERVAL_MS){ state.lastAd=Date.now(); setTimeout(interstitialAd,300); }
     });
   }
 
@@ -905,7 +904,7 @@
         beforeReward:(show)=>{ show(); }, adViewed:()=>{ opts.onReward&&opts.onReward(); }, adDismissed:()=>{}, adBreakDone:()=>{} }); return; }
     }catch(e){}
     openAd({ rewarded:true, seconds:4, art:opts.art||'🎁 REWARD', rewardLabel:opts.label||'Reward',
-      note:opts.note||'Rewarded ad — always available, even with No-Ads on.', onComplete:opts.onReward });
+      note:opts.note||'Watch a short ad for your reward.', onComplete:opts.onReward });
   }
 
   // ---- ads: one parameterized overlay for interstitial + rewarded (simulated) ----
@@ -928,7 +927,7 @@
   }
   function showInterstitial(){
     openAd({rewarded:false, seconds:5,
-      note:'In the shipped game, forced ads are gated to about <b>one per minute</b> — never per reaction. Toggle 📺 off to feel the paid "Remove Ads" experience.'});
+      note:'Forced ads are gated to about <b>one every 90 seconds</b> — never per reaction. (This is a placeholder; real ads serve once AdSense is approved.)'});
   }
   $('#adSkip').onclick=()=>{ if($('#adSkip').disabled) return;
     $('#adOverlay').classList.remove('show');
@@ -942,7 +941,7 @@
     const id=COMBOS[t].id; const cur=state.hints[id]||0; if(cur>=5) return;
     if(free){ state.hints[id]=cur+1; renderHint(); return; }
     rewardedAd({ name:'hint', art:'🔍 HINT', label:'Poke '+(cur+1),
-      note:'Hint ads are <b>rewarded</b> ads — they play even on the No-Ads tier. (No-Ads only removes the forced interstitials.)',
+      note:'Watch a short ad to reveal the next poke of this secret code.',
       onReward:()=>{ state.hints[id]=(state.hints[id]||0)+1; renderHint(); } });
   }
   function renderHint(){
@@ -958,7 +957,7 @@
       : '<button class="btn ghost" id="hintClose2">Full code! Go nail the combo 🐄</button>';
     wrap.innerHTML='<div class="htitle">Next secret · #'+(t+1)+' of 20</div><div class="hslots">'+slots+'</div>'+locked+
       '<div class="hprog">'+shown+' / 5 pokes revealed</div>'+btn+
-      '<div class="adnote">Rewarded ads — always available, even with No-Ads on.</div>';
+      '<div class="adnote">Watch a short ad to reveal each poke.</div>';
     const rb=$('#hintReveal'); if(rb) rb.onclick=()=>revealHint(false);
     const cb=$('#hintClose2'); if(cb) cb.onclick=()=>$('#hintOverlay').classList.remove('show');
   }
@@ -983,7 +982,7 @@
     picks.forEach((rw,i)=>{ const b=document.createElement('button'); b.className='btn'+(i?' ghost':''); b.textContent=rw.label;
       b.onclick=()=>{ $('#rewardOverlay').classList.remove('show');
         rewardedAd({ name:'bonus', art:'🎁 REWARD', label:'Reward',
-          note:'Rewarded ads are opt-in and stay available on every tier — including No-Ads.', onReward:()=>rw.grant() }); };
+          note:'Watch a short ad to claim your reward.', onReward:()=>rw.grant() }); };
       wrap.appendChild(b); });
     const no=document.createElement('button'); no.className='btn ghost'; no.textContent='No thanks'; no.style.marginTop='4px';
     no.onclick=()=>$('#rewardOverlay').classList.remove('show'); wrap.appendChild(no);
@@ -1034,17 +1033,12 @@
   $('#achClose').onclick=()=>$('#achOverlay').classList.remove('show');
   $('#hintBtn').onclick=()=>openHint();
   $('#hintClose').onclick=()=>$('#hintOverlay').classList.remove('show');
-  $('#freeBtn').onclick=(e)=>{ state.free=!state.free;
-    e.currentTarget.textContent=state.free?'📺 Free':'💎 No-Ads';
-    e.currentTarget.style.background=state.free?'':'#eafbe9';
-    toast(state.free?'Forced ads ON':'No forced ads 💎 — rewarded still on'); };
   ['#achOverlay','#hintOverlay','#rewardOverlay','#celebOverlay'].forEach(s=>
     $(s).addEventListener('click',ev=>{ if(ev.target===$(s)) $(s).classList.remove('show'); }));
 
   window.addEventListener('resize',sizeFx);
   $('#achTotal').textContent=COMBOS.length;
   loadGame();
-  if(!state.free){ const fb=$('#freeBtn'); fb.textContent='💎 No-Ads'; fb.style.background='#eafbe9'; }
   if(Sound.isMuted()){ $('#sndBtn').textContent='🔇'; }
   _lastCoins=state.coins; advanceHintTarget();
   setInterval(()=>{ if(!react.busy && Math.random()<0.55) blink(); }, 3800);
