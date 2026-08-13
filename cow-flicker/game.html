@@ -317,8 +317,8 @@
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important}}
 </style>
 <!-- MONETIZATION: replace ca-pub-XXXX (both places) + bannerSlot with your AdSense H5 ids. -->
-<script>window.COWFLICKER_ADS = { client:"ca-pub-XXXXXXXXXXXXXXXX", bannerSlot:"XXXXXXXXXX" };</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+<script>window.COWFLICKER_ADS = { client:"ca-pub-7076706539426530", bannerSlot:"" };</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076706539426530" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -870,7 +870,7 @@
   }
 
   // ================= AD LAYER: real Google H5 ads when configured, else simulated =================
-  // Hosting page sets window.COWFLICKER_ADS = { client:'ca-pub-XXXXXXXXXXXXXXXX', bannerSlot:'1234567890' }
+  // Hosting page sets window.COWFLICKER_ADS = { client:'ca-pub-7076706539426530', bannerSlot:'1234567890' }
   const CFG = window.COWFLICKER_ADS || {};
   const PORTAL = (CFG.portal||'').toLowerCase();   // '' = Google H5 / self-host, or 'poki' / 'crazygames'
   const Ads = { ready:false };
@@ -1056,7 +1056,7 @@
 
 <script>
 (function(){ var C=window.COWFLICKER_ADS||{};
-  if(!/^ca-pub-[0-9]+$/.test(C.client||"")) return;
+  if(!/^ca-pub-[0-9]+$/.test(C.client||"") || !C.bannerSlot) return;   // no banner until a real ad-unit slot is set
   var slot=document.getElementById("ad-top"); if(!slot) return;
   var ins=document.createElement("ins"); ins.className="adsbygoogle";
   ins.style.display="block"; ins.style.width="100%";
