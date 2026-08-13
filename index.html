@@ -13,7 +13,7 @@
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="AInovations LLC builds AI-powered products — Everward, Reef Tank Copilot, and Kick a Donut — and delivers custom app development, automation, and AI knowledge solutions for businesses." />
+<meta name="description" content="AInovations LLC builds AI-powered products — Everward, Reef Tank Copilot, Kick a Donut, and Cow Flicker — and delivers custom app development, automation, and AI knowledge solutions for businesses." />
 <meta name="theme-color" content="#071c2f" />
 <link rel="canonical" href="https://ainovations.net/" />
 <meta property="og:type" content="website" />
@@ -24,7 +24,7 @@
 <meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="AInovations — AI Products &amp; Custom App Development" />
-<meta name="twitter:description" content="Everward, Reef Tank Copilot, Kick a Donut, and custom AI software — built by one team that ships." />
+<meta name="twitter:description" content="Everward, Reef Tank Copilot, Kick a Donut, Cow Flicker, and custom AI software — built by one team that ships." />
 <meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <title>AInovations — AI Products &amp; Custom App Development</title>
@@ -75,7 +75,7 @@ img{max-width:100%;display:block}
 .section-head h2{margin:0;font-size:clamp(32px,4.6vw,52px);line-height:1.04;letter-spacing:-.04em}
 .section-head p{margin:15px auto 0;max-width:60ch;color:var(--muted);font-size:18px;line-height:1.55}
 /* products */
-.products{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.products{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 .product{display:flex;flex-direction:column;padding:26px;border:1px solid var(--border);border-radius:24px;background:linear-gradient(180deg,var(--panel-2),var(--panel));box-shadow:var(--shadow)}
 .product .top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .product .badge{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;font-size:30px;box-shadow:0 10px 26px rgba(0,0,0,.35);flex:0 0 auto;overflow:hidden}
@@ -143,8 +143,9 @@ img{max-width:100%;display:block}
   },
   "owns":[
     {"@type":"Product","name":"Everward","url":"https://ainovations.net/everward-individuals"},
-    {"@type":"Product","name":"Reef Tank Copilot"},
-    {"@type":"Product","name":"Kick a Donut","url":"https://kickadonut.ainovations.net/"}
+    {"@type":"Product","name":"Reef Tank Copilot","url":"https://ainovations.net/reef"},
+    {"@type":"Product","name":"Kick a Donut","url":"https://kickadonut.ainovations.net/"},
+    {"@type":"Product","name":"Cow Flicker","url":"https://cowflicker.ainovations.net/"}
   ]
 }
 </script>
@@ -182,7 +183,7 @@ img{max-width:100%;display:block}
     <section class="section" id="products" aria-labelledby="products-h">
       <div class="section-head">
         <p class="kicker">Built by AInovations</p>
-        <h2 id="products-h">Three products. Three very different audiences. One team.</h2>
+        <h2 id="products-h">Four products. Four very different audiences. One team.</h2>
         <p>Each product runs on its own site — proof we can take an idea from concept to a real, published app.</p>
       </div>
       <div class="products">
@@ -198,12 +199,12 @@ img{max-width:100%;display:block}
 
         <article class="product">
           <div class="top">
-            <div class="badge" style="background:linear-gradient(135deg,#0891b2,#2563eb)">🐠</div>
+            <div class="badge fill" style="background:#0a2a3d"><img src="reef-assets/icon-512.png" alt="Reef Tank Copilot logo" /></div>
             <div><div class="tag">Consumer AI</div><h3>Reef Tank Copilot</h3></div>
           </div>
           <p>An AI health assistant for saltwater aquariums. Snap a photo of a coral or fish and get an AI-assisted assessment, log water parameters, and track your Tank Health Score over time.</p>
-          <div class="meta">iOS · Android</div>
-          <a class="go" href="#contact">Learn more →</a>
+          <div class="meta">iOS · Android · Coming soon</div>
+          <a class="go" href="/reef">Learn more →</a>
         </article>
 
         <article class="product">
@@ -214,6 +215,16 @@ img{max-width:100%;display:block}
           <p>A goofy Roblox game designed by two kids (8 &amp; 9) and coded by their dad — a family passion project. Train, kick donuts for cash, unlock worlds, and hatch pets.</p>
           <div class="meta">Roblox · PC · Mac · Mobile · Tablet</div>
           <a class="go" href="https://kickadonut.ainovations.net/">Play Kick a Donut →</a>
+        </article>
+
+        <article class="product">
+          <div class="top">
+            <div class="badge" style="background:#a8d8f0">🐮</div>
+            <div><div class="tag">Web Game</div><h3>Cow Flicker</h3></div>
+          </div>
+          <p>A gigglefest dreamed up by a 9-year-old: flick, whack, bat and box a cow who never dies — she just gets madder. 20 hidden combo animations to crack, free in your browser.</p>
+          <div class="meta">Browser · Free · No download</div>
+          <a class="go" href="https://cowflicker.ainovations.net/">Play Cow Flicker →</a>
         </article>
       </div>
     </section>
@@ -247,7 +258,7 @@ img{max-width:100%;display:block}
       </div>
       <div class="why-grid">
         <div class="why-item"><span class="why-num">01</span><h4>We own the whole stack</h4><p>Design, AI, mobile, web, and backend under one roof — no hand-offs between agencies.</p></div>
-        <div class="why-item"><span class="why-num">02</span><h4>Real shipped products</h4><p>Everward, Reef Tank Copilot, and Kick a Donut are live and in users' hands today.</p></div>
+        <div class="why-item"><span class="why-num">02</span><h4>Real shipped products</h4><p>Everward, Kick a Donut, and Cow Flicker are live and in users' hands today, with Reef Tank Copilot coming soon.</p></div>
         <div class="why-item"><span class="why-num">03</span><h4>AI with judgment kept human</h4><p>We build AI that informs and assists — the final decision always stays with the person.</p></div>
       </div>
     </section>
@@ -273,8 +284,9 @@ img{max-width:100%;display:block}
         <h5>Products</h5>
         <a href="/everward-individuals">Everward for Individuals</a>
         <a href="/everward-organizations">Everward for Organizations</a>
-        <a href="#products">Reef Tank Copilot</a>
+        <a href="/reef">Reef Tank Copilot</a>
         <a href="https://kickadonut.ainovations.net/">Kick a Donut</a>
+        <a href="https://cowflicker.ainovations.net/">Cow Flicker</a>
       </div>
       <div>
         <h5>Services</h5>
@@ -293,7 +305,7 @@ img{max-width:100%;display:block}
     </div>
     <div class="footer-bottom">
       <span>© 2026 AInovations LLC. All rights reserved.</span>
-      <span>Everward · Reef Tank Copilot · Kick a Donut · Custom AI</span>
+      <span>Everward · Reef Tank Copilot · Kick a Donut · Cow Flicker · Custom AI</span>
     </div>
   </footer>
 </div>

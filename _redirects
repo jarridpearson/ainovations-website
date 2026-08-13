@@ -30,6 +30,9 @@
 /files /home.html 301
 /files.html /home.html 301
 /home.html / 301
+/reef /reef.html 200
+/reef/partners /reef-partners.html 200
+/reef/partner-thanks /reef-partner-thanks.html 200
 /reef/privacy /reef-privacy.html 200
 /custom-ai-solutions /custom-ai-solutions.html 200
 /ai-automation-central-new-york /ai-automation-central-new-york.html 200

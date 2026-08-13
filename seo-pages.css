@@ -81,6 +81,20 @@ a {
   color: var(--white);
 }
 
+.header-links .header-login {
+  padding: 0 17px;
+  border-radius: 12px;
+  background: var(--dark);
+  color: var(--mint);
+  border: 1px solid var(--teal);
+}
+
+.header-links .header-login:hover,
+.header-links .header-login:focus-visible {
+  background: var(--deep);
+  color: var(--white);
+}
+
 .hero {
   padding:
     clamp(82px, 11vw, 150px)

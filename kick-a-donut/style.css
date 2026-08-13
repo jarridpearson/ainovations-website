@@ -106,6 +106,8 @@ img { max-width: 100%; display: block; }
 }
 .nav-links a:hover, .nav-links a:focus-visible { background: rgba(255, 255, 255, 0.14); }
 .nav-links a.current { background: rgba(255, 255, 255, 0.18); }
+.nav-links a.parent-link { border: 1px solid rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.12); font-weight: 700; }
+.nav-links a.parent-link:hover, .nav-links a.parent-link:focus-visible { background: rgba(255, 255, 255, 0.24); }
 
 /* ---------- Buttons ---------- */
 .btn {
