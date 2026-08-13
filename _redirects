@@ -1,4 +1,22 @@
-# Never serve markdown source files (internal docs, test notes) publicly
+# This site's publish directory is the whole repo, so without these rules
+# every other project's full source (including live edge function code)
+# is publicly reachable at ainovations.net/<dir>/... Netlify splats only
+# match nested paths when anchored at the end of the pattern (/dir/*), not
+# as a mid-pattern suffix (/*.md) — that form only ever matches single-
+# segment paths, so it silently fails to catch anything nested.
+/supabase/*         /404.html 404!
+/everward-portal/*  /404.html 404!
+/node_modules/*     /404.html 404!
+/cow-flicker/*       /404.html 404!
+
+# kick-a-donut has its own public site and index.html here links directly
+# to kick-a-donut/assets/icon-512.png, so only its internal docs/config
+# are blocked — the rest is meant to be public anyway.
+/kick-a-donut/README.md   /404.html 404!
+/kick-a-donut/_redirects  /404.html 404!
+/kick-a-donut/_headers    /404.html 404!
+
+# Belt-and-suspenders: catches a stray markdown file dropped at site root
 /*.md /404.html 404!
 
 /privacy /privacy.html 200
