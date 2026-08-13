@@ -32,7 +32,8 @@
   #ad-top{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;justify-content:center;align-items:center;background:transparent;min-height:0}
   #ad-top:empty{display:none}
   #game{
-    position:relative; width:100%; min-height:100vh; overflow:hidden;
+    position:relative; width:100%; height:100vh; min-height:100vh; overflow:hidden;
+    display:flex; flex-direction:column;
     font-family:var(--font-body); color:var(--ink);
     background:linear-gradient(#bfe3f2 0%,#d9f0fa 45%,#e8f6ff 60%);
     user-select:none; -webkit-user-select:none; touch-action:manipulation;
@@ -61,16 +62,15 @@
     .brand small{display:none}
     .hud{padding:8px 12px}
     .chip,.iconbtn{font-size:12px;padding:4px 8px}
-    .angerwrap{top:calc(66px + var(--adh));width:min(300px,56vw)}
+    .angerwrap{width:min(300px,64vw)}
     .angerlabel{font-size:10px;margin-bottom:2px}
-    .stage{top:calc(96px + var(--adh));bottom:15%}
-    .cow-svg{width:min(300px,50vh)}
+    .cow-svg{width:min(280px,46vh)}
     .dock{padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
     .weapon{min-width:60px;padding:5px 7px 3px}
     .weapon .emoji{font-size:20px}
     .weapon .wname{font-size:10px}
     .weapon .cost{font-size:10px}
-    .hint{bottom:calc(15% + 4px);font-size:12px}
+    .hint{font-size:12px;margin-bottom:4px}
   }
 
   /* gentle idle breathe (independent of the strike animations on .cow-svg) */
@@ -86,8 +86,8 @@
     #game{max-width:460px;margin:0 auto;box-shadow:0 24px 70px rgba(30,50,80,.28)}
   }
 
-  .hud{position:absolute;top:var(--adh);left:0;right:0;z-index:20;
-    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px;}
+  .hud{position:relative;z-index:20;flex:none;margin-top:var(--adh);
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px 14px;}
   .brand{display:flex;flex-direction:column;line-height:.95}
   .brand h1{margin:0;font-family:var(--font-display);letter-spacing:.5px;
     font-size:clamp(22px,6vw,40px);color:var(--milk);
@@ -105,8 +105,7 @@
     box-shadow:0 3px 0 var(--panel-line),0 6px 10px var(--shadow);color:var(--ink)}
   .iconbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--panel-line)}
 
-  .angerwrap{position:absolute;z-index:15;top:calc(78px + var(--adh));left:50%;transform:translateX(-50%);
-    width:min(320px,72vw);text-align:center}
+  .angerwrap{position:relative;z-index:15;flex:none;width:min(340px,86vw);margin:0 auto 2px;text-align:center}
   .angerlabel{font-family:var(--font-display);font-size:12px;letter-spacing:2px;
     color:var(--angry-deep);text-shadow:0 1px 0 #fff;margin-bottom:4px}
   .angerbar{height:16px;border-radius:12px;background:#fff;border:3px solid var(--ink);
@@ -114,8 +113,8 @@
   .angerfill{height:100%;width:0%;border-radius:8px;
     background:linear-gradient(90deg,#ffd166,#f3722c 55%,var(--angry-deep));transition:width .18s ease}
 
-  .stage{position:absolute;left:0;right:0;bottom:14%;top:calc(120px + var(--adh));z-index:10;
-    display:flex;align-items:flex-end;justify-content:center}
+  .stage{position:relative;z-index:10;flex:1 1 auto;min-height:0;
+    display:flex;align-items:center;justify-content:center;padding:4px 0}
   .cowhit{position:relative;cursor:pointer;filter:drop-shadow(0 12px 10px var(--shadow));transform-origin:50% 100%;
     animation:breathe 3.6s ease-in-out infinite;}
   .cow-svg{width:min(360px,74vw);height:auto;display:block;transition:filter .2s}
@@ -130,7 +129,7 @@
   .cowshadow{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);
     width:60%;height:22px;background:radial-gradient(rgba(0,0,0,.28),transparent 70%);z-index:-1}
 
-  .bubble{position:absolute;z-index:16;left:50%;top:calc(118px + var(--adh));transform:translate(-50%,0) scale(.6);
+  .bubble{position:absolute;z-index:16;left:50%;top:calc(26% + var(--adh));transform:translate(-50%,0) scale(.6);
     background:#fff;border:3px solid var(--ink);border-radius:18px;padding:10px 16px;
     font-family:var(--font-display);font-size:clamp(15px,4.4vw,22px);max-width:78vw;text-align:center;
     box-shadow:0 6px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:transform .18s,opacity .18s}
@@ -143,10 +142,10 @@
     color:var(--gold-deep);text-shadow:0 2px 0 #fff;pointer-events:none;animation:floatUp .8s ease-out forwards}
   @keyframes floatUp{to{transform:translateY(-60px);opacity:0}}
 
-  .dock{position:absolute;z-index:20;left:0;right:0;bottom:0;
+  .dock{position:relative;z-index:20;flex:none;
     display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
-    padding:12px 12px calc(12px + env(safe-area-inset-bottom));
-    background:linear-gradient(transparent,rgba(0,0,0,.12));}
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(transparent,rgba(0,0,0,.14));}
   .weapon{cursor:pointer;background:var(--panel);border:3px solid var(--panel-line);
     border-radius:16px;padding:8px 10px 6px;min-width:78px;text-align:center;
     box-shadow:0 4px 0 var(--panel-line),0 8px 12px var(--shadow);position:relative;transition:transform .08s}
@@ -310,7 +309,7 @@
   .fxflash{position:fixed;inset:0;z-index:29;opacity:.45;pointer-events:none;animation:fxflash .36s ease-out forwards}
   @keyframes fxflash{to{opacity:0}}
 
-  .hint{position:absolute;z-index:12;left:50%;bottom:calc(14% + 8px);transform:translateX(-50%);
+  .hint{position:relative;z-index:12;flex:none;text-align:center;margin:0 0 6px;
     font-family:var(--font-display);color:#fffbe9;text-shadow:0 2px 4px rgba(0,0,0,.4);
     font-size:14px;letter-spacing:.5px;animation:pulse 1.6s infinite}
   @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
@@ -466,11 +465,11 @@
   const AD_INTERVAL_MS=60000; // shipped: gate forced ads to ~1/min, never per-reaction
 
   const weapons=[
-    {id:'flick', name:'Finger', emoji:'👆', cost:0,    power:1, unlocked:true},
-    {id:'stick', name:'Stick',  emoji:'🥍', cost:60,   power:2, unlocked:false},
-    {id:'bat',   name:'Bat',    emoji:'🏏', cost:220,  power:4, unlocked:false},
-    {id:'glove', name:'Glove',  emoji:'🥊', cost:600,  power:6, unlocked:false},
-    {id:'tip',   name:'Tipper', emoji:'🐄', cost:1200, power:5, unlocked:false},
+    {id:'flick', name:'Finger', emoji:'👆', cost:0,     power:1,  unlocked:true},
+    {id:'stick', name:'Stick',  emoji:'🥍', cost:250,   power:3,  unlocked:false},
+    {id:'bat',   name:'Bat',    emoji:'🏏', cost:1500,  power:8,  unlocked:false},
+    {id:'glove', name:'Glove',  emoji:'🥊', cost:8000,  power:20, unlocked:false},
+    {id:'tip',   name:'Tipper', emoji:'🐄', cost:30000, power:45, unlocked:false},
   ];
   // ================= SOUND (synthesized — no assets needed) =================
   const Sound=(function(){
@@ -967,7 +966,7 @@
 
   // ================= REWARD OFFER (every 20th tap) =================
   const REWARDS=[
-    { label:'💰 +300 coins', grant(){ state.coins+=300; toast('+300 🪙'); sync(); } },
+    { label:'💰 Coin boost', grant(){ const amt=250*Math.max(1,weapons.filter(w=>w.unlocked).length); state.coins+=amt; toast('+'+amt+' 🪙'); sync(); } },
     { label:'✨ 2× coins · 60s', grant(){ state.mult=2; toast('2× coins ON!'); clearTimeout(state._mult); state._mult=setTimeout(()=>{ state.mult=1; toast('2× ended'); },60000); } },
     { label:'🔍 Free poke hint', grant(){ revealHint(true); openHint(); } },
     { label:'🐄 Auto-flick · 30s', grant(){ startAuto(30000); } },
