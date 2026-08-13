@@ -55,6 +55,23 @@
   .cloud.c3{top:9%;transform:scale(1.25);animation-duration:58s;animation-delay:-30s;opacity:.85}
   @keyframes drift{from{left:-120px}to{left:100%}}
   @media (prefers-reduced-motion:reduce){.cloud{animation:none}}
+  /* short / landscape frames (e.g. CrazyGames desktop player) — keep the HUD from crowding */
+  @media (max-height:620px){
+    .brand h1{font-size:22px}
+    .brand small{display:none}
+    .hud{padding:8px 12px}
+    .chip,.iconbtn{font-size:12px;padding:4px 8px}
+    .angerwrap{top:calc(66px + var(--adh));width:min(300px,56vw)}
+    .angerlabel{font-size:10px;margin-bottom:2px}
+    .stage{top:calc(96px + var(--adh));bottom:15%}
+    .cow-svg{width:min(300px,50vh)}
+    .dock{padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+    .weapon{min-width:60px;padding:5px 7px 3px}
+    .weapon .emoji{font-size:20px}
+    .weapon .wname{font-size:10px}
+    .weapon .cost{font-size:10px}
+    .hint{bottom:calc(15% + 4px);font-size:12px}
+  }
 
   /* gentle idle breathe (independent of the strike animations on .cow-svg) */
   @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
