@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /node_modules/
+Disallow: /everward-portal/
+Disallow: /seo-backups-*/
+
+Sitemap: https://ainovations.net/sitemap.xml
