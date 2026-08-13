@@ -1,0 +1,2 @@
+# Never serve markdown source files (internal docs) publicly
+/*.md / 404!

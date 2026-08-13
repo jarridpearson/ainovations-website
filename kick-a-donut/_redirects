@@ -1,3 +1,6 @@
+# Never serve markdown source files (internal docs) publicly
+/*.md /  404!
+
 # Clean URLs for kickadonut.ainovations.net
 /guide   /guide.html   200
 /story   /story.html   200
