@@ -51,6 +51,9 @@
 /files /home.html 301
 /files.html /home.html 301
 /home.html / 301
+/partners /referral-partners.html 200
+/referral-partners /referral-partners.html 200
+/referral-partner-thanks /referral-partner-thanks.html 200
 /reef /reef.html 200
 /reef/partners /reef-partners.html 200
 /reef/partner-thanks /reef-partner-thanks.html 200
