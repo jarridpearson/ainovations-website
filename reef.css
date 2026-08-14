@@ -156,3 +156,20 @@ img{max-width:100%;display:block}
   .footer-cols{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.store-badge{transition:none}}
+
+/* Reef guide articles */
+.article{max-width:760px;margin:0 auto}
+.article .meta{color:var(--muted);font-size:14px;font-weight:600;margin:0 0 6px}
+.ptable{width:100%;border-collapse:collapse;margin:8px 0 4px}
+.ptable th,.ptable td{text-align:left;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.16);font-size:15px}
+.ptable th{color:var(--teal-soft);font-weight:800}
+.related{max-width:760px;margin:36px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.related a{display:block;padding:18px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.06);text-decoration:none;color:var(--text);font-weight:700;line-height:1.4}
+.related a:hover{background:rgba(255,255,255,.12)}
+@media(max-width:640px){.related{grid-template-columns:1fr}}
+
+/* Reef guides grid (on landing) */
+.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.guide-grid a.feature{display:block;text-decoration:none}
+.guide-grid a.feature:hover{border-color:var(--teal-soft)}
+@media(max-width:900px){.guide-grid{grid-template-columns:1fr}}
