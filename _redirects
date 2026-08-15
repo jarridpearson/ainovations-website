@@ -60,6 +60,11 @@
 /tanks/planted /tanks-planted.html 200
 /tanks/shrimp-nano /tanks-shrimp-nano.html 200
 /tanks/axolotl /tanks-axolotl.html 200
+/features/ai-diagnosis /features-ai-diagnosis.html 200
+/features/species-id /features-species-id.html 200
+/features/compatibility-scanner /features-compatibility-scanner.html 200
+/features/ecosystem-health /features-ecosystem-health.html 200
+/blog /blog.html 200
 /partners /tankmate-partners.html 200
 /partner-thanks /tankmate-partner-thanks.html 200
 # Everward referral partner program keeps its own path
