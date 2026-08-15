@@ -51,10 +51,15 @@
 /files /home.html 301
 /files.html /home.html 301
 /home.html / 301
-/partners /referral-partners.html 200
+# TankMate (rebranded from Reef Tank Copilot)
+/tankmate /tankmate.html 200
+/partners /tankmate-partners.html 200
+/partner-thanks /tankmate-partner-thanks.html 200
+# Everward referral partner program keeps its own path
 /referral-partners /referral-partners.html 200
 /referral-partner-thanks /referral-partner-thanks.html 200
-/reef /reef.html 200
+# Old reef paths -> new TankMate equivalents (app hardcodes /privacy and /partners)
+/reef /tankmate 301!
 /reef/how-to-lower-nitrates /reef-lower-nitrates.html 200
 /reef/reef-tank-water-parameters /reef-water-parameters.html 200
 /reef/why-is-my-coral-bleaching /reef-coral-bleaching.html 200
@@ -65,9 +70,10 @@
 /how-to-set-and-achieve-quarterly-priorities /how-to-set-and-achieve-quarterly-priorities.html 200
 /how-to-run-effective-client-check-ins /how-to-run-effective-client-check-ins.html 200
 /what-is-decision-calibration /what-is-decision-calibration.html 200
-/reef/partners /reef-partners.html 200
-/reef/partner-thanks /reef-partner-thanks.html 200
-/reef/privacy /reef-privacy.html 200
+/reef/partners /partners 301!
+/reef/partner-application /partners 301!
+/reef/partner-thanks /partner-thanks 301!
+/reef/privacy /privacy 301!
 /custom-ai-solutions /custom-ai-solutions.html 200
 /ai-automation-central-new-york /ai-automation-central-new-york.html 200
 /service-areas /service-areas.html 200

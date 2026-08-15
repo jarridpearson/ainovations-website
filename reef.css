@@ -1,9 +1,9 @@
-/* Reef Tank Copilot — shared styles. Palette pulled from the app UI. */
+/* TankMate — shared styles. Palette from the TankMate app brand system. */
 :root{
-  --navy:#0a2a3d; --deep:#0b3d5c; --teal:#128a99; --teal-2:#0e6b78; --teal-soft:#7fd4de;
-  --coral:#e2664a; --coral-dark:#c44e34; --green:#2f9e44; --green-soft:#5ec97a;
-  --text:#eef7fa; --muted:#a9c2cd; --ink:#0a2a3d; --ink-muted:#5b7683;
-  --card:#ffffff; --line:rgba(255,255,255,.14); --light:#f3f7f9; --light-line:#dde7ec;
+  --navy:#082a3d; --deep:#0B3D5C; --teal:#0E7C86; --teal-2:#0a5f68; --teal-soft:#7fd4de;
+  --aqua:#16A0A8; --coral:#E8613C; --coral-dark:#c44a28; --green:#1E7E48; --green-soft:#5ec97a;
+  --text:#eef7fa; --muted:#a9c2cd; --ink:#12303B; --ink-muted:#5b7683;
+  --card:#ffffff; --line:rgba(255,255,255,.14); --light:#F5FAFB; --light-line:#dde7ec;
   --shadow:0 24px 64px rgba(4,18,28,.4);
 }
 *{box-sizing:border-box}
