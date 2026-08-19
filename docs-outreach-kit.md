@@ -4,7 +4,7 @@ Two pages went live today. This file is the copy to put them in front of people.
 Everything here is ready to paste — edit freely, it's your voice that closes.
 
 - **ainovations.net/hire** → freelance/custom-dev leads (fastest path to money)
-- **ainovations.net/chalkline** → contractor signups (the recurring-revenue path)
+- **ainovations.net/chalkline** → contractor launch-list interest (the recurring-revenue path; product is coming-soon branded until Jarrid says otherwise)
 
 Rule of thumb: 30 minutes of outreach a day beats a weekend binge once a month.
 Every message below ends with a link, and every link lands on a page with a
@@ -96,9 +96,9 @@ boards, and your design partner's network.
 ### The ask to your design partner (most important single message)
 
 > Now that you're running on Chalkline, would you introduce me to two or three
-> other contractors you respect? It's free for them during early access, and
-> every company that joins makes the product better for you too. A text like
-> "my software guy built this for my company, worth a look:
+> other contractors you respect? It launches publicly soon, and I want the
+> first companies in line to be people you'd vouch for. A text like "my
+> software guy built this for my company, it's launching soon, worth a look:
 > ainovations.net/chalkline" is all it takes.
 
 ### Facebook group / forum post
@@ -112,8 +112,8 @@ boards, and your design partner's network.
 > (payments go straight to YOUR account), and your data exports any time.
 > QuickBooks stays — this runs the field side.
 >
-> It's free while in early access (no card, no trial countdown) because I'd
-> rather have feedback from real crews than money right now:
+> It launches publicly soon — flat monthly price, never a percentage of your
+> invoices. If you want a look before launch or a spot on the list:
 > https://ainovations.net/chalkline
 >
 > I'm the developer, so if it's missing something your company needs, tell me
@@ -125,8 +125,8 @@ boards, and your design partner's network.
 > partner runs her framing/siding company on it: quotes, invoices, jobs,
 > schedule, crew time, payments straight to her bank with no cut taken.
 >
-> It's free during early access and takes about two minutes to set up:
-> ainovations.net/chalkline
+> It launches soon — flat monthly price, no percentage taken off your
+> invoices. Details and the launch list: ainovations.net/chalkline
 >
 > If you try it and it doesn't fit how you work, I genuinely want to know why —
 > that feedback is worth more to me than the signup.
