@@ -16,3 +16,4 @@ supabase/functions/create-organization-users-corrupted/
 # Local AI-assistant notes — never publish (served publicly by Netlify from repo root)
 CLAUDE.md
 .claude/
+.logo-backup-blue/
