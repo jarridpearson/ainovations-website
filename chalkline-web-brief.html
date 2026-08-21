@@ -142,9 +142,32 @@ footer{margin-top:74px;padding-top:22px;border-top:1px solid var(--line);font-si
   <p style="margin-bottom:0">All three are live in the AInovations Stripe account. A subscription is one customer with these three line items and a quantity on each.</p>
 </div>
 
+<div class="panel">
+  <p class="title-block">Resolved &middot; 20 Aug 2026 &middot; billing is live</p>
+  <p>An earlier version of this brief said the portal had signup but no billing code, and told you not to
+  build a checkout because there was nothing behind it. <strong>That is no longer true.</strong> Subscription
+  billing shipped on 20 August and was verified end to end against the live site.</p>
+  <div class="scroll">
+  <table>
+    <tr><th>Now true</th><th>What it means for the page</th></tr>
+    <tr><td>A subscription is required</td><td>There is no free path. A company with no active subscription cannot reach anything in the portal or the phone app.</td></tr>
+    <tr><td>Checkout is Stripe-hosted</td><td>Signup creates the company, then hands off to Stripe Checkout. Payment details never touch Chalkline.</td></tr>
+    <tr><td>Seats meter automatically</td><td>Add or deactivate someone and the next invoice follows, without anyone touching Stripe.</td></tr>
+    <tr><td>Cancelling is self-serve</td><td>From the billing screen inside the portal, through Stripe&rsquo;s own portal.</td></tr>
+  </table>
+  </div>
+  <p style="margin-bottom:0">The call to action is <strong>&ldquo;Start your account&rdquo;</strong>, pointing at
+  <code>chalkline.ainovations.net/signup</code>.</p>
+</div>
+
 <div class="panel flag">
-  <p class="title-block">Still true &middot; the one gap to design around</p>
-  <p style="margin-bottom:0">The portal has <strong>self-serve signup but no billing code yet</strong> &mdash; no card capture, no seat metering, no Stripe checkout wired in. Anyone who signs up today gets a working account and is not charged. So the site&rsquo;s call-to-action is <em>&ldquo;Start your account&rdquo;</em> with the honest line <em>&ldquo;No card needed to start &mdash; we set billing up with you directly.&rdquo;</em> Do not build a checkout flow or a &ldquo;start free trial&rdquo; button; there is nothing behind it yet.</p>
+  <p class="title-block">Careful &middot; do not mention needing a payment method</p>
+  <p style="margin-bottom:0">Do not write &ldquo;no card needed&rdquo; &mdash; it is false. But do not write
+  &ldquo;a card is required to start&rdquo; either. Both versions have been on this page and both were wrong for
+  different reasons: the first lied, and the second announced something every buyer already assumes, which reads
+  as either nervous or condescending and pushes the price down the page. State the price and the billing period
+  and stop. The live fine print is the model: <em>&ldquo;Billed monthly through Stripe. Cancel any time from
+  inside the portal.&rdquo;</em></p>
 </div>
 
 <section class="col">
