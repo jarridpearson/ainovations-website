@@ -16,6 +16,12 @@
 /kick-a-donut/_redirects  /404.html 404!
 /kick-a-donut/_headers    /404.html 404!
 
+# The web-developer brief is an internal working document that happens to
+# live in the web root so it can be published as an Artifact. It is not
+# linked from anywhere, but robots.txt allows everything, so without this
+# it is one crawl away from being indexed.
+/chalkline-web-brief.html /404.html 404!
+
 # Belt-and-suspenders: catches a stray markdown file dropped at site root
 /*.md /404.html 404!
 

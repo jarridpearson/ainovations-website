@@ -156,14 +156,38 @@ img{max-width:100%;display:block}
 </style>
 <script type="application/ld+json">
 {
-  "@context":"https://schema.org",
-  "@type":"SoftwareApplication",
-  "name":"Chalkline",
-  "applicationCategory":"BusinessApplication",
-  "operatingSystem":"Web",
-  "description":"Field-service management for small construction companies: quotes, invoices, jobs, scheduling, crew timesheets, and payments with no platform cut.",
-  "url":"https://chalkline.ainovations.net/",
-  "publisher":{"@type":"Organization","name":"AInovations LLC","url":"https://ainovations.net/","email":"jp@ainovations.net"}
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Chalkline",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web, Android",
+  "description": "Field-service management for small construction companies: quotes, invoices, jobs, scheduling, crew timesheets and payments with no platform cut. $20/month for the office, $10 per additional full seat, $3 per crew seat.",
+  "url": "https://chalkline.ainovations.net/",
+  "publisher": {
+    "@type": "Organization",
+    "name": "AInovations LLC",
+    "url": "https://ainovations.net/",
+    "email": "jp@ainovations.net"
+  },
+  "installUrl": "https://play.google.com/store/apps/details?id=net.ainovations.chalkline",
+  "offers": {
+    "@type": "Offer",
+    "price": "20.00",
+    "priceCurrency": "USD",
+    "url": "https://chalkline.ainovations.net/signup",
+    "availability": "https://schema.org/InStock",
+    "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "20.00",
+      "priceCurrency": "USD",
+      "description": "Per month for the web portal and the first full seat. Additional full seats $10/month, crew seats $3/month.",
+      "referenceQuantity": {
+        "@type": "QuantitativeValue",
+        "value": 1,
+        "unitCode": "MON"
+      }
+    }
+  }
 }
 </script>
 </head>
