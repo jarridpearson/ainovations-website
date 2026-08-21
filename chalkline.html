@@ -13,18 +13,18 @@
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Chalkline is the contractor's operating system: quotes, invoices, jobs, scheduling, crew timesheets, and payments with no platform cut. Built with a working framing and siding contractor. Coming soon." />
+<meta name="description" content="Chalkline is the contractor's operating system: quotes, invoices, jobs, scheduling, crew timesheets, and payments with no platform cut. $20/mo for the office, $3 per crew seat. Now on Google Play." />
 <meta name="theme-color" content="#071c2f" />
 <link rel="canonical" href="https://ainovations.net/chalkline" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="AInovations" />
 <meta property="og:title" content="Chalkline — Quotes, Invoices &amp; Jobs for Contractors" />
-<meta property="og:description" content="Run the whole job from one place: quotes, invoices, scheduling, crew time, and getting paid — with no platform cut and no GPS tracking of your crew. Coming soon." />
+<meta property="og:description" content="Run the whole job from one place: quotes, invoices, scheduling, crew time, and getting paid — with no platform cut and no GPS tracking of your crew. $20/mo plus $3 a crew seat." />
 <meta property="og:url" content="https://ainovations.net/chalkline" />
 <meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Chalkline — Quotes, Invoices &amp; Jobs for Contractors" />
-<meta name="twitter:description" content="The contractor's operating system: quotes, invoices, jobs, crew time, and payments that go straight to your bank. Coming soon." />
+<meta name="twitter:description" content="The contractor's operating system: quotes, invoices, jobs, crew time, and payments that go straight to your bank. $20/mo plus $3 a crew seat." />
 <meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <title>Chalkline — Quotes, Invoices &amp; Jobs for Contractors | AInovations</title>
@@ -105,6 +105,28 @@ img{max-width:100%;display:block}
 .tier{padding:12px 18px;border:1px solid var(--border);border-radius:14px;background:rgba(1,10,17,.34);font-size:14.5px;color:#cfe2f4}
 .tier strong{color:#fff;font-size:16px}
 .price-card .fine{margin:22px auto 0;max-width:56ch;color:#8ea6b5;font-size:13px;line-height:1.55}
+/* pricing rows + comparison */
+.pricerows{display:flex;flex-direction:column;gap:14px;margin-top:26px;text-align:left}
+.pricerow{display:flex;gap:18px;align-items:flex-start;padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:rgba(1,10,17,.34)}
+.pr-amt{flex:0 0 auto;min-width:104px;font-size:30px;font-weight:900;letter-spacing:-.04em;color:var(--chalk-soft);font-variant-numeric:tabular-nums}
+.pr-amt span{font-size:14px;font-weight:700;color:var(--muted);letter-spacing:0}
+.pr-lab{color:var(--muted);font-size:15px;line-height:1.55}
+.pr-lab strong{display:block;color:#fff;font-size:16.5px;margin-bottom:3px}
+.worked{margin:26px auto 0;max-width:46ch;font-size:20px;line-height:1.5;color:#cfe2f4}
+.worked strong{color:#fff}
+.cmp-wrap{margin-top:26px;overflow-x:auto}
+.cmp{width:100%;border-collapse:collapse;font-size:15px;text-align:left}
+.cmp caption{caption-side:top;text-align:left;color:#8ea6b5;font-size:13px;padding-bottom:10px;letter-spacing:.02em;text-transform:uppercase}
+.cmp th,.cmp td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:500}
+.cmp thead th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#8ea6b5}
+.cmp td{text-align:right;font-variant-numeric:tabular-nums}
+.cmp em{font-style:normal;color:#8ea6b5;font-size:13px}
+.cmp tr.us th,.cmp tr.us td{color:#fff;font-weight:800;background:rgba(90,162,255,.12)}
+.pricefacts{list-style:none;padding:0;margin:26px 0 0;display:flex;flex-direction:column;gap:12px;text-align:left}
+.pricefacts li{color:var(--muted);font-size:15px;line-height:1.6;padding-left:20px;position:relative}
+.pricefacts li::before{content:"";position:absolute;left:0;top:9px;width:8px;height:8px;border-radius:2px;background:var(--teal)}
+.pricefacts strong{color:#fff}
+@media(max-width:560px){.pricerow{flex-direction:column;gap:6px}.pr-amt{min-width:0}}
 /* contact cta */
 .contact{margin-top:90px;padding:clamp(34px,6vw,66px);border-radius:32px;text-align:center;border:1px solid rgba(156,198,255,.25);background:radial-gradient(circle at 80% 10%,rgba(90,162,255,.18),transparent 34%),rgba(255,255,255,.04)}
 .contact h2{margin:0 auto;max-width:22ch;font-size:clamp(30px,4.6vw,52px);line-height:1.02;letter-spacing:-.045em}
@@ -155,19 +177,19 @@ img{max-width:100%;display:block}
       <a href="#paid">Getting Paid</a>
       <a href="#pricing">Pricing</a>
       <a href="https://chalkline.ainovations.net/">Sign In</a>
-      <a class="cta" href="mailto:jp@ainovations.net?subject=Chalkline%20Launch%20List">Get Launch Updates</a>
+      <a class="cta" href="https://chalkline.ainovations.net/signup">Start your account</a>
     </div>
   </nav>
 
   <main id="main">
     <!-- HERO -->
     <section class="hero" aria-labelledby="hero-h">
-      <div class="eyebrow">Chalkline · coming soon</div>
+      <div class="eyebrow">Chalkline · now on Google Play</div>
       <h1 id="hero-h">Run the whole job <span class="hl">from one place.</span></h1>
-      <p class="lead">Quotes, invoices, jobs, the schedule, crew time, and getting paid — in one tool a small construction company can actually run on. Built alongside a working framing &amp; siding contractor, not in a boardroom. Launching soon; in final development with a founding contractor today.</p>
+      <p class="lead">Quotes, invoices, jobs, the schedule, crew time, and getting paid — in one tool a small construction company can actually run on. Built alongside a working framing &amp; siding contractor, not in a boardroom. Live on Android today, with iPhone right behind it.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="mailto:jp@ainovations.net?subject=Chalkline%20Launch%20List">Get notified at launch →</a>
-        <a class="btn btn-ghost" href="#features">See what it does</a>
+        <a class="btn btn-primary" href="https://chalkline.ainovations.net/signup">Start your account →</a>
+        <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=net.ainovations.chalkline">Get it on Google Play</a>
       </div>
       <div class="logostrip" aria-label="Who it's for">
         <span>Built for:</span><span>Framing</span><span>Siding</span><span>Remodeling</span><span>Roofing</span><span>Any small crew</span>
@@ -227,29 +249,64 @@ img{max-width:100%;display:block}
     <section class="pricing" id="pricing" aria-labelledby="pricing-h">
       <div class="section-head">
         <p class="kicker">Pricing</p>
-        <h2 id="pricing-h">Simple, flat pricing at launch.</h2>
+        <h2 id="pricing-h">Twenty for the office. Three bucks a hard hat.</h2>
+        <p>Pay for the seats you turn on this month. Nothing else, ever — and never a percentage of your invoices.</p>
       </div>
+
       <div class="price-card">
-        <p class="price-headline"><span class="hl">Coming soon.</span></p>
-        <p class="sub">Chalkline is in final development, already running live with a founding framing &amp; siding contractor. Launch pricing:</p>
-        <div class="tiers" aria-label="Launch pricing">
-          <div class="tier"><strong>Solo</strong> · $29/mo</div>
-          <div class="tier"><strong>Crew</strong> · $79/mo · up to 10 users</div>
-          <div class="tier"><strong>Plus</strong> · $149/mo · bigger teams</div>
+        <div class="pricerows">
+          <div class="pricerow">
+            <div class="pr-amt">$20<span>/mo</span></div>
+            <div class="pr-lab"><strong>The office</strong>The web portal and your first full seat. Every feature, no tiers.</div>
+          </div>
+          <div class="pricerow">
+            <div class="pr-amt">+$10<span>/mo</span></div>
+            <div class="pr-lab"><strong>Each extra full seat</strong>Owner, admin, whoever does the books — sees quotes, invoices and margins.</div>
+          </div>
+          <div class="pricerow">
+            <div class="pr-amt">+$3<span>/mo</span></div>
+            <div class="pr-lab"><strong>Each crew seat</strong>Clock in, the week's schedule, jobsite photos. Crew never see pricing or pay — the database won't let them. That's why the seat is three dollars.</div>
+          </div>
         </div>
-        <p class="fine">A flat monthly price for the tool — never a percentage of your invoices, and your data exports any time.</p>
+
+        <p class="worked">A six-person shop — you plus five on the tools — is <strong>$35 a month.</strong></p>
+
+        <div class="cmp-wrap">
+          <table class="cmp">
+            <caption>What that same six-person shop pays elsewhere</caption>
+            <thead><tr><th scope="col">Tool</th><th scope="col">Per month</th></tr></thead>
+            <tbody>
+              <tr class="us"><th scope="row">Chalkline</th><td>$35</td></tr>
+              <tr><th scope="row">Contractor Foreman</th><td>$49</td></tr>
+              <tr><th scope="row">Workyard <em>(time clock only)</em></th><td>$80</td></tr>
+              <tr><th scope="row">Jobber</th><td>$169–224</td></tr>
+              <tr><th scope="row">Housecall Pro</th><td>$234</td></tr>
+              <tr><th scope="row">JobTread</th><td>$299</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ul class="pricefacts">
+          <li><strong>Seats flex every month.</strong> Lay a hand off in November, the $3 stops. His hours and job history stay put, and he picks up where he left off in April.</li>
+          <li><strong>No caps, no tiers, no gates.</strong> Every feature is in the $20 — job costing, the price book, progress reports, all eleven calculators.</li>
+          <li><strong>Never a cut of your payments.</strong> Card processing at 2.9% on $200K of volume is about $5,800 a year. Our worst year is a fraction of that, and your customers pay straight into your own Stripe, Square, PayPal or bank account.</li>
+          <li><strong>Your data walks.</strong> Export every table to CSV any time, no notice period, no charge.</li>
+        </ul>
+
         <div class="hero-cta" style="justify-content:center">
-          <a class="btn btn-primary" href="mailto:jp@ainovations.net?subject=Chalkline%20Launch%20List">Get notified at launch →</a>
+          <a class="btn btn-primary" href="https://chalkline.ainovations.net/signup">Start your account →</a>
+          <a class="btn btn-ghost" href="mailto:jp@ainovations.net?subject=Chalkline%20question">Ask a question</a>
         </div>
+        <p class="fine">No card needed to start — we set billing up with you directly. Founding accounts keep this rate for life.</p>
       </div>
     </section>
 
     <!-- CONTACT -->
     <section class="contact" aria-labelledby="contact-h">
       <h2 id="contact-h">Want Chalkline for your company?</h2>
-      <p>Get on the launch list, or ask anything — you'd be trusting Chalkline with your quotes and your payroll hours, so email and a real person answers. The same person who builds it.</p>
+      <p>Ask anything — you'd be trusting Chalkline with your quotes and your payroll hours, so email and a real person answers. The same person who builds it.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="mailto:jp@ainovations.net?subject=Chalkline%20Launch%20List">Get notified at launch →</a>
+        <a class="btn btn-primary" href="https://chalkline.ainovations.net/signup">Start your account →</a>
         <a class="btn btn-ghost" href="mailto:jp@ainovations.net?subject=Chalkline%20Question">Ask a question</a>
       </div>
     </section>
@@ -263,7 +320,7 @@ img{max-width:100%;display:block}
       </div>
       <div>
         <h5>Chalkline</h5>
-        <a href="mailto:jp@ainovations.net?subject=Chalkline%20Launch%20List">Get Launch Updates</a>
+        <a href="https://chalkline.ainovations.net/signup">Start your account</a>
         <a href="https://chalkline.ainovations.net/">Sign In</a>
         <a href="mailto:jp@ainovations.net?subject=Chalkline%20Question">Ask a Question</a>
       </div>
