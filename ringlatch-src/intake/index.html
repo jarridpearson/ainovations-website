@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ringlatch setup</title>
+
+    <style>
+    :root {
+      --dark: #071a1c;
+      --teal: #0f766e;
+      --soft: #e9f7f5;
+      --page: #f5f7f8;
+      --border: #d7dee2;
+      --muted: #64748b;
+      --white: #fff;
+      --alert: #b91c1c;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 26px 20px 70px;
+      background: var(--page);
+      color: var(--dark);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.8rem;
+      letter-spacing: -0.04em;
+    }
+    .sub {
+      margin: 0 0 30px;
+      color: var(--muted);
+    }
+    fieldset {
+      margin: 0 0 18px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--white);
+    }
+    legend {
+      padding: 0 8px;
+      color: var(--teal);
+      font-size: 0.74rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    label:first-of-type {
+      margin-top: 0;
+    }
+    .hint {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.86rem;
+    }
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="time"],
+    textarea,
+    select {
+      width: 100%;
+      margin-top: 7px;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: inherit;
+      font: inherit;
+      font-size: 1rem;
+    }
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 2px solid var(--teal);
+      outline-offset: 1px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+    .row > * {
+      flex: 1;
+    }
+    .check {
+      display: flex;
+      gap: 11px;
+      align-items: flex-start;
+      margin-top: 14px;
+      font-weight: 400;
+    }
+    .check input {
+      width: 21px;
+      height: 21px;
+      margin: 2px 0 0;
+      flex: 0 0 auto;
+    }
+    .consent {
+      border-color: var(--teal);
+      background: var(--soft);
+    }
+    button {
+      width: 100%;
+      margin-top: 8px;
+      padding: 17px;
+      border: none;
+      border-radius: 13px;
+      background: var(--teal);
+      color: var(--white);
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    button.ghost {
+      background: var(--dark);
+    }
+    .err {
+      margin-top: 14px;
+      padding: 13px 15px;
+      border-radius: 10px;
+      background: #fdecec;
+      color: var(--alert);
+      font-weight: 700;
+    }
+    #out {
+      display: none;
+    }
+    #out.show {
+      display: block;
+    }
+    pre {
+      max-height: 320px;
+      margin: 0;
+      padding: 15px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--dark);
+      color: #9ff3e0;
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+    </style>
+  </head>
+
+  <body>
+    <h1>Ringlatch setup</h1>
+    <p class="sub">
+    Ten minutes, once. This is everything your assistant needs to answer the
+    phone the way you would.
+  </p>
+
+    <form id="f">
+      <fieldset>
+        <legend>Your business</legend>
+
+        <label>Business name
+        <input type="text" name="business_name" required placeholder="Miller Plumbing &amp; Heating LLC" />
+      </label>
+
+        <label>What should the assistant say out loud?
+        <span class="hint">Leave blank to use the full name.</span>
+        <input type="text" name="spoken_name" placeholder="Miller Plumbing" />
+      </label>
+
+        <label>What kind of business is it?
+        <span class="hint">In your own words — "plumbing contractor", "dental office", "hair salon".</span>
+        <input type="text" name="business_type" required placeholder="plumbing and heating contractor" />
+      </label>
+
+        <label>Towns or areas you serve
+        <span class="hint">One per line.</span>
+        <textarea name="service_area" required placeholder="Pulaski&#10;Sandy Creek&#10;Oswego County"></textarea>
+      </label>
+
+        <label>What you do
+        <span class="hint">One per line. These are the things callers ask for.</span>
+        <textarea name="services" required placeholder="water heater repair&#10;furnace service&#10;drain cleaning"></textarea>
+      </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Your phone</legend>
+
+        <label>Your business number
+        <span class="hint">The one on your truck and your cards. This never changes.</span>
+        <input type="tel" name="main" required placeholder="315-555-0142" />
+      </label>
+
+        <label>Where should we text you leads?
+        <input type="tel" name="owner_cell" required placeholder="315-555-0119" />
+      </label>
+
+        <label>Email for call summaries
+        <span class="hint">Optional.</span>
+        <input type="email" name="email" placeholder="you@yourbusiness.com" />
+      </label>
+
+        <label>What kind of line is your business number?
+        <span class="hint">This changes how we set it up — please get it right.</span>
+        <select name="line_type" required>
+          <option value="">Choose one…</option>
+          <option value="verizon">Cell — Verizon</option>
+          <option value="att">Cell — AT&amp;T</option>
+          <option value="tmobile">Cell — T-Mobile</option>
+          <option value="us_cellular">Cell — US Cellular</option>
+          <option value="gsm_generic">Cell — something else</option>
+          <option value="landline">Landline (Frontier, Windstream, CenturyLink)</option>
+          <option value="cable_voip">Cable phone (Spectrum, Comcast)</option>
+          <option value="hosted_voip">Internet phone (RingCentral, Google Voice)</option>
+        </select>
+      </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Hours</legend>
+
+        <label>Weekdays
+        <div class="row">
+          <input type="time" name="wd_open" value="08:00" required />
+          <input type="time" name="wd_close" value="17:00" required />
+        </div>
+      </label>
+
+        <div class="check">
+          <input type="checkbox" id="sat" name="sat" />
+          <label for="sat" style="margin:0">Open Saturdays</label>
+        </div>
+
+        <div class="row" id="sat_times" style="display:none">
+          <input type="time" name="sat_open" value="08:00" />
+          <input type="time" name="sat_close" value="12:00" />
+        </div>
+
+        <div class="check">
+          <input type="checkbox" id="sun" name="sun" />
+          <label for="sun" style="margin:0">Open Sundays</label>
+        </div>
+
+        <div class="row" id="sun_times" style="display:none">
+          <input type="time" name="sun_open" value="09:00" />
+          <input type="time" name="sun_close" value="13:00" />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Calls that can't wait</legend>
+
+        <label>What kind of urgent calls do you get?
+        <select name="pack" required>
+          <option value="">Choose one…</option>
+          <option value="trades">Trades — no heat, burst pipe, no power</option>
+          <option value="clinic">Clinic or vet — pain, injury, needs seen today</option>
+          <option value="auto">Auto — broken down, stranded, needs a tow</option>
+          <option value="property">Property — locked out, leak, tenant emergency</option>
+          <option value="appointment">Appointments — running late, cancellations</option>
+          <option value="none">Nothing is ever really urgent for us</option>
+        </select>
+      </label>
+
+        <label>Anything else that means "call me right now"?
+        <span class="hint">Optional. One per line, in your words.</span>
+        <textarea name="urgency_keywords" placeholder="well pump quit&#10;boiler down"></textarea>
+      </label>
+
+        <div class="check">
+          <input type="checkbox" id="lt" name="live_transfer" checked />
+          <label for="lt" style="margin:0">
+          Ring my phone for urgent calls
+          <span class="hint">Otherwise we just text you right away.</span>
+        </label>
+        </div>
+
+        <div class="check">
+          <input type="checkbox" id="ah" name="after_hours" checked />
+          <label for="ah" style="margin:0">Ring me after hours too</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Questions you get asked constantly</legend>
+
+        <label>Anything the assistant should be able to answer
+        <span class="hint">
+          Optional. One per line as "question | answer". Example:
+          Are you licensed? | Yes, licensed and insured in New York.
+        </span>
+        <textarea name="faqs" placeholder="Are you licensed? | Yes, fully licensed and insured in NY."></textarea>
+      </label>
+
+        <label>Rough pricing you're okay sharing
+        <span class="hint">Optional. One per line. Never quoted as firm.</span>
+        <textarea name="pricing_notes" placeholder="Service call is about $95 during business hours."></textarea>
+      </label>
+      </fieldset>
+
+      <fieldset class="consent">
+        <legend>One last thing</legend>
+
+        <div class="check">
+          <input type="checkbox" id="consent" required />
+          <label for="consent" style="margin:0; font-weight:400">
+          I agree to receive text messages from Ringlatch about calls placed to
+          my business, at the mobile number above. Message and data rates may
+          apply. Message frequency varies with call volume. Reply STOP to opt
+          out, HELP for help. See the
+          <a href="/ai-receptionist#sms-terms">messaging terms</a>.
+        </label>
+        </div>
+      </fieldset>
+
+      <button type="submit">Finish setup</button>
+      <div id="err" class="err" style="display:none"></div>
+    </form>
+
+    <div id="out">
+      <fieldset>
+        <legend>Send this to AInovations</legend>
+        <pre id="json"></pre>
+        <button type="button" class="ghost" id="copy">Copy</button>
+      </fieldset>
+    </div>
+
+    <script>
+    const $ = (id) => document.getElementById(id);
+    const lines = (v) => (v || "").split("\n").map((s) => s.trim()).filter(Boolean);
+
+    // A landline keypad has no "+" key, but the profile always stores E.164.
+    const e164 = (raw) => {
+      const d = (raw || "").replace(/\D/g, "");
+      const ten = d.length === 11 && d[0] === "1" ? d.slice(1) : d;
+      return ten.length === 10 ? "+1" + ten : null;
+    };
+
+    for (const day of ["sat", "sun"]) {
+      $(day).addEventListener("change", (e) => {
+        $(day + "_times").style.display = e.target.checked ? "flex" : "none";
+      });
+    }
+
+    $("f").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(e.target));
+      const err = $("err");
+      err.style.display = "none";
+
+      const main = e164(d.main);
+      const cell = e164(d.owner_cell);
+
+      if (!main || !cell) {
+        err.textContent =
+          "Please check the phone numbers — we need 10 digits each.";
+        err.style.display = "block";
+        return;
+      }
+
+      if (d.wd_open >= d.wd_close) {
+        err.textContent = "Weekday closing time has to be after opening time.";
+        err.style.display = "block";
+        return;
+      }
+
+      const weekday = { open: d.wd_open, close: d.wd_close };
+      const hours = {
+        monday: weekday,
+        tuesday: weekday,
+        wednesday: weekday,
+        thursday: weekday,
+        friday: weekday,
+        saturday: d.sat ? { open: d.sat_open, close: d.sat_close } : null,
+        sunday: d.sun ? { open: d.sun_open, close: d.sun_close } : null,
+      };
+
+      const faqs = lines(d.faqs)
+        .map((row) => row.split("|"))
+        .filter((parts) => parts.length >= 2)
+        .map((parts) => ({
+          question: parts[0].trim(),
+          answer: parts.slice(1).join("|").trim(),
+        }));
+
+      const profile = {
+        slug: (d.business_name || "client").toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40),
+        business_name: d.business_name.trim(),
+        business_type: d.business_type.trim(),
+        timezone: "America/New_York",
+        coverage_mode: "missed_call",
+        phone: { main, ringlatch: "+15550000000", owner_cell: cell },
+        hours,
+        services: lines(d.services),
+        service_area: lines(d.service_area),
+        pricing_notes: lines(d.pricing_notes),
+        faqs,
+        urgency: {
+          enabled: d.pack !== "none",
+          packs: d.pack && d.pack !== "none" ? [d.pack] : [],
+          keywords: lines(d.urgency_keywords),
+          live_transfer: !!d.live_transfer,
+          transfer_after_hours: !!d.after_hours,
+        },
+        notify: { sms_to: [cell], email_to: d.email ? [d.email.trim()] : [] },
+      };
+
+      if (d.spoken_name && d.spoken_name.trim()) {
+        profile.spoken_name = d.spoken_name.trim();
+      }
+
+      // Setup facts that are not part of the agent profile but decide how the
+      // forwarding call goes, plus the consent record the A2P filing promises.
+      const setup = {
+        line_type: d.line_type,
+        consent: {
+          text: "I agree to receive text messages from Ringlatch about calls " +
+            "placed to my business. Msg & data rates may apply. Reply STOP to opt out.",
+          mobile: cell,
+          agreed_at: new Date().toISOString(),
+        },
+      };
+
+      $("json").textContent = JSON.stringify({ profile, setup }, null, 2);
+      $("out").classList.add("show");
+      $("out").scrollIntoView({ behavior: "smooth" });
+    });
+
+    $("copy").addEventListener("click", async () => {
+      await navigator.clipboard.writeText($("json").textContent);
+      $("copy").textContent = "Copied";
+      setTimeout(() => ($("copy").textContent = "Copy"), 1600);
+    });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,68 @@
+{
+  "slug": "lakeside-dental",
+  "business_name": "Lakeside Family Dental PLLC",
+  "spoken_name": "Lakeside Family Dental",
+  "business_type": "family dental office",
+  "timezone": "America/New_York",
+  "coverage_mode": "full_answering",
+
+  "phone": {
+    "main": "+13155550231",
+    "ringlatch": "+13155550277",
+    "owner_cell": "+13155550264"
+  },
+
+  "hours": {
+    "monday": { "open": "08:00", "close": "17:00" },
+    "tuesday": { "open": "08:00", "close": "17:00" },
+    "wednesday": { "open": "08:00", "close": "17:00" },
+    "thursday": { "open": "08:00", "close": "16:00" },
+    "friday": { "open": "08:00", "close": "13:00" },
+    "saturday": null,
+    "sunday": null
+  },
+
+  "services": [
+    "cleanings and exams",
+    "fillings and crowns",
+    "extractions",
+    "root canals",
+    "whitening",
+    "emergency dental visits"
+  ],
+
+  "service_area": ["Pulaski", "Oswego", "Mexico", "Sandy Creek"],
+
+  "pricing_notes": [
+    "A new patient exam with x-rays is typically around $150 without insurance.",
+    "We take most major insurance plans and can check yours when we call back."
+  ],
+
+  "faqs": [
+    {
+      "question": "Are you accepting new patients?",
+      "answer": "Yes, we're taking new patients right now."
+    },
+    {
+      "question": "Do you take my insurance?",
+      "answer": "We take most major plans. Leave your details and we'll verify yours and call you back."
+    },
+    {
+      "question": "Do you see kids?",
+      "answer": "Yes, we're a family practice and see patients of all ages."
+    }
+  ],
+
+  "urgency": {
+    "enabled": true,
+    "packs": ["clinic"],
+    "keywords": ["lost a filling", "broken tooth", "knocked out", "abscess"],
+    "live_transfer": false,
+    "transfer_after_hours": false
+  },
+
+  "notify": {
+    "sms_to": ["+13155550264"],
+    "email_to": ["frontdesk@example.com"]
+  }
+}

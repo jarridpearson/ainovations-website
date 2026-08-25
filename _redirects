@@ -8,6 +8,7 @@
 /everward-portal/*  /404.html 404!
 /node_modules/*     /404.html 404!
 /cow-flicker/*       /404.html 404!
+/ringlatch-src/*    /404.html 404!
 
 # kick-a-donut has its own public site and index.html here links directly
 # to kick-a-donut/assets/icon-512.png, so only its internal docs/config
@@ -96,6 +97,70 @@
 /hire /hire.html 200
 /hire-thanks /hire-thanks.html 200
 /custom-ai-solutions /custom-ai-solutions.html 200
+
+# Ringlatch marketing pages. The product has a name, so the URLs use it.
+/ringlatch /ringlatch.html 200
+/ringlatch-sms-terms /ringlatch-sms-terms.html 200
+/ringlatch-signup /ringlatch-signup.html 200
+/ringlatch-thanks /ringlatch-thanks.html 200
+/ringlatch-faq /ringlatch-faq.html 200
+/ringlatch-for-auto-repair-shops /ringlatch-for-auto-repair-shops.html 200
+/ringlatch-for-cleaning-services /ringlatch-for-cleaning-services.html 200
+/ringlatch-for-dental-offices /ringlatch-for-dental-offices.html 200
+/ringlatch-for-electricians /ringlatch-for-electricians.html 200
+/ringlatch-for-excavation-contractors /ringlatch-for-excavation-contractors.html 200
+/ringlatch-for-hvac-companies /ringlatch-for-hvac-companies.html 200
+/ringlatch-for-law-and-accounting-offices /ringlatch-for-law-and-accounting-offices.html 200
+/ringlatch-for-plumbers /ringlatch-for-plumbers.html 200
+/ringlatch-for-property-managers /ringlatch-for-property-managers.html 200
+/ringlatch-for-salons-and-barbers /ringlatch-for-salons-and-barbers.html 200
+/ringlatch-for-tree-services /ringlatch-for-tree-services.html 200
+/ringlatch-for-veterinary-clinics /ringlatch-for-veterinary-clinics.html 200
+/ringlatch-how-it-works /ringlatch-how-it-works.html 200
+/ringlatch-missed-call-text-back /ringlatch-missed-call-text-back.html 200
+/ringlatch-pricing /ringlatch-pricing.html 200
+/ringlatch-welcome /ringlatch-welcome.html 200
+/ringlatch-minutes /ringlatch-minutes.html 200
+/ringlatch-help /ringlatch-help.html 200
+/ringlatch-add-business /ringlatch-add-business.html 200
+/ringlatch-account /ringlatch-account.html 200
+/ringlatch-help-thanks /ringlatch-help-thanks.html 200
+
+# Old descriptive URLs from the first build -> keep any indexing alive.
+/ai-receptionist /ringlatch 301!
+/ai-receptionist-faq /ringlatch-faq 301!
+/ai-receptionist-for-auto-repair-shops /ringlatch-for-auto-repair-shops 301!
+/ai-receptionist-for-cleaning-services /ringlatch-for-cleaning-services 301!
+/ai-receptionist-for-dental-offices /ringlatch-for-dental-offices 301!
+/ai-receptionist-for-electricians /ringlatch-for-electricians 301!
+/ai-receptionist-for-excavation-contractors /ringlatch-for-excavation-contractors 301!
+/ai-receptionist-for-hvac-companies /ringlatch-for-hvac-companies 301!
+/ai-receptionist-for-law-and-accounting-offices /ringlatch-for-law-and-accounting-offices 301!
+/ai-receptionist-for-plumbers /ringlatch-for-plumbers 301!
+/ai-receptionist-for-property-managers /ringlatch-for-property-managers 301!
+/ai-receptionist-for-salons-and-barbers /ringlatch-for-salons-and-barbers 301!
+/ai-receptionist-for-tree-services /ringlatch-for-tree-services 301!
+/ai-receptionist-for-veterinary-clinics /ringlatch-for-veterinary-clinics 301!
+/ai-receptionist-how-it-works /ringlatch-how-it-works 301!
+/ai-receptionist-missed-call-text-back /ringlatch-missed-call-text-back 301!
+/ai-receptionist-pricing /ringlatch-pricing 301!
+/ai-receptionist /ringlatch.html 200
+/ai-receptionist-faq /ringlatch-faq.html 200
+/ai-receptionist-for-auto-repair-shops /ringlatch-for-auto-repair-shops.html 200
+/ai-receptionist-for-cleaning-services /ringlatch-for-cleaning-services.html 200
+/ai-receptionist-for-dental-offices /ringlatch-for-dental-offices.html 200
+/ai-receptionist-for-electricians /ringlatch-for-electricians.html 200
+/ai-receptionist-for-excavation-contractors /ringlatch-for-excavation-contractors.html 200
+/ai-receptionist-for-hvac-companies /ringlatch-for-hvac-companies.html 200
+/ai-receptionist-for-law-and-accounting-offices /ringlatch-for-law-and-accounting-offices.html 200
+/ai-receptionist-for-plumbers /ringlatch-for-plumbers.html 200
+/ai-receptionist-for-property-managers /ringlatch-for-property-managers.html 200
+/ai-receptionist-for-salons-and-barbers /ringlatch-for-salons-and-barbers.html 200
+/ai-receptionist-for-tree-services /ringlatch-for-tree-services.html 200
+/ai-receptionist-for-veterinary-clinics /ringlatch-for-veterinary-clinics.html 200
+/ai-receptionist-how-it-works /ringlatch-how-it-works.html 200
+/ai-receptionist-missed-call-text-back /ringlatch-missed-call-text-back.html 200
+/ai-receptionist-pricing /ringlatch-pricing.html 200
 /ai-automation-central-new-york /ai-automation-central-new-york.html 200
 /service-areas /service-areas.html 200
 /ai-knowledge-database /ai-knowledge-database.html 200

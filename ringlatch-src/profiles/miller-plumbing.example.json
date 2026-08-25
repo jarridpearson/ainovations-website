@@ -1,0 +1,102 @@
+{
+  "slug": "miller-plumbing",
+  "business_name": "Miller Plumbing & Heating LLC",
+  "spoken_name": "Miller Plumbing",
+  "business_type": "plumbing and heating contractor",
+  "timezone": "America/New_York",
+  "coverage_mode": "missed_call",
+  "phone": {
+    "main": "+13155550142",
+    "ringlatch": "+13155550188",
+    "owner_cell": "+13155550119"
+  },
+  "hours": {
+    "monday": {
+      "open": "07:00",
+      "close": "17:00"
+    },
+    "tuesday": {
+      "open": "07:00",
+      "close": "17:00"
+    },
+    "wednesday": {
+      "open": "07:00",
+      "close": "17:00"
+    },
+    "thursday": {
+      "open": "07:00",
+      "close": "17:00"
+    },
+    "friday": {
+      "open": "07:00",
+      "close": "17:00"
+    },
+    "saturday": {
+      "open": "08:00",
+      "close": "12:00"
+    },
+    "sunday": null
+  },
+  "services": [
+    "water heater repair and replacement",
+    "furnace and boiler service",
+    "burst and frozen pipe repair",
+    "well pump service",
+    "drain cleaning",
+    "bathroom and kitchen fixture install"
+  ],
+  "service_area": [
+    "Pulaski",
+    "Sandy Creek",
+    "Mexico",
+    "Parish",
+    "Altmar",
+    "Oswego County",
+    "southern Jefferson County"
+  ],
+  "pricing_notes": [
+    "Standard service call runs about $95 to come out during business hours.",
+    "After-hours emergency calls start around $175.",
+    "Water heater replacement typically lands between $1,400 and $2,600 installed depending on the unit."
+  ],
+  "faqs": [
+    {
+      "question": "Do you work on well pumps?",
+      "answer": "Yes \u2014 well pump service and replacement is a big part of what we do out here."
+    },
+    {
+      "question": "Are you licensed and insured?",
+      "answer": "Yes, fully licensed and insured in New York State."
+    },
+    {
+      "question": "How far out are you booking?",
+      "answer": "Usually a few days for routine work, but emergencies get handled same day."
+    },
+    {
+      "question": "Do you do septic?",
+      "answer": "We don't pump septic tanks, but we handle the line from the house out to the tank."
+    }
+  ],
+  "urgency": {
+    "enabled": true,
+    "packs": [
+      "trades"
+    ],
+    "keywords": [
+      "well pump out",
+      "no water",
+      "water heater leaking",
+      "boiler down"
+    ],
+    "live_transfer": true,
+    "transfer_after_hours": true
+  },
+  "notify": {
+    "sms_to": [
+      "+13155550119"
+    ],
+    "email_to": [
+      "owner@example.com"
+    ]
+  }
+}
