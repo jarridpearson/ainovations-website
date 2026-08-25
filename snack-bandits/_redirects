@@ -1,0 +1,5 @@
+# Never serve markdown/source files publicly
+/*.md   /   404!
+# Clean URLs for snackbandits.ainovations.net
+/guide   /guide.html   200
+/story   /story.html   200

@@ -59,6 +59,7 @@
 /files.html /home.html 301
 /home.html / 301
 # TankMate (rebranded from Reef Tank Copilot)
+/roblox-games /roblox-games.html 200
 /tankmate /tankmate.html 200
 /tanks/reef /tanks-reef.html 200
 /tanks/saltwater-fish-only /tanks-saltwater-fish-only.html 200

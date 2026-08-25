@@ -1,0 +1,114 @@
+/* Snack Bandits — shared styles. Palette pulled from the game's UI. */
+:root{
+  --bg-dark:#181520; --bg-deep:#1C1612; --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.09);
+  --gold:#FFE082; --purple:#7E3ED6; --pink:#FF78D2; --cyan:#82DCFF; --green:#78EB96; --red:#F0645F;
+  --text:#f6f0ff; --muted:#c3b9d4; --line:rgba(255,255,255,.14);
+  --shadow:0 20px 55px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;overflow-x:hidden;color:var(--text);
+  font-family:"Nunito",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:16px;font-weight:600;
+  background:radial-gradient(circle at 50% -10%,rgba(126,62,214,.35),transparent 45%),linear-gradient(180deg,#221a2e 0%,var(--bg-dark) 45%,var(--bg-deep) 100%);
+  background-attachment:fixed}
+a{color:inherit}
+img{max-width:100%;display:block}
+.skip-link{position:absolute;top:-60px;left:14px;z-index:100;padding:12px 16px;border-radius:10px;background:var(--gold);color:#1a1420;font-weight:800;text-decoration:none}
+.skip-link:focus{top:14px}
+.wrap{width:min(1120px,calc(100% - 32px));margin:0 auto}
+/* headline treatment */
+.pop{font-family:"Luckiest Guy",system-ui,sans-serif;font-weight:400;letter-spacing:.01em;line-height:1.02;text-transform:uppercase}
+.gold{color:var(--gold)}
+/* nav */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0;flex-wrap:wrap}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
+.brand img{width:44px;height:44px;border-radius:11px;box-shadow:var(--shadow)}
+.brand b{font-family:"Luckiest Guy",sans-serif;font-weight:400;font-size:20px;letter-spacing:.02em;color:var(--gold)}
+.nav-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.nav-links a{padding:8px 13px;border-radius:999px;text-decoration:none;color:var(--text);font-weight:800;font-size:14px}
+.nav-links a:hover{background:rgba(255,255,255,.12)}
+.nav-links a.parent-link{border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.08)}
+.nav-links a.cta{background:var(--red);color:#fff}
+.nav-links a.cta:hover{filter:brightness(1.08)}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border:0;border-radius:16px;font-family:"Luckiest Guy",sans-serif;font-weight:400;font-size:19px;letter-spacing:.02em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:transform .14s ease,filter .14s ease}
+.btn-play{background:linear-gradient(180deg,#ffe9a0,var(--gold));color:#3a2a06;box-shadow:0 8px 0 #c79a2e,var(--shadow)}
+.btn-play:hover{transform:translateY(-2px);filter:brightness(1.04)}
+.btn-play:active{transform:translateY(4px);box-shadow:0 4px 0 #c79a2e,var(--shadow)}
+.btn-purple{background:linear-gradient(180deg,#9a5be8,var(--purple));color:#fff;box-shadow:0 8px 0 #5a2aa0,var(--shadow)}
+.btn-purple:hover{transform:translateY(-2px)}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.4)}
+.btn-ghost:hover{background:rgba(255,255,255,.18);transform:translateY(-2px)}
+/* hero */
+.hero{position:relative;margin-top:6px;border-radius:26px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.05)}
+.hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(24,21,32,.35) 0%,rgba(24,21,32,.72) 62%,rgba(24,21,32,.92) 100%)}
+.hero-inner{position:relative;padding:clamp(26px,6vw,60px) clamp(20px,5vw,54px);text-align:center;display:flex;flex-direction:column;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(126,62,214,.3);border:1px solid rgba(130,220,255,.4);color:var(--cyan);font-weight:800;font-size:13px;margin-bottom:16px}
+.hero h1{margin:0;font-size:clamp(44px,10vw,96px);text-shadow:0 4px 0 rgba(0,0,0,.35)}
+.hero .sub{margin:14px 0 0;max-width:32ch;font-size:clamp(17px,2.4vw,24px);font-weight:800;color:var(--gold)}
+.hero .lead{margin:12px 0 0;max-width:44ch;color:var(--muted);font-size:clamp(15px,1.9vw,18px);font-weight:700}
+.hero-cta{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;margin-top:26px}
+.hero-note{margin:16px 0 0;color:var(--muted);font-size:13.5px;font-weight:700}
+/* sections */
+.section{padding:clamp(44px,7vw,72px) 0}
+.section-head{max-width:720px;margin:0 auto 30px;text-align:center}
+.kicker{display:inline-block;margin:0 0 12px;padding:6px 14px;border-radius:999px;background:var(--gold);color:#3a2a06;font-family:"Luckiest Guy",sans-serif;font-size:13px;letter-spacing:.06em}
+.section-head h2{margin:0;font-size:clamp(30px,6vw,52px)}
+.section-head p{margin:14px auto 0;max-width:56ch;color:var(--muted);font-size:17px;font-weight:700;line-height:1.55}
+/* card grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{padding:24px;border-radius:20px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+.card .ic{font-size:40px;line-height:1}
+.card h3{margin:14px 0 8px;font-family:"Luckiest Guy",sans-serif;font-weight:400;font-size:22px;letter-spacing:.01em}
+.card.pink h3{color:var(--pink)} .card.cyan h3{color:var(--cyan)} .card.green h3{color:var(--green)} .card.red h3{color:var(--red)} .card.gold h3{color:var(--gold)}
+.card p{margin:0;color:var(--muted);font-size:15px;font-weight:700;line-height:1.6}
+/* worlds ladder */
+.worlds{display:grid;gap:12px;max-width:760px;margin:0 auto}
+.world{display:flex;align-items:center;gap:16px;padding:18px 22px;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+.world .n{font-family:"Luckiest Guy",sans-serif;font-size:22px;width:40px;flex:0 0 auto}
+.world .wn{font-family:"Luckiest Guy",sans-serif;font-weight:400;font-size:20px;letter-spacing:.02em}
+.world .wd{margin:2px 0 0;color:var(--muted);font-size:14px;font-weight:700}
+.w1{border-left:6px solid #b7c0cf}.w1 .n,.w1 .wn{color:#dfe6f0}
+.w2{border-left:6px solid var(--cyan)}.w2 .n,.w2 .wn{color:var(--cyan)}
+.w3{border-left:6px solid var(--purple)}.w3 .n,.w3 .wn{color:#b98bf0}
+.w4{border-left:6px solid var(--gold)}.w4 .n,.w4 .wn{color:var(--gold)}
+.w5{border-left:6px solid var(--pink)}.w5 .n,.w5 .wn{color:var(--pink)}
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:860px;margin:0 auto}
+.step{display:flex;gap:14px;padding:18px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.step .num{font-family:"Luckiest Guy",sans-serif;font-size:22px;color:var(--gold);width:34px;flex:0 0 auto}
+.step p{margin:0;font-weight:700;font-size:15px;line-height:1.5}
+.step strong{color:#fff}
+/* band */
+.band{padding:clamp(28px,5vw,52px);border-radius:24px;text-align:center;border:1px solid rgba(240,100,96,.35);background:radial-gradient(circle at 80% 10%,rgba(240,100,96,.22),transparent 42%),var(--panel);box-shadow:var(--shadow)}
+.band h2{margin:0 auto;max-width:20ch;font-size:clamp(28px,5vw,46px);color:var(--red)}
+.band p{margin:14px auto 0;max-width:52ch;color:var(--muted);font-size:17px;font-weight:700;line-height:1.55}
+/* faq */
+.faq{max-width:800px;margin:0 auto}
+.faq details{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:2px 20px;margin-bottom:12px}
+.faq summary{cursor:pointer;padding:16px 0;font-family:"Luckiest Guy",sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";float:right;color:var(--gold)}
+.faq details[open] summary::after{content:"\2013"}
+.faq details p{margin:0 0 16px;color:var(--muted);font-weight:700;line-height:1.6}
+/* prose (guide/story) */
+.page-head{text-align:center;padding:26px 0 6px}
+.page-head h1{margin:0;font-size:clamp(36px,8vw,68px)}
+.page-head p{margin:14px auto 0;max-width:60ch;color:var(--muted);font-size:17px;font-weight:700}
+.prose{max-width:760px;margin:0 auto;padding:clamp(24px,4vw,40px);border-radius:22px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+.prose p,.prose li{font-size:17px;font-weight:600;line-height:1.75;color:var(--text)}
+.prose .lead{font-size:19px;font-weight:800;color:var(--gold)}
+.prose h2{font-family:"Luckiest Guy",sans-serif;font-weight:400;font-size:26px;margin:28px 0 10px;letter-spacing:.01em}
+.prose strong{color:#fff}
+.prose ol,.prose ul{padding-left:22px}
+.prose li{margin:8px 0}
+/* footer */
+.footer{margin-top:44px;padding:30px 0 48px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:14px;font-weight:700}
+.footer-links{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.footer-links a{color:var(--gold);text-decoration:none;font-weight:800}
+.footer-links a:hover{text-decoration:underline}
+/* responsive */
+@media(max-width:820px){.grid3{grid-template-columns:1fr}.steps{grid-template-columns:1fr}}
+@media(max-width:560px){.nav-links a:not(.cta):not(.parent-link){display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
