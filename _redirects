@@ -10,7 +10,10 @@
 /cow-flicker/*       /404.html 404!
 /ringlatch-src/*    /404.html 404!
 # rent-an-app has its own public site at rent-an-app.ainovations.net;
-# this directory is just its source, never served here.
+# this directory is just its source, never served here. The bare-path 301s
+# must come first: the /rent-an-app/* splat also matches /rent-an-app itself.
+/rent-an-app https://rent-an-app.ainovations.net/ 301!
+/rent-an-app-thanks https://rent-an-app.ainovations.net/thanks 301!
 /rent-an-app/*      /404.html 404!
 
 # kick-a-donut has its own public site and index.html here links directly
@@ -98,9 +101,6 @@
 /reef/partner-thanks /partner-thanks 301!
 /reef/privacy /privacy 301!
 /chalkline /chalkline.html 200
-# Rent-an-App lives on its own subdomain now
-/rent-an-app https://rent-an-app.ainovations.net/ 301!
-/rent-an-app-thanks https://rent-an-app.ainovations.net/thanks 301!
 /hire /hire.html 200
 /hire-thanks /hire-thanks.html 200
 /custom-ai-solutions /custom-ai-solutions.html 200
