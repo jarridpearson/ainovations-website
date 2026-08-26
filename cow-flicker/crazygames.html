@@ -870,7 +870,9 @@
         window.PokiSDK.init().then(()=>{ Ads.ready=true; }).catch(()=>{});
         if(window.PokiSDK.gameLoadingFinished) window.PokiSDK.gameLoadingFinished();
       } else if(PORTAL==='crazygames' && window.CrazyGames && window.CrazyGames.SDK){
-        window.CrazyGames.SDK.init().then(()=>{ Ads.ready=true; }).catch(()=>{});
+        window.CrazyGames.SDK.init().then(()=>{ Ads.ready=true;
+          try{ var g=window.CrazyGames.SDK.game; g.loadingStart(); setTimeout(function(){ try{ g.loadingStop(); g.gameplayStart(); }catch(e){} }, 400); }catch(e){}
+        }).catch(()=>{});
       } else if(PORTAL==='gamedistribution'){
         Ads.ready=true;  // GD SDK loads via GD_OPTIONS; gdsdk appears when ready
         try{ if(window.gdsdk&&window.gdsdk.preloadAd) window.gdsdk.preloadAd('rewarded'); }catch(e){}
