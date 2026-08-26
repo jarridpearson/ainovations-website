@@ -1,0 +1,10 @@
+# Never serve markdown/source files publicly
+/*.md   /   404!
+# Clean URLs for rent-an-app.ainovations.net
+/thanks   /thanks.html   200
+/learn    /learn.html    200
+/how-much-does-an-app-cost-for-a-small-business   /how-much-does-an-app-cost-for-a-small-business.html   200
+/app-vs-website-for-small-business                /app-vs-website-for-small-business.html                200
+/how-app-rental-works                             /how-app-rental-works.html                             200
+/ai-chat-agent-for-small-business                 /ai-chat-agent-for-small-business.html                 200
+/sell-through-your-own-app                        /sell-through-your-own-app.html                        200
