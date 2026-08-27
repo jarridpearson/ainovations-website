@@ -58,6 +58,9 @@
     .chip,.iconbtn{font-size:12px;padding:4px 8px}
     .angerwrap{width:min(300px,64vw)}
     .angerlabel{font-size:10px;margin-bottom:2px}
+    .milewrap{width:min(300px,64vw)}
+    .milelabel{font-size:9px;margin-bottom:1px}
+    .milebar{height:7px}
     .cow-svg{width:min(280px,46vh)}
     .dock{padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
     .weapon{min-width:60px;padding:5px 7px 3px}
@@ -307,6 +310,39 @@
     font-family:var(--font-display);color:#fffbe9;text-shadow:0 2px 4px rgba(0,0,0,.4);
     font-size:14px;letter-spacing:.5px;animation:pulse 1.6s infinite}
   @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+  /* squash & stretch on every poke (interrupts breathe briefly, then it resumes) */
+  @keyframes squashy{0%{transform:scale(1,1)}30%{transform:scale(1.12,.84)}60%{transform:scale(.93,1.09)}80%{transform:scale(1.03,.98)}100%{transform:scale(1,1)}}
+  .cowhit.squash{animation:squashy .32s cubic-bezier(.3,1.4,.5,1)}
+
+  /* subtle shake for the every-5th-poke reaction */
+  @keyframes gameShakeSm{0%,100%{transform:translate(0,0)}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-3px,1px)}}
+  #game.shakesm{animation:gameShakeSm .3s}
+
+  /* tail swish */
+  #tail{transform-box:view-box;transform-origin:70px 132px;animation:swish 4.2s ease-in-out infinite}
+  @keyframes swish{0%,62%,100%{transform:rotate(0)}72%{transform:rotate(16deg)}84%{transform:rotate(-12deg)}}
+
+  /* occasional bird flyby */
+  .bird{position:absolute;z-index:5;font-size:22px;pointer-events:none;animation:flyby linear forwards}
+  @keyframes flyby{0%{left:100%;transform:translateY(0)}25%{transform:translateY(-10px)}50%{transform:translateY(4px)}75%{transform:translateY(-8px)}100%{left:-60px;transform:translateY(0)}}
+
+  /* milestone progress track (under the HUD) */
+  .milewrap{position:relative;z-index:15;flex:none;width:min(340px,86vw);margin:0 auto 4px;text-align:center}
+  .milelabel{font-family:var(--font-display);font-size:11px;letter-spacing:1px;color:#2f7dc0;
+    text-shadow:0 1px 0 #fff;margin-bottom:2px;font-variant-numeric:tabular-nums}
+  .milebar{height:9px;border-radius:8px;background:#fff;border:2px solid var(--ink);
+    overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .milefill{height:100%;width:0%;border-radius:6px;
+    background:linear-gradient(90deg,#7cc4f0,#2f7dc0);transition:width .3s ease}
+
+  /* onboarding pointing hand (first ever load, until first poke) */
+  .ptr{position:absolute;z-index:21;left:50%;bottom:36%;transform:translateX(-50%);
+    font-size:58px;pointer-events:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3));
+    animation:ptrBounce 1s ease-in-out infinite}
+  @keyframes ptrBounce{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}
+    50%{transform:translateX(-50%) translateY(-26px) scale(1.12)}}
+
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
@@ -329,9 +365,15 @@
       <div class="chip coins"><span class="ico">🪙</span><span id="coins">0</span></div>
       <div class="chip"><span class="ico">👆</span><span id="flicks">0</span></div>
       <div class="iconbtn" id="achBtn">🏆 <span id="achCount">0</span>/<span id="achTotal">0</span></div>
+      <div class="iconbtn" id="skinBtn">🎨 Skins</div>
       <div class="iconbtn" id="hintBtn">🔍 Hints</div>
       <div class="iconbtn" id="sndBtn">🔊</div>
     </div>
+  </div>
+
+  <div class="milewrap">
+    <div class="milelabel">🎯 <span id="mileTxt"></span></div>
+    <div class="milebar"><div class="milefill" id="mileFill"></div></div>
   </div>
 
   <div class="angerwrap">
@@ -343,6 +385,10 @@
     <div class="cowhit" id="cow">
       <div class="cowshadow"></div>
       <svg class="cow-svg" id="cowSvg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg">
+        <g id="tail">
+          <path d="M66 132 q-16 22 -6 52" stroke="#f4efe6" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <circle cx="61" cy="188" r="8" fill="#2a2a2e"/>
+        </g>
         <rect x="86" y="150" width="22" height="60" rx="8" fill="#f4efe6"/>
         <rect x="190" y="150" width="22" height="60" rx="8" fill="#f4efe6"/>
         <rect x="86" y="196" width="22" height="16" rx="4" fill="#26262b"/>
@@ -360,6 +406,7 @@
         </g>
         <g id="head">
           <ellipse cx="150" cy="86" rx="56" ry="48" fill="#fbf7ef" stroke="#26262b" stroke-width="4"/>
+          <ellipse id="madflush" cx="150" cy="86" rx="54" ry="46" fill="#e4572e" opacity="0"/>
           <ellipse cx="98" cy="66" rx="16" ry="10" fill="#fbf7ef" stroke="#26262b" stroke-width="3" transform="rotate(-24 98 66)"/>
           <ellipse cx="202" cy="66" rx="16" ry="10" fill="#fbf7ef" stroke="#26262b" stroke-width="3" transform="rotate(24 202 66)"/>
           <path d="M116 46 q-8-16 4-24" stroke="#d9c9a3" stroke-width="7" fill="none" stroke-linecap="round"/>
@@ -375,8 +422,8 @@
             <rect id="lidR" x="161" y="67" width="22" height="0" rx="5" fill="#fbf7ef"/>
           </g>
           <g id="brows" opacity="0">
-            <path d="M118 66 l20 8" stroke="#26262b" stroke-width="4" stroke-linecap="round"/>
-            <path d="M182 66 l-20 8" stroke="#26262b" stroke-width="4" stroke-linecap="round"/>
+            <path id="browL" d="M118 66 l20 8" stroke="#26262b" stroke-width="4" stroke-linecap="round"/>
+            <path id="browR" d="M182 66 l-20 8" stroke="#26262b" stroke-width="4" stroke-linecap="round"/>
           </g>
           <ellipse cx="150" cy="108" rx="30" ry="20" fill="#f4b8bf" stroke="#26262b" stroke-width="3"/>
           <circle cx="140" cy="106" r="4" fill="#26262b"/>
@@ -402,6 +449,7 @@
 
   <canvas class="canvas-fx" id="fx"></canvas>
   <div class="bubble" id="bubble"></div>
+  <div class="ptr" id="ptr" style="display:none">👆</div>
   <div class="hint" id="hint">Tap the cow to flick her 👆</div>
 
   <div class="dock" id="dock"></div>
@@ -412,6 +460,15 @@
       <p style="margin:.2em 0;font-size:13px;color:#6b6b6b">Hidden combos! Mix and match your 5 weapons over 5 taps to trigger unique reactions. ⭐ = special scene. Discover them all.</p>
       <div class="ach-list" id="achList"></div>
       <button class="btn ghost" id="achClose">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="skinOverlay">
+    <div class="card">
+      <h2>🎨 Cow Skins</h2>
+      <p style="margin:.2em 0;font-size:13px;color:#6b6b6b">Dress her up! Buy skins with coins, then tap to wear.</p>
+      <div class="ach-list" id="skinList"></div>
+      <button class="btn ghost" id="skinClose">Close</button>
     </div>
   </div>
 
@@ -453,6 +510,8 @@
   const brows=$('#brows'), pupilL=$('#pupilL'), pupilR=$('#pupilR'), mouth=$('#mouth');
   const lidL=$('#lidL'), lidR=$('#lidR');
   const dock=$('#dock'), achCountEl=$('#achCount'), hint=$('#hint');
+  const ptr=$('#ptr'), mileTxt=$('#mileTxt'), mileFill=$('#mileFill');
+  const browL=$('#browL'), browR=$('#browR'), madflush=$('#madflush');
 
   const AD_INTERVAL_MS=90000; // forced ads gated to ~1 / 90s (no ad-removal purchase on web)
 
@@ -494,18 +553,21 @@
       o.type='sawtooth'; o.frequency.setValueAtTime(120,c.currentTime); o.frequency.exponentialRampToValueAtTime(760,c.currentTime+1.2);
       g.gain.setValueAtTime(0.10,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1.25);
       o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+1.3); }
+    function jt(f){ return f*(1+(Math.random()-.5)*0.16); }   // slight random detune per hit
     return {
       resume:()=>ac(), isMuted:()=>muted, toggle(){ muted=!muted; if(!muted) ac(); return muted; },
-      tick:()=>tone(520,0.05,'square',0.14,760),
-      whoosh:()=>noise(0.22,0.22,1400),
-      thwack:()=>{ noise(0.11,0.5,2600); tone(120,0.16,'square',0.3,60); },
-      punch:()=>{ noise(0.08,0.45,1700); tone(95,0.15,'sine',0.34,48); },
-      thud:()=>{ noise(0.14,0.4,320); tone(72,0.2,'sine',0.34,42); },
+      tick:()=>{ const f=jt(520); tone(f,0.05,'square',0.14,f*1.46); },
+      whoosh:()=>noise(0.22,0.22,jt(1400)),
+      thwack:()=>{ noise(0.11,0.5,jt(2600)); const f=jt(120); tone(f,0.16,'square',0.3,f*0.5); },
+      punch:()=>{ noise(0.08,0.45,jt(1700)); const f=jt(95); tone(f,0.15,'sine',0.34,f*0.5); },
+      thud:()=>{ noise(0.14,0.4,jt(320)); const f=jt(72); tone(f,0.2,'sine',0.34,f*0.58); },
       boing:()=>tone(200,0.34,'sine',0.28,620),
       splat:()=>noise(0.34,0.5,720),
       pop:()=>tone(600,0.11,'triangle',0.22,900),
       ding:()=>{ tone(880,0.35,'sine',0.24); setTimeout(()=>tone(1320,0.45,'sine',0.2),90); },
       sparkle:()=>{ [880,1175,1568,2093].forEach((f,i)=>setTimeout(()=>tone(f,0.16,'triangle',0.16),i*70)); },
+      jingle:()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'triangle',0.2),i*90));
+        setTimeout(()=>tone(1319,0.34,'sine',0.18),360); },
       charge:()=>tone(180,0.5,'sawtooth',0.14,520),
       moo, whir,
     };
@@ -528,6 +590,7 @@
       c.style.left=(Math.random()*100)+'%'; c.style.background=cols[i%cols.length];
       c.style.animationDelay=(Math.random()*350)+'ms'; game.appendChild(c); setTimeout(()=>c.remove(),2200); } }
   function screenShake(){ game.classList.remove('shake'); void game.offsetWidth; game.classList.add('shake'); setTimeout(()=>game.classList.remove('shake'),490); }
+  function shakeSmall(){ game.classList.remove('shakesm'); void game.offsetWidth; game.classList.add('shakesm'); setTimeout(()=>game.classList.remove('shakesm'),310); }
   function flashScreen(color){ const f=document.createElement('div'); f.className='fxflash'; f.style.background=color||'#fff'; game.appendChild(f); setTimeout(()=>f.remove(),380); }
   function spitMilk(){ const r=cow.getBoundingClientRect(); flyGlassFrom(r.left+r.width*0.5, r.top+r.height*0.3); }
   function launchCow(){ cowSvg.style.transition='transform .45s cubic-bezier(.3,0,.7,1)'; cowSvg.style.transform='translateY(-300px) scale(.42) rotate(22deg)'; }
@@ -637,10 +700,32 @@
   ];
   const MOOS=["MOOO! 😠","Rude!","I felt that.","You'll pay for this.","Grrr... moo.","Was that necessary?"];
   const MILK={ id:null, special:false, dur:2400, phrase:null,
-    scene(done){ milkSequence(function(){ Sound.splat(); Sound.moo(); }); setTimeout(done,2200); } };
+    scene(done){ shakeSmall(); milkSequence(function(){ Sound.splat(); Sound.moo(); }); setTimeout(done,2200); } };
+
+  // ================= milestone track (total flicks) =================
+  const MILES=[100,500,1500,5000,15000], MBONUS=[150,500,1500,5000,15000];
+
+  // ================= cow skins (SVG fill swaps) =================
+  const SKINS=[
+    {id:'classic',name:'Classic',emoji:'🐄',cost:0,     body:'#fbf7ef',limb:'#f4efe6',spot:'#2a2a2e'},
+    {id:'brown',  name:'Brown',  emoji:'🟤',cost:500,   body:'#e8c391',limb:'#dcb27b',spot:'#6b4226'},
+    {id:'pink',   name:'Pink',   emoji:'🌸',cost:2500,  body:'#ffd9e6',limb:'#f8c6d8',spot:'#d15f92'},
+    {id:'golden', name:'Golden', emoji:'✨',cost:10000, body:'#ffe08a',limb:'#f5cd60',spot:'#b8860b'},
+    {id:'robot',  name:'Robot',  emoji:'🤖',cost:40000, body:'#cfd8e0',limb:'#b9c4cd',spot:'#46586a'},
+  ];
 
   let state={coins:0, flicks:0, weapon:'flick', combo:[], anger:0, free:true, mult:1,
-    unlocked:new Set(), lastAd:Date.now(), hints:{}, hintTarget:0};
+    unlocked:new Set(), lastAd:Date.now(), hints:{}, hintTarget:0,
+    mile:0, skins:new Set(['classic']), skin:'classic'};
+
+  const skinNodes=[...cowSvg.querySelectorAll('[fill],[stroke]')].map(el=>(
+    {el, f:el.getAttribute('fill'), s:el.getAttribute('stroke')}));
+  function applySkin(id){
+    const sk=SKINS.find(x=>x.id===id)||SKINS[0];
+    const map={'#fbf7ef':sk.body,'#f4efe6':sk.limb,'#2a2a2e':sk.spot};
+    skinNodes.forEach(n=>{ if(map[n.f]) n.el.setAttribute('fill',map[n.f]);
+      if(map[n.s]) n.el.setAttribute('stroke',map[n.s]); });
+  }
 
   function renderDock(){
     dock.innerHTML='';
@@ -674,14 +759,25 @@
     const gain=w.power*(state.mult||1);
     state.flicks++; state.coins+=gain; state.anger=Math.min(100,state.anger+20);
     state.combo.push(state.weapon); if(state.combo.length>5) state.combo.shift();
-    hint.style.display='none';
+    hint.style.display='none'; ptr.style.display='none';
     floater(x,y,'+'+gain);
+    squash(); burst(x,y,['#ffd166','#fff3c4','#f2c14e']);
     strike(state.weapon, x, y); faceMad(state.anger);
     const code=matchCode();
     if(code){ state.combo=[]; state.anger=0; react(code); }       // secret code completed!
     else if(state.flicks%5===0){ state.anger=0; react(MILK); }    // default anger reaction
+    checkMilestone();
     if(state.flicks%20===0) maybeRewardOffer();                    // rewarded-ad bonus offer
     sync();
+  }
+  function squash(){ cow.classList.remove('squash'); void cow.offsetWidth; cow.classList.add('squash');
+    clearTimeout(squash._t); squash._t=setTimeout(()=>cow.classList.remove('squash'),330); }
+  function checkMilestone(){
+    if(state.mile>=MILES.length || state.flicks<MILES[state.mile]) return;
+    const goal=MILES[state.mile], bonus=MBONUS[state.mile]; state.mile++;
+    state.coins+=bonus;
+    confetti(30); Sound.jingle(); bigText('🎯 '+goal+' FLICKS!','#2f7dc0');
+    setTimeout(()=>toast('Milestone! +'+bonus+' 🪙'),700);
   }
 
   function matchCode(){
@@ -698,6 +794,7 @@
     react.busy=true;
     combo.scene(function(){
       react.busy=false;
+      faceMad(state.anger);   // cool off — brows/flush reset after the reaction
       if(Date.now()-state.lastAd>=AD_INTERVAL_MS){ state.lastAd=Date.now(); setTimeout(interstitialAd,300); }
     });
   }
@@ -709,7 +806,9 @@
     const firstEver = discoveredCount()===0;
     state.unlocked.add(id);
     if(COMBOS.every(x=>state.unlocked.has(x.id))) state.unlocked.add('grand');
-    confetti(26); Sound.sparkle(); bigText('SECRET '+discoveredCount()+'/20!','#6da544');
+    confetti(26); Sound.jingle();
+    if(firstEver){ flashScreen('#fff8d8'); screenShake(); bigText('SECRET FOUND!','#f2c14e'); }
+    else bigText('SECRET '+discoveredCount()+'/20!','#6da544');
     toast('🏆 '+comboTitle(id));
     advanceHintTarget(); renderAch();
     if(firstEver) setTimeout(()=>showCelebration(comboTitle(id)), 950);
@@ -734,7 +833,12 @@
   function faceMad(a){
     const mad=a>=40;
     cow.classList.toggle('mad',mad);
-    brows.setAttribute('opacity', mad?'1':'0');
+    // escalating anger: brows fade in + steepen, face flushes red across the 5-poke cycle
+    brows.setAttribute('opacity', Math.min(1,a/50).toFixed(2));
+    const t=4+(a/100)*7;   // brow steepness 4 → 11
+    browL.setAttribute('d','M118 '+(74-t)+' l20 '+t);
+    browR.setAttribute('d','M182 '+(74-t)+' l-20 '+t);
+    madflush.setAttribute('opacity',(a/100*0.22).toFixed(3));
     mouth.setAttribute('d', mad?'M138 120 q12 -8 24 0':'M138 118 q12 8 24 0');
     const s=mad?5.5:4.5; pupilL.setAttribute('r',s); pupilR.setAttribute('r',s);
   }
@@ -999,7 +1103,8 @@
       '<p style="font-size:13px;color:#777">Stuck? Tap 🔍 <b>Hints</b> to reveal the next code, one poke at a time.</p>'+
       '<button class="btn" id="celebClose">Let’s go! 🐄</button>';
     $('#celebOverlay').classList.add('show'); Sound.ding();
-    $('#celebClose').onclick=()=>$('#celebOverlay').classList.remove('show');
+    $('#celebClose').onclick=()=>{ $('#celebOverlay').classList.remove('show');
+      toast('19 more secrets remain…'); };
   }
 
   // ================= persistence (return players keep progress) =================
@@ -1008,11 +1113,16 @@
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
     coins:state.coins, flicks:state.flicks, free:state.free, muted:Sound.isMuted(),
     unlocked:[...state.unlocked], hints:state.hints,
-    weapons:weapons.filter(w=>w.unlocked).map(w=>w.id) })); }catch(e){} }
+    weapons:weapons.filter(w=>w.unlocked).map(w=>w.id),
+    mile:state.mile, skins:[...state.skins], skin:state.skin })); }catch(e){} }
   function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(!s) return;
     state.coins=s.coins||0; state.flicks=s.flicks||0; state.free=(s.free!==false);
     state.unlocked=new Set(s.unlocked||[]); state.hints=s.hints||{};
     (s.weapons||[]).forEach(id=>{ const w=weapons.find(x=>x.id===id); if(w) w.unlocked=true; });
+    // legacy saves: count already-passed milestones as claimed (no retroactive toasts)
+    state.mile=(typeof s.mile==='number')?s.mile:MILES.filter(m=>state.flicks>=m).length;
+    state.skins=new Set(s.skins||['classic']); state.skins.add('classic');
+    state.skin=(s.skin && SKINS.some(x=>x.id===s.skin))?s.skin:'classic';
     if(s.muted) Sound.toggle();
     if(state.flicks>0) hint.style.display='none';
   }catch(e){} }
@@ -1025,23 +1135,63 @@
     angerFill.style.width=state.anger+'%';
     toReactEl.textContent=5-(state.flicks%5);
     achCountEl.textContent=discoveredCount();
+    if(state.mile>=MILES.length){ mileTxt.textContent='All goals done! 👑'; mileFill.style.width='100%'; }
+    else { const goal=MILES[state.mile], prev=state.mile?MILES[state.mile-1]:0;
+      mileTxt.textContent=state.flicks+' / '+goal+' flicks · +'+MBONUS[state.mile]+' 🪙';
+      mileFill.style.width=Math.min(100,(state.flicks-prev)/(goal-prev)*100)+'%'; }
     renderDock(); scheduleSave();
   }
   function arrEq(a,b){ return a.length===b.length && a.every((v,i)=>v===b[i]); }
+
+  // ================= skins shop =================
+  function renderSkins(){
+    const list=$('#skinList'); list.innerHTML='';
+    SKINS.forEach(sk=>{
+      const owned=state.skins.has(sk.id), sel=state.skin===sk.id;
+      const el=document.createElement('div'); el.className='ach'+(owned?' done':'');
+      el.style.cursor='pointer';
+      el.innerHTML='<div class="a-emoji" style="filter:none">'+sk.emoji+'</div>'+
+        '<div class="a-txt"><b>'+sk.name+'</b><br>'+
+        (sel?'✅ Equipped':owned?'Tap to wear':'🪙'+sk.cost+' — tap to buy')+'</div>';
+      el.onclick=()=>{
+        if(!owned){
+          if(state.coins<sk.cost){ toast('Need 🪙'+sk.cost); return; }
+          state.coins-=sk.cost; state.skins.add(sk.id); Sound.jingle(); confetti(20);
+          toast('Unlocked '+sk.name+' cow!');
+        }
+        state.skin=sk.id; applySkin(sk.id); sync(); renderSkins();
+      };
+      list.appendChild(el);
+    });
+  }
+
+  // ================= occasional bird flyby =================
+  function birdLoop(){
+    const b=document.createElement('div'); b.className='bird'; b.textContent='🐦';
+    b.style.top=(6+Math.random()*18)+'%';
+    const d=9+Math.random()*6; b.style.animationDuration=d+'s';
+    game.appendChild(b); setTimeout(()=>b.remove(), d*1000+150);
+    setTimeout(birdLoop, 14000+Math.random()*22000);
+  }
+  setTimeout(birdLoop, 7000);
 
   cow.addEventListener('pointerdown',(e)=>{ e.preventDefault(); Sound.resume(); flick(e.clientX, e.clientY); });
   $('#sndBtn').onclick=(e)=>{ const m=Sound.toggle(); e.currentTarget.textContent=m?'🔇':'🔊'; };
   $('#achBtn').onclick=()=>{ renderAch(); $('#achOverlay').classList.add('show'); };
   $('#achClose').onclick=()=>$('#achOverlay').classList.remove('show');
+  $('#skinBtn').onclick=()=>{ renderSkins(); $('#skinOverlay').classList.add('show'); };
+  $('#skinClose').onclick=()=>$('#skinOverlay').classList.remove('show');
   $('#hintBtn').onclick=()=>openHint();
   $('#hintClose').onclick=()=>$('#hintOverlay').classList.remove('show');
-  ['#achOverlay','#hintOverlay','#rewardOverlay','#celebOverlay'].forEach(s=>
+  ['#achOverlay','#skinOverlay','#hintOverlay','#rewardOverlay','#celebOverlay'].forEach(s=>
     $(s).addEventListener('click',ev=>{ if(ev.target===$(s)) $(s).classList.remove('show'); }));
 
   window.addEventListener('resize',sizeFx);
   $('#achTotal').textContent=COMBOS.length;
   loadGame();
   if(Sound.isMuted()){ $('#sndBtn').textContent='🔇'; }
+  applySkin(state.skin);
+  if(state.flicks===0) ptr.style.display='block';   // first-ever load: bouncing hand until the first poke
   _lastCoins=state.coins; advanceHintTarget();
   setInterval(()=>{ if(!react.busy && Math.random()<0.55) blink(); }, 3800);
   window.addEventListener('beforeunload',saveGame);
