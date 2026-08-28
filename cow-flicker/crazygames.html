@@ -968,6 +968,12 @@
   const CFG = window.COWFLICKER_ADS || {};
   const PORTAL = (CFG.portal||'').toLowerCase();   // '' = Google H5 / self-host, or 'poki' / 'crazygames'
   const Ads = { ready:false };
+  // CrazyGames handles: .game (lifecycle), .data (cloud progress save). Null on every other host.
+  const CG = { g:null, data:null, menus:0, playing:false };
+  function cgStop(){ if(!CG.playing) return; CG.playing=false; try{ if(CG.g) CG.g.gameplayStop(); }catch(e){} }
+  // Stay stopped while any menu is still open — an ad launched from a menu must not report
+  // "playing" on completion; the overlay observer resumes once the last overlay closes.
+  function cgStart(){ if(CG.menus>0 || CG.playing) return; CG.playing=true; try{ if(CG.g) CG.g.gameplayStart(); }catch(e){} }
   (function initAds(){
     try{
       if(PORTAL==='poki' && window.PokiSDK){
@@ -975,7 +981,9 @@
         if(window.PokiSDK.gameLoadingFinished) window.PokiSDK.gameLoadingFinished();
       } else if(PORTAL==='crazygames' && window.CrazyGames && window.CrazyGames.SDK){
         window.CrazyGames.SDK.init().then(()=>{ Ads.ready=true;
-          try{ var g=window.CrazyGames.SDK.game; g.loadingStart(); setTimeout(function(){ try{ g.loadingStop(); g.gameplayStart(); }catch(e){} }, 400); }catch(e){}
+          try{ CG.g=window.CrazyGames.SDK.game; CG.data=window.CrazyGames.SDK.data; }catch(e){}
+          try{ var g=CG.g; g.loadingStart(); setTimeout(function(){ try{ g.loadingStop(); g.gameplayStart(); CG.playing=true; }catch(e){} }, 400); }catch(e){}
+          try{ cloudRestore(); }catch(e){}
         }).catch(()=>{});
       } else if(PORTAL==='gamedistribution'){
         Ads.ready=true;  // GD SDK loads via GD_OPTIONS; gdsdk appears when ready
@@ -993,7 +1001,8 @@
   function interstitialAd(){            // forced ad break (free tier only — gated ~1/min)
     try{
       if(PORTAL==='poki' && window.PokiSDK){ react.busy=true; window.PokiSDK.commercialBreak().then(()=>{react.busy=false;}).catch(()=>{react.busy=false;}); return; }
-      if(PORTAL==='crazygames' && window.CrazyGames){ react.busy=true; window.CrazyGames.SDK.ad.requestAd('midgame',{adFinished:()=>{react.busy=false;},adError:()=>{react.busy=false;}}); return; }
+      if(PORTAL==='crazygames' && window.CrazyGames){ react.busy=true; cgStop();
+        window.CrazyGames.SDK.ad.requestAd('midgame',{adFinished:()=>{react.busy=false; cgStart();},adError:()=>{react.busy=false; cgStart();}}); return; }
       if(PORTAL==='gamedistribution' && window.gdsdk && window.gdsdk.showAd){ react.busy=true; window.gdsdk.showAd().then(()=>{react.busy=false;}).catch(()=>{react.busy=false;}); return; }
       if(PORTAL==='gamemonetize' && window.sdk && window.sdk.showBanner){ react.busy=true; try{ window.sdk.showBanner(); }catch(e){} setTimeout(()=>{react.busy=false;}, 500); return; }
       if(Ads.ready){ window.adBreak({ type:'next', name:'reaction_break',
@@ -1004,7 +1013,8 @@
   function rewardedAd(opts){            // opts:{art,label,note,onReward,name} — always available, every tier
     try{
       if(PORTAL==='poki' && window.PokiSDK){ window.PokiSDK.rewardedBreak().then(ok=>{ if(ok) opts.onReward&&opts.onReward(); }).catch(()=>{}); return; }
-      if(PORTAL==='crazygames' && window.CrazyGames){ window.CrazyGames.SDK.ad.requestAd('rewarded',{adFinished:()=>{opts.onReward&&opts.onReward();},adError:()=>{}}); return; }
+      if(PORTAL==='crazygames' && window.CrazyGames){ cgStop();
+        window.CrazyGames.SDK.ad.requestAd('rewarded',{adFinished:()=>{cgStart(); opts.onReward&&opts.onReward();},adError:()=>{cgStart();}}); return; }
       if(PORTAL==='gamedistribution' && window.gdsdk && window.gdsdk.showAd){ window.gdsdk.showAd('rewarded').then(()=>{opts.onReward&&opts.onReward(); try{window.gdsdk.preloadAd('rewarded');}catch(e){}}).catch(()=>{}); return; }
       if(Ads.ready){ window.adBreak({ type:'reward', name:opts.name||'reward',
         beforeReward:(show)=>{ show(); }, adViewed:()=>{ opts.onReward&&opts.onReward(); }, adDismissed:()=>{}, adBreakDone:()=>{} }); return; }
@@ -1109,13 +1119,34 @@
 
   // ================= persistence (return players keep progress) =================
   const SAVE_KEY='cowflicker_v1'; let _saveT, _lastCoins=0;
+  // CrazyGames' data module carries progress across devices for signed-in players and mirrors the
+  // localStorage API, so writes go to both and the cloud copy is adopted only when it is ahead.
+  function storeWrite(raw){
+    try{ if(CG.data) CG.data.setItem(SAVE_KEY, raw); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, raw); }catch(e){}
+  }
   function scheduleSave(){ clearTimeout(_saveT); _saveT=setTimeout(saveGame,600); }
-  function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
+  function saveGame(){ try{ storeWrite(JSON.stringify({
     coins:state.coins, flicks:state.flicks, free:state.free, muted:Sound.isMuted(),
     unlocked:[...state.unlocked], hints:state.hints,
     weapons:weapons.filter(w=>w.unlocked).map(w=>w.id),
     mile:state.mile, skins:[...state.skins], skin:state.skin })); }catch(e){} }
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(!s) return;
+  // SDK init resolves after first paint, so the cloud save arrives late; swap it in only if it
+  // holds more progress than what the local save already put on screen.
+  function cloudRestore(){
+    if(!CG.data) return;
+    let raw=null; try{ raw=CG.data.getItem(SAVE_KEY); }catch(e){ return; }
+    if(!raw){ saveGame(); return; }
+    let s=null; try{ s=JSON.parse(raw); }catch(e){ return; }
+    if(!s || (s.flicks||0)<=state.flicks) return;
+    loadGame(raw);
+    try{ $('#sndBtn').textContent=Sound.isMuted()?'🔇':'🔊'; }catch(e){}
+    try{ if(state.flicks>0) ptr.style.display='none'; }catch(e){}
+    _lastCoins=state.coins; advanceHintTarget();
+    applySkin(state.skin); renderDock(); renderAch(); sync();
+  }
+  function loadGame(raw){ try{ const src=(raw!==undefined)?raw:(function(){ try{ return localStorage.getItem(SAVE_KEY); }catch(e){ return null; } })();
+    const s=JSON.parse(src||'null'); if(!s) return;
     state.coins=s.coins||0; state.flicks=s.flicks||0; state.free=(s.free!==false);
     state.unlocked=new Set(s.unlocked||[]); state.hints=s.hints||{};
     (s.weapons||[]).forEach(id=>{ const w=weapons.find(x=>x.id===id); if(w) w.unlocked=true; });
@@ -1123,7 +1154,7 @@
     state.mile=(typeof s.mile==='number')?s.mile:MILES.filter(m=>state.flicks>=m).length;
     state.skins=new Set(s.skins||['classic']); state.skins.add('classic');
     state.skin=(s.skin && SKINS.some(x=>x.id===s.skin))?s.skin:'classic';
-    if(s.muted) Sound.toggle();
+    if(s.muted && !Sound.isMuted()) Sound.toggle();   // idempotent: cloudRestore may re-run this
     if(state.flicks>0) hint.style.display='none';
   }catch(e){} }
   function blink(){ if(react.busy) return; lidL.style.height='19px'; lidR.style.height='19px';
@@ -1185,6 +1216,19 @@
   $('#hintClose').onclick=()=>$('#hintOverlay').classList.remove('show');
   ['#achOverlay','#skinOverlay','#hintOverlay','#rewardOverlay','#celebOverlay'].forEach(s=>
     $(s).addEventListener('click',ev=>{ if(ev.target===$(s)) $(s).classList.remove('show'); }));
+
+  // Full-launch requirement: report gameplay interruptions. Only in-game menus count — browser
+  // focus changes are excluded on purpose, CrazyGames reports those itself.
+  ['#achOverlay','#skinOverlay','#hintOverlay','#rewardOverlay','#celebOverlay'].forEach(sel=>{
+    const el=$(sel); if(!el) return;
+    let was=el.classList.contains('show');
+    new MutationObserver(()=>{
+      const now=el.classList.contains('show'); if(now===was) return; was=now;
+      CG.menus=Math.max(0, CG.menus+(now?1:-1));
+      if(now && CG.menus===1) cgStop();
+      else if(!now && CG.menus===0) cgStart();
+    }).observe(el,{attributes:true, attributeFilter:['class']});
+  });
 
   window.addEventListener('resize',sizeFx);
   $('#achTotal').textContent=COMBOS.length;
