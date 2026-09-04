@@ -108,8 +108,10 @@
 /reef/partner-thanks /partner-thanks 301!
 /reef/privacy /privacy 301!
 /chalkline /chalkline.html 200
-/2-hour-web /2-hour-web.html 200
-/2-hour-web-thanks /2-hour-web-thanks.html 200
+/rent-a-site /rent-a-site.html 200
+/rent-a-site-thanks /rent-a-site-thanks.html 200
+/2-hour-web /rent-a-site 301!
+/2-hour-web-thanks /rent-a-site-thanks 301!
 /hire /hire.html 200
 /hire-thanks /hire-thanks.html 200
 /custom-ai-solutions /custom-ai-solutions.html 200

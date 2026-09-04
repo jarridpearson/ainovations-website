@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07060e">
+<meta name="description" content="The Ajax Adventure — a free browser action-adventure: nine levels, a full hidden overworld, bombs, bows and a sword that fires beams at full health.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E%F0%9F%97%A1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<title>The Ajax Adventure — Play Free in Your Browser</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05040b;overflow:hidden;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#8ed2ff;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 35%,#141a30 0%,#05040b 70%)}
+  #screen{image-rendering:pixelated;image-rendering:crisp-edges;
+    box-shadow:0 0 0 2px #23283c,0 12px 48px rgba(0,0,0,.75),0 0 90px rgba(70,110,200,.18);
+    border-radius:2px;touch-action:none}
+  #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:13px;letter-spacing:2px;z-index:20;background:#05040b}
+  /* ---- touch controls, only on coarse pointers ---- */
+  #touch{position:fixed;inset:0;display:none;z-index:10;pointer-events:none}
+  .pad{position:absolute;pointer-events:auto;display:grid;
+    grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);
+    left:14px;bottom:calc(18px + env(safe-area-inset-bottom))}
+  .pad div{background:rgba(140,170,230,.14);border:1px solid rgba(160,190,240,.28);border-radius:8px}
+  .pad div:active,.pad div.on{background:rgba(160,200,255,.42)}
+  .pad .sp{background:none;border:none}
+  .btns{position:absolute;right:16px;bottom:calc(26px + env(safe-area-inset-bottom));
+    pointer-events:auto;display:flex;gap:14px;align-items:flex-end}
+  .btns button{width:62px;height:62px;border-radius:50%;font:700 20px/1 inherit;
+    color:#e8f0ff;background:rgba(140,170,230,.18);border:1px solid rgba(160,190,240,.34)}
+  .btns button:active{background:rgba(160,200,255,.5)}
+  .sys{position:absolute;top:calc(8px + env(safe-area-inset-top));right:12px;
+    pointer-events:auto;display:flex;gap:8px}
+  .sys button{padding:7px 12px;border-radius:8px;font:600 11px/1 inherit;letter-spacing:1px;
+    color:#cfe0ff;background:rgba(140,170,230,.16);border:1px solid rgba(160,190,240,.3)}
+  @media (pointer:coarse){#touch{display:block}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="screen"></canvas></div>
+<div id="loading">LOADING&hellip;</div>
+
+<div id="touch">
+  <div class="pad">
+    <div class="sp"></div><div data-b="up"></div><div class="sp"></div>
+    <div data-b="left"></div><div class="sp"></div><div data-b="right"></div>
+    <div class="sp"></div><div data-b="down"></div><div class="sp"></div>
+  </div>
+  <div class="btns">
+    <button data-b="b">B</button>
+    <button data-b="a">A</button>
+  </div>
+  <div class="sys">
+    <button data-b="start">ITEMS</button>
+    <button data-b="mute">SOUND</button>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/music.js"></script>
+<script src="js/art.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/ow-data.js"></script>
+<script src="js/ow-secrets.js"></script>
+<script src="js/ow-enemies.js"></script>
+<script src="js/overworld.js"></script>
+<script src="js/dungeon-data.js"></script>
+<script src="js/room-data.js"></script>
+<script src="js/dungeons.js"></script>
+<script src="js/content.js"></script>
+<script src="js/world.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/player.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script>
+(function () {
+  // wire the on-screen controls to the same input map the keyboard uses
+  var held = {};
+  function set(btn, down) { EQ.Input.set(btn, down); EQ.audio.unlock(); }
+  document.getElementById('touch').addEventListener('pointerdown', function (e) {
+    var b = e.target.getAttribute('data-b'); if (!b) return;
+    e.preventDefault(); e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
+    held[e.pointerId] = b; e.target.classList.add('on'); set(b, true);
+  }, { passive: false });
+  ['pointerup','pointercancel','pointerleave'].forEach(function (ev) {
+    document.getElementById('touch').addEventListener(ev, function (e) {
+      var b = held[e.pointerId]; if (!b) return;
+      delete held[e.pointerId];
+      e.target.classList && e.target.classList.remove('on');
+      set(b, false);
+    });
+  });
+  window.addEventListener('error', function (ev) {
+    var l = document.getElementById('loading');
+    if (l) { l.textContent = 'ERROR: ' + ev.message; l.style.color = '#e33a30'; }
+  });
+  try { EQ.boot(); } catch (err) {
+    var l = document.getElementById('loading');
+    if (l) { l.textContent = 'ERROR: ' + err.message; l.style.color = '#e33a30'; }
+    throw err;
+  }
+})();
+</script>
+</body>
+</html>
