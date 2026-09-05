@@ -13,7 +13,7 @@
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="AInovations LLC builds real software products — Everward, TankMate, Chalkline, Kick a Donut, and Cow Flicker — and delivers custom app development, automation, and AI knowledge solutions for businesses." />
+<meta name="description" content="AInovations LLC — the AI product studio that ships. Hero launch programs open now: Rent-a-Site managed websites at $100/mo and Rent-an-App native business apps at 50% off for life. Plus Everward, TankMate, Chalkline, Ringlatch, and custom development." />
 <meta name="theme-color" content="#071c2f" />
 <link rel="canonical" href="https://ainovations.net/" />
 <meta property="og:type" content="website" />
@@ -68,6 +68,32 @@ img{max-width:100%;display:block}
 .btn-ghost:hover{border-color:var(--teal-soft);transform:translateY(-2px)}
 .logostrip{display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:34px;padding-top:26px;border-top:1px solid var(--border);color:#93a9b8;font-size:13px;font-weight:800;letter-spacing:.03em}
 .logostrip span{opacity:.85}
+/* hero programs */
+.btn-gold{background:linear-gradient(180deg,#ffd982,#ffc94d);color:#3a2a00;box-shadow:0 6px 0 #b8860b}
+.btn-gold:hover{filter:brightness(1.05);transform:translateY(-2px)}
+.heroprog{margin-top:26px;position:relative;padding:clamp(30px,4.5vw,52px);border-radius:30px;overflow:hidden;
+border:2px solid rgba(255,209,102,.55);
+background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40%),radial-gradient(circle at 92% 100%,rgba(29,200,198,.15),transparent 40%),linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
+.heroprog .hp-head{text-align:center;max-width:760px;margin:0 auto 30px}
+.heroprog .hp-head .kicker{color:#ffd166}
+.heroprog .hp-head h2{margin:0;font-size:clamp(30px,4.6vw,50px);line-height:1.05;letter-spacing:-.04em}
+.heroprog .hp-head h2 .gold{color:#ffd166}
+.heroprog .hp-head p{margin:14px auto 0;color:var(--muted);font-size:17px;line-height:1.6}
+.hp-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.hp-card{display:flex;flex-direction:column;padding:30px 28px;border:1px solid rgba(255,209,102,.35);border-radius:24px;background:rgba(3,11,20,.55)}
+.hp-card .chip{align-self:flex-start;display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border:1px solid rgba(255,209,102,.5);border-radius:999px;color:#ffe3a1;font-weight:900;font-size:12.5px;letter-spacing:.05em}
+.hp-card .chip::before{content:"";width:8px;height:8px;border-radius:50%;background:#ffd166;box-shadow:0 0 12px rgba(255,209,102,.9)}
+.hp-card h3{margin:18px 0 0;font-size:clamp(24px,2.6vw,32px);letter-spacing:-.03em;line-height:1.1}
+.hp-card .price{margin:14px 0 0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hp-card .price .amt{font-size:clamp(36px,4vw,52px);font-weight:900;letter-spacing:-.04em;color:#ffd166}
+.hp-card .price .per{font-size:15px;font-weight:800;color:var(--muted)}
+.hp-card .price .was{font-size:15px;font-weight:750;color:#8da6b4;text-decoration:line-through}
+.hp-card p.d{margin:14px 0 0;color:#dcebf2;font-size:15.5px;line-height:1.6;flex:1}
+.hp-card ul{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+.hp-card li{position:relative;padding-left:24px;color:#cfe3ec;font-size:14.5px;line-height:1.5}
+.hp-card li::before{content:"★";position:absolute;left:0;color:#ffd166;font-weight:900;font-size:12px}
+.hp-card .btn{margin-top:22px;align-self:flex-start}
+@media(max-width:860px){.hp-grid{grid-template-columns:1fr}}
 /* sections */
 .section{margin-top:90px}
 .section-head{max-width:780px;margin:0 auto 34px;text-align:center}
@@ -166,8 +192,9 @@ img{max-width:100%;display:block}
 <a class="skip-link" href="#main">Skip to main content</a>
 <div class="page">
   <nav class="nav" aria-label="Main navigation">
-    <a class="brand" href="/" aria-label="AInovations home"><img src="ainovations-logo-header.png" alt="AInovations — Intelligent Business Insights" /></a>
+    <a class="brand" href="/" aria-label="AInovations home"><img src="ainovations-logo-header.png" alt="AInovations — The AI Product Studio That Ships" /></a>
     <div class="nav-links">
+      <a href="#hero-programs" style="color:#ffd166">Hero Programs</a>
       <a href="#products">Products</a>
       <a href="#custom">Custom Development</a>
       <a href="/resources">Resources</a>
@@ -179,15 +206,50 @@ img{max-width:100%;display:block}
   <main id="main">
     <!-- HERO -->
     <section class="hero" aria-labelledby="hero-h">
-      <div class="eyebrow">AInovations LLC · AI product studio</div>
+      <div class="eyebrow" style="border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.1);color:#ffe3a1">TWO HERO LAUNCH PROGRAMS — OPEN NOW</div>
       <h1 id="hero-h">AI products people use. <span class="hl">Custom software that ships.</span></h1>
       <p class="lead">We design and build our own AI-powered apps — across productivity, consumer, and gaming — then bring that same product craft to custom work for your business. Not slideware. Shipped software.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#products">See what we build →</a>
-        <a class="btn btn-ghost" href="#custom">Start a custom project</a>
+        <a class="btn btn-gold" href="#hero-programs" onclick="gtag('event','home_hero_cta',{target:'hero_programs'})">See the hero programs →</a>
+        <a class="btn btn-ghost" href="#products">See what we build</a>
       </div>
       <div class="logostrip" aria-label="Where our software runs">
         <span>Shipping on:</span><span>iOS</span><span>Android</span><span>Web</span><span>Roblox</span>
+      </div>
+    </section>
+
+    <!-- HERO PROGRAMS -->
+    <section class="heroprog" id="hero-programs" aria-labelledby="heroprog-h">
+      <div class="hp-head">
+        <p class="kicker">HERO PROGRAMS · LAUNCH PRICING · LIMITED SEATS</p>
+        <h2 id="heroprog-h">Get in while we're <span class="gold">still small.</span></h2>
+        <p>Two launch programs, priced to earn our first believers. The rates below lock in for as long as you stay subscribed — and when the seats are gone, they're gone.</p>
+      </div>
+      <div class="hp-grid">
+        <article class="hp-card">
+          <span class="chip">20 HERO SPOTS · RATE LOCKED FOR LIFE</span>
+          <h3>Rent-a-Site</h3>
+          <div class="price"><span class="amt">$100</span><span class="per">/month — that's the whole price</span></div>
+          <p class="d">No website? We build it, you approve it, then we run it forever — hosting, monitoring, Google Analytics, search basics, and fresh content every month. You never touch a thing.</p>
+          <ul>
+            <li>No setup fee · no contract · cancel anytime</li>
+            <li>Built for you — approved by you before launch</li>
+            <li>After 20 hero clients, the price goes up</li>
+          </ul>
+          <a class="btn btn-gold" href="/rent-a-site" onclick="gtag('event','home_heroprog_click',{program:'rent_a_site'})">Claim a hero spot →</a>
+        </article>
+        <article class="hp-card">
+          <span class="chip">FOUNDING FIVE · 5 SEATS · 50% OFF FOR LIFE</span>
+          <h3>Rent-an-App</h3>
+          <div class="price"><span class="amt">$149</span><span class="per">/month</span><span class="was">$299</span></div>
+          <p class="d">Your business's own native iPhone &amp; Android app — booking, AI chat that answers your customers, even in-app sales — rented at a flat monthly rate instead of a five-figure build bill.</p>
+          <ul>
+            <li>Founding tiers: $149 / $349 / $649 — half of standard, locked for life</li>
+            <li>Onboarding fee waived on all founding seats</li>
+            <li>When the five seats are claimed, founding pricing never returns</li>
+          </ul>
+          <a class="btn btn-gold" href="https://rent-an-app.ainovations.net/" onclick="gtag('event','home_heroprog_click',{program:'rent_an_app'})">Claim a founding seat →</a>
+        </article>
       </div>
     </section>
 
