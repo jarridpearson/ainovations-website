@@ -9,11 +9,11 @@
 /node_modules/*     /404.html 404!
 /cow-flicker/*       /404.html 404!
 /ringlatch-src/*    /404.html 404!
-# Towncrier lives entirely on its own subdomain — the sales page, the town
-# pages and the clerk portal are all served from towncrier.ainovations.net.
-# The marketing site only points at it.
-# Must come first: the /towncrier/* splat also matches /towncrier itself.
-/towncrier      https://towncrier.ainovations.net/for-municipalities 301!
+# Towncrier: the bare /towncrier path serves our own about page until the
+# client-approved Towncrier site is ready to link. Deep paths (town pages,
+# clerk portal) still live on towncrier.ainovations.net.
+# Order matters: exact match first, then the splat.
+/towncrier      /towncrier.html 200
 /towncrier/*    https://towncrier.ainovations.net/:splat 301!
 
 # rent-an-app has its own public site at rent-an-app.ainovations.net;
