@@ -69,6 +69,14 @@ img{max-width:100%;display:block}
 .logostrip{display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:34px;padding-top:26px;border-top:1px solid var(--border);color:#93a9b8;font-size:13px;font-weight:800;letter-spacing:.03em}
 .logostrip span{opacity:.85}
 /* hero programs */
+/* seat counter: crossed-out original, remaining below */
+.seatx{display:inline-flex;flex-direction:column;align-items:center;line-height:1;margin:0 5px;vertical-align:middle}
+.seatx .old{position:relative;font-weight:900;opacity:.6}
+.seatx .old::before,.seatx .old::after{content:"";position:absolute;left:-20%;top:48%;width:140%;height:2.5px;background:#ff5f5f;border-radius:2px}
+.seatx .old::before{transform:rotate(26deg)}
+.seatx .old::after{transform:rotate(-26deg)}
+.seatx .new{color:#ffd166;font-weight:900;margin-top:3px}
+
 .btn-gold{background:linear-gradient(180deg,#ffd982,#ffc94d);color:#3a2a00;box-shadow:0 6px 0 #b8860b}
 .btn-gold:hover{filter:brightness(1.05);transform:translateY(-2px)}
 .heroprog{margin-top:26px;position:relative;padding:clamp(30px,4.5vw,52px);border-radius:30px;overflow:hidden;
@@ -228,7 +236,7 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
       </div>
       <div class="hp-grid">
         <article class="hp-card">
-          <span class="chip">20 HERO SPOTS · RATE LOCKED FOR LIFE</span>
+          <span class="chip"><span class="seatx"><span class="old">20</span><span class="new">19</span></span> HERO SPOTS LEFT · RATE LOCKED FOR LIFE</span>
           <h3>Rent-a-Site</h3>
           <div class="price"><span class="amt">$100</span><span class="per">/month — that's the whole price</span></div>
           <p class="d">No website? We build it, you approve it, then we run it forever — hosting, monitoring, Google Analytics, search basics, and fresh content every month. You never touch a thing.</p>
@@ -240,7 +248,7 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
           <a class="btn btn-gold" href="/rent-a-site" onclick="gtag('event','home_heroprog_click',{program:'rent_a_site'})">Claim a hero spot →</a>
         </article>
         <article class="hp-card">
-          <span class="chip">FOUNDING FIVE · 5 SEATS · 50% OFF FOR LIFE</span>
+          <span class="chip">FOUNDING FIVE · <span class="seatx"><span class="old">5</span><span class="new">4</span></span> SEATS LEFT · 50% OFF FOR LIFE</span>
           <h3>Rent-an-App</h3>
           <div class="price"><span class="amt">$149</span><span class="per">/month</span><span class="was">$299</span></div>
           <p class="d">Your business's own native iPhone &amp; Android app — booking, AI chat that answers your customers, even in-app sales — rented at a flat monthly rate instead of a five-figure build bill.</p>

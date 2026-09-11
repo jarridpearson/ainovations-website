@@ -77,6 +77,14 @@ img{max-width:100%;display:block}
 .section-head h2{margin:0;font-size:clamp(28px,4vw,44px);line-height:1.08;letter-spacing:-.035em}
 .section-head p{margin:16px 0 0;color:var(--muted);font-size:17px;line-height:1.65}
 /* founding five */
+/* seat counter: crossed-out original, remaining below */
+.seatx{display:inline-flex;flex-direction:column;align-items:center;line-height:1;margin:0 5px;vertical-align:middle}
+.seatx .old{position:relative;font-weight:900;opacity:.6}
+.seatx .old::before,.seatx .old::after{content:"";position:absolute;left:-20%;top:48%;width:140%;height:2.5px;background:#ff5f5f;border-radius:2px}
+.seatx .old::before{transform:rotate(26deg)}
+.seatx .old::after{transform:rotate(-26deg)}
+.seatx .new{color:#ffd166;font-weight:900;margin-top:3px}
+
 .founding{margin-top:56px;position:relative;padding:clamp(34px,5vw,60px);border-radius:30px;overflow:hidden;
 border:2px solid rgba(255,209,102,.55);
 background:radial-gradient(circle at 12% 0%,rgba(255,209,102,.14),transparent 42%),radial-gradient(circle at 90% 100%,rgba(29,200,198,.16),transparent 40%),linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
@@ -240,7 +248,7 @@ background:radial-gradient(circle at 12% 0%,rgba(255,209,102,.14),transparent 42
         <a class="btn btn-ghost" href="#inquire" onclick="gtag('event','raa_cta',{placement:'hero_inquire'})">Talk to us</a>
       </div>
       <div class="hero-cta" style="margin-top:18px">
-        <a class="f-seats" href="#founding" onclick="gtag('event','raa_founding_cta',{placement:'hero_ribbon'})">FOUNDING FIVE — 5 seats at 50% off for life →</a>
+        <a class="f-seats" href="#founding" onclick="gtag('event','raa_founding_cta',{placement:'hero_ribbon'})">FOUNDING FIVE — <span class="seatx"><span class="old">5</span><span class="new">4</span></span> seats left at 50% off for life →</a>
       </div>
       <div class="hero-points">
         <span>Native iPhone &amp; Android</span>
@@ -252,7 +260,7 @@ background:radial-gradient(circle at 12% 0%,rgba(255,209,102,.14),transparent 42
 
     <!-- FOUNDING FIVE -->
     <section class="founding" id="founding" aria-labelledby="founding-h">
-      <p class="kicker">Limited — 5 seats, then it's gone</p>
+      <p class="kicker">Limited — <span class="seatx"><span class="old">5</span><span class="new">4</span></span> seats left, then it's gone</p>
       <h2 id="founding-h">The <span class="gold">Founding Five</span>.<br />Half price. For life.</h2>
       <p class="lede">The first five businesses to join Rent-an-App get their plan at <strong>50% off — locked in for as long as they stay subscribed</strong> — with the onboarding fee waived entirely. In exchange, you agree to be a named case study and reference we can point future customers to. When the five seats are claimed, founding pricing never comes back.</p>
       <div class="f-grid">
@@ -280,7 +288,7 @@ background:radial-gradient(circle at 12% 0%,rgba(255,209,102,.14),transparent 42
         <span>Onboarding fee waived</span>
         <span>Same app, same support — nothing stripped down</span>
       </div>
-      <p class="f-terms">Founding seats: 5 of 5 available. Founding terms: your discounted rate applies for as long as your subscription remains active, on a 1-year or 3-year agreement. In exchange, you agree to serve as a named customer reference and case study (your business name, your app, your results). All plan caps and features match the standard tiers below.</p>
+      <p class="f-terms">Founding seats: 4 of 5 available. Founding terms: your discounted rate applies for as long as your subscription remains active, on a 1-year or 3-year agreement. In exchange, you agree to serve as a named customer reference and case study (your business name, your app, your results). All plan caps and features match the standard tiers below.</p>
       <div class="f-cta">
         <a class="btn btn-gold" href="#inquire" onclick="gtag('event','raa_founding_cta',{placement:'founding_section'});var c=document.getElementById('founding_seat');if(c){c.checked=true}">Claim a founding seat →</a>
         <a class="btn btn-ghost" href="#pricing">See standard pricing</a>
