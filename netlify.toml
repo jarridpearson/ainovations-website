@@ -1,0 +1,13 @@
+# Netlify config for ainovations.net.
+# NOTE: publish dir / build command stay controlled by the Netlify UI (this is a
+# static site published from the repo root) — this file only declares the
+# serverless functions dir so the chatbot backend deploys with the site.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Clean API path -> the chat function (the widget posts here).
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
