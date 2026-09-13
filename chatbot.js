@@ -80,11 +80,11 @@
   wrap.id = 'ainov-cw';
   wrap.innerHTML =
     '<style>' + css + '</style>' +
-    '<button id="ainov-launch" aria-label="Open AInovations chat">' +
+    '<button id="ainov-launch" aria-label="Chat with Aiden, the AInovations assistant">' +
     '<svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.3 1.1 4.4 2.9 5.9-.1 1-.5 2.4-1.4 3.6 1.7-.3 3.3-1 4.5-1.9 1.2.4 2.5.6 4 .6 5.5 0 10-3.8 10-8.2S17.5 3 12 3z"/></svg>' +
     '</button>' +
-    '<div id="ainov-panel" role="dialog" aria-label="AInovations chat">' +
-    '<div id="ainov-head"><span class="dot"></span><div><div class="t">AInovations Assistant</div><div class="s">Ask about our products &amp; services</div></div>' +
+    '<div id="ainov-panel" role="dialog" aria-label="Chat with Aiden">' +
+    '<div id="ainov-head"><span class="dot"></span><div><div class="t">Aiden</div><div class="s">AInovations&rsquo; AI assistant</div></div>' +
     '<button id="ainov-x" aria-label="Close chat">&times;</button></div>' +
     '<div id="ainov-msgs"></div>' +
     '<div id="ainov-foot"><textarea id="ainov-in" rows="1" placeholder="Type your message…" aria-label="Message"></textarea>' +
