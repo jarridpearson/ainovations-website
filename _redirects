@@ -9,6 +9,11 @@
 /node_modules/*     /404.html 404!
 /cow-flicker/*       /404.html 404!
 /ringlatch-src/*    /404.html 404!
+# Local AI-assistant config and skills. The outbound playbook lives here and
+# names the ICP, target towns and tactics — it must never be served. Note the
+# /*.md rule below does NOT cover it: that form only matches single-segment
+# paths, so a nested .claude/skills/.../SKILL.md would slip through.
+/.claude/*          /404.html 404!
 # Towncrier: the bare /towncrier path serves our own about page until the
 # client-approved Towncrier site is ready to link. Deep paths (town pages,
 # clerk portal) still live on towncrier.ainovations.net.
