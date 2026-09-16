@@ -13,7 +13,7 @@
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Rent-a-Site by AInovations: we build your business website, then run it, monitor it, and grow it — hosting, SEO basics, Google Analytics, and monthly content — for a flat $100/month. No setup fee. Hero pricing for the first 20 clients." />
+<meta name="description" content="Rent-a-Site by AInovations: we build your business website, then run it, monitor it, and grow it — hosting, SEO basics, Google Analytics, and monthly content. Three plans from $200/month, and the build is always included — never a setup fee. Hero Program: the first 20 clients get 50% off any plan, locked while subscribed." />
 <meta name="keywords" content="small business website service, website with monthly maintenance, done for you website, website and seo monthly, flat rate website service" />
 <meta name="theme-color" content="#071c2f" />
 <link rel="canonical" href="https://ainovations.net/rent-a-site" />
@@ -22,16 +22,16 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="AInovations" />
-<meta property="og:title" content="Rent-a-Site — We Build It. We Run It. $100/Month. | AInovations" />
-<meta property="og:description" content="No website? We build it, host it, monitor it, and grow it — flat $100/month, no setup fee. Hero pricing for the first 20 clients." />
+<meta property="og:title" content="Rent-a-Site — We Build It. We Run It. From $100/Month. | AInovations" />
+<meta property="og:description" content="No website? We build it, host it, monitor it, and grow it. Three plans, and the build is always included — never a setup fee. Hero Program: the first 20 clients get 50% off any plan, from $100/month." />
 <meta property="og:url" content="https://ainovations.net/rent-a-site" />
 <meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Rent-a-Site — $100/Month, Everything Handled | AInovations" />
-<meta name="twitter:description" content="We build your business website, then run it and grow it. Flat $100/month. No setup fee. First 20 clients." />
+<meta name="twitter:title" content="Rent-a-Site — From $100/Month, Everything Handled | AInovations" />
+<meta name="twitter:description" content="We build your business website, then run it and grow it. Three plans, and the build is always included — never a setup fee. First 20 clients get 50% off." />
 <meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
-<title>Rent-a-Site — We Build It. We Run It. $100/Month. | AInovations</title>
+<title>Rent-a-Site — We Build It. We Run It. From $100/Month. | AInovations</title>
 <style>
 :root{
   --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06);
@@ -131,7 +131,26 @@ img{max-width:100%;display:block}
 .footer a:hover{color:#fff}
 .footer .about{margin:0;color:#8da6b4;font-size:14px;line-height:1.6;max-width:34ch}
 .footer-bottom{margin-top:34px;color:#78909d;font-size:13px;line-height:1.7}
-@media(max-width:960px){.steps{grid-template-columns:1fr}.included{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+.tier{position:relative;display:flex;flex-direction:column;padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
+.tier.feature{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.06)}
+.tier .tbadge{position:absolute;top:-11px;left:28px;padding:4px 12px;border-radius:999px;background:var(--gold);color:#05121f;font-size:11.5px;font-weight:900;letter-spacing:.06em}
+.tier .tname{margin:0;font-size:22px;letter-spacing:-.02em}
+.tier .tfor{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+.tier .thero{margin:20px 0 0;display:flex;align-items:baseline;gap:8px}
+.tier .thero .amt{font-size:42px;font-weight:900;letter-spacing:-.04em;color:var(--gold)}
+.tier .thero .per{font-size:15px;font-weight:800;color:var(--muted)}
+.tier .tlist{margin:6px 0 0;color:#9fb3bf;font-size:13.5px;line-height:1.5}
+.tier ul{margin:18px 0 0;padding:0;list-style:none;display:grid;gap:9px}
+.tier li{position:relative;padding-left:24px;color:#dcebf2;font-size:14.5px;line-height:1.5}
+.tier li::before{content:"✓";position:absolute;left:0;color:var(--teal-soft);font-weight:900}
+.tier li.cap{color:#9fb3bf}
+.tier li.cap::before{content:"•";color:#6f8694}
+.tier .tcta{margin-top:auto;padding-top:22px}
+.tier .tcta a{display:block;text-align:center;padding:12px;border-radius:999px;font-weight:850;font-size:14.5px;text-decoration:none;border:1px solid rgba(255,255,255,.18);color:#e9f6fa}
+.tier.feature .tcta a{background:var(--gold);color:#05121f;border-color:var(--gold)}
+.tiers-note{margin:18px 0 0;color:#9fb3bf;font-size:13.5px;line-height:1.65;max-width:900px}
+@media(max-width:960px){.steps{grid-template-columns:1fr}.included{grid-template-columns:1fr}.tiers{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.inquire-form .fg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}}
 </style>
 <script type="application/ld+json">
@@ -142,11 +161,13 @@ img{max-width:100%;display:block}
   "serviceType":"Managed business website service",
   "provider":{"@type":"Organization","name":"AInovations LLC","url":"https://ainovations.net/"},
   "url":"https://ainovations.net/rent-a-site",
-  "description":"AInovations builds your business website, then runs it: hosting, monitoring, Google Analytics, SEO basics, and monthly content — for a flat $100/month with no setup fee.",
+  "description":"AInovations builds your business website, then runs it: hosting, monitoring, Google Analytics, SEO basics, and monthly content. Three plans — Presence, Growth, and Commerce — and the build is always included, with no setup fee on any plan.",
   "areaServed":"US",
   "offers":[
-    {"@type":"Offer","price":"100","priceCurrency":"USD","description":"Flat $100/month. No setup fee. Hero pricing for the first 20 clients, locked in for as long as the subscription stays active."},
-    {"@type":"Offer","price":"50","priceCurrency":"USD","description":"AI Chat Agent add-on: an AI assistant on your site answering customer questions 24/7, built and maintained by AInovations. $50/month on top of the subscription."}
+    {"@type":"Offer","name":"Presence","price":"200","priceCurrency":"USD","description":"Presence — $200/month on a 1-year agreement, or $170/month on a 3-year. Up to 5 pages, 2 hours of active work each month, 1 editor login, hosting, monitoring, Google Analytics with a monthly report, and search-engine basics. The build is included — no setup fee. Hero Program price for the first 20 clients: $100/month, locked while subscribed."},
+    {"@type":"Offer","name":"Growth","price":"400","priceCurrency":"USD","description":"Growth — $400/month on a 1-year agreement, or $340/month on a 3-year. Everything in Presence plus up to 15 pages, 5 hours of active work each month, 3 editor logins, one article written and published each month, the AI Chat Agent included with up to 750 chats, booking, Google Business Profile management, and review requests. The build is included — no setup fee. Hero Program price: $200/month."},
+    {"@type":"Offer","name":"Commerce","price":"700","priceCurrency":"USD","description":"Commerce — $700/month on a 1-year agreement, or $595/month on a 3-year. Everything in Growth plus up to 40 pages, 10 hours of active work each month, 5 editor logins, an online store or paid booking with up to 100 products, and the AI Chat Agent included with up to 2,000 chats. The build is included — no setup fee. Hero Program price: $350/month."},
+    {"@type":"Offer","name":"AI Chat Agent add-on","price":"50","priceCurrency":"USD","description":"AI Chat Agent add-on for the Presence plan: an AI assistant on your site answering customer questions 24/7, up to 250 chats each month, built and maintained by AInovations. $50/month. Already included on Growth and Commerce."}
   ]
 }
 </script>
@@ -155,14 +176,17 @@ img{max-width:100%;display:block}
   "@context":"https://schema.org",
   "@type":"FAQPage",
   "mainEntity":[
-    {"@type":"Question","name":"What does the $100/month include?","acceptedAnswer":{"@type":"Answer","text":"The initial website build, hosting, security and uptime monitoring, Google Analytics with a monthly report, search-engine basics done right, and two hours of ongoing work every month — a new article, content updates, or improvements we recommend. No setup fee, no surprise charges."}},
-    {"@type":"Question","name":"What is the two-hour monthly scope?","acceptedAnswer":{"@type":"Answer","text":"Each month includes up to two hours of active work on your site beyond hosting and monitoring — typically one published article or one batch of content updates, plus our recommendations. Bigger requests are quoted separately or queued for the following month, so the price never surprises you."}},
+    {"@type":"Question","name":"What do the plans cost?","acceptedAnswer":{"@type":"Answer","text":"Three plans on a one-year agreement: Presence $200/month, Growth $400/month, Commerce $700/month. On a three-year agreement they are $170, $340, and $595. Hero Program clients — the first 20 — pay half: $100, $200, and $350, locked for as long as they stay subscribed. The website build is included on every plan."}},
+    {"@type":"Question","name":"Is there a setup fee?","acceptedAnswer":{"@type":"Answer","text":"No — not on any plan, and not after the Hero Program ends. Building your site is part of the subscription, which is what the one-year agreement is for. You will never get a separate build invoice from us."}},
+    {"@type":"Question","name":"What is the difference between the plans?","acceptedAnswer":{"@type":"Answer","text":"Presence is a complete business website: up to 5 pages, 2 hours of active work each month, 1 editor login. Growth adds up to 15 pages, 5 hours each month, 3 editor logins, an article written and published for you every month, the AI Chat Agent included, booking, Google Business Profile management, and review requests. Commerce adds up to 40 pages, 10 hours each month, 5 editor logins, and an online store or paid booking with up to 100 products."}},
+    {"@type":"Question","name":"How many hours of work do I get each month?","acceptedAnswer":{"@type":"Answer","text":"Two hours on Presence, five on Growth, ten on Commerce — active work on your site beyond hosting and monitoring. It is a real cap, and unused hours do not roll over. Bigger projects are quoted separately or queued to the following month, so your monthly price never moves."}},
     {"@type":"Question","name":"Will my site rank #1 on Google?","acceptedAnswer":{"@type":"Answer","text":"Nobody can honestly promise rankings, and we won't. What we deliver: a fast, properly built site that search engines can index, set up the right way — titles, descriptions, local business info, analytics — plus fresh content monthly. For businesses starting with no web presence, that alone is a real, visible difference."}},
-    {"@type":"Question","name":"What is the AI chat agent add-on?","acceptedAnswer":{"@type":"Answer","text":"For $50/month on top of your subscription, your site gets an AI assistant that talks to your visitors 24/7 — answering the basics like hours, services, and service area from your real business information. Want it handling more advanced questions? We set that up too. We build it, train it, and keep it current; you never touch it."}},
-    {"@type":"Question","name":"Is there a contract?","acceptedAnswer":{"@type":"Answer","text":"Plans are one-year agreements — that's what lets us build your site with no setup fee and keep the price flat at $100. After the first year, it simply continues, and hero clients keep the $100 rate for as long as they stay subscribed."}},
-    {"@type":"Question","name":"Who owns the site? Can I buy it?","acceptedAnswer":{"@type":"Answer","text":"AInovations builds and operates the site and everything behind it — that's what keeps it $100 a month. Your subscription covers the build, hosting, updates, and support. Businesses interested in owning their site outright can reach out to discuss it individually."}},
+    {"@type":"Question","name":"What is the AI chat agent?","acceptedAnswer":{"@type":"Answer","text":"An AI assistant on your site that talks to visitors 24/7 — answering the basics like hours, services, and service area from your real business information, and handling more advanced questions if you want. On Presence it is a $50/month add-on covering up to 250 chats. It is already included on Growth (up to 750 chats) and Commerce (up to 2,000 chats). We build it, train it, and keep it current; you never touch it."}},
+    {"@type":"Question","name":"Is there a contract?","acceptedAnswer":{"@type":"Answer","text":"Plans are one-year agreements — that is what lets us include the build with no setup fee. There is also a three-year option at a lower monthly rate. After the first term it simply continues, and Hero clients keep their rate for as long as they stay subscribed."}},
+    {"@type":"Question","name":"Can I move up a plan later?","acceptedAnswer":{"@type":"Answer","text":"Yes — move up whenever your business is ready, and the new plan starts the following month. Hero clients keep their 50% discount when they move up, so it applies to the new plan too. Moving down waits until the end of your current term."}},
+    {"@type":"Question","name":"Who owns the site? Can I buy it?","acceptedAnswer":{"@type":"Answer","text":"AInovations builds and operates the site and everything behind it — that is what keeps the monthly price where it is. Your subscription covers the build, hosting, updates, and support. Want to own your site outright? Just like Rent-an-App, that's a conversation, not a menu item — reach out and we'll talk."}},
     {"@type":"Question","name":"What happens if I cancel?","acceptedAnswer":{"@type":"Answer","text":"The site and hosting are part of the service, so the site retires when the subscription ends — and we'll export your content and hand over your domain name so nothing you paid for is lost."}},
-    {"@type":"Question","name":"Why is it only $100?","acceptedAnswer":{"@type":"Answer","text":"This is our Hero Program pricing for the first 20 clients — businesses willing to grow with us while we grow. Hero clients keep the $100 rate for as long as they stay subscribed. After 20, the price goes up for new clients."}}
+    {"@type":"Question","name":"Why is the Hero Program half price?","acceptedAnswer":{"@type":"Answer","text":"The first 20 clients are the ones taking a chance on a new program, so they get 50% off any plan for as long as they stay subscribed — and that discount follows them if they move up later. After 20 clients, new customers pay full price."}}
   ]
 }
 </script>
@@ -172,6 +196,7 @@ img{max-width:100%;display:block}
   <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="/" aria-label="AInovations home"><img src="/ainovations-logo-header.png" alt="AInovations — The AI Product Studio That Ships" /></a>
     <div class="nav-links">
+      <a href="#plans">Plans</a>
       <a href="#included">What's included</a>
       <a href="#faq">FAQ</a>
       <a href="/">AInovations</a>
@@ -183,20 +208,20 @@ img{max-width:100%;display:block}
     <!-- HERO -->
     <header class="hero">
       <span class="eyebrow">HERO PROGRAM — <span class="seatx"><span class="old">20</span><span class="new">19</span></span> spots left</span>
-      <h1>No website? <span class="accent">We build it. We run it.</span><br /><span class="gold">$100 a month. That's the whole price.</span></h1>
-      <p class="lede">Rent-a-Site is for businesses with no web presence — or one they're embarrassed by. We build your site, you approve it, and then we keep it running and growing: hosting, monitoring, Google Analytics, search-engine basics, and fresh content every month. You never touch a thing.</p>
+      <h1>No website? <span class="accent">We build it. We run it.</span><br /><span class="gold">From $100 a month, all in.</span></h1>
+      <p class="lede">Rent-a-Site is for businesses with no web presence — or one they're embarrassed by. We build your site, you approve it, and then we keep it running and growing: hosting, monitoring, Google Analytics, search-engine basics, and fresh content every month. You never touch a thing. Three plans, and the build is included on all of them.</p>
       <div class="price-hero">
-        <span class="amt">$100</span><span class="per">/month</span><span class="flat">No setup fee · Simple 1-year agreement · Everything included</span>
+        <span class="amt">$100</span><span class="per">/month</span><span class="flat">Hero rate — 50% off any plan · Build included, never a setup fee · 1-year agreement</span>
       </div>
       <div class="hero-cta">
         <a class="btn btn-gold" href="#inquire" onclick="gtag('event','ras_cta',{placement:'hero'})">Claim one of the 19 remaining spots →</a>
-        <a class="btn btn-ghost" href="#included">See everything included</a>
+        <a class="btn btn-ghost" href="#plans">Compare the three plans</a>
       </div>
       <div class="hero-points">
         <span>Built for you — you approve before launch</span>
         <span>Hosted, monitored &amp; maintained</span>
         <span>New content every month</span>
-        <span>Hero rate locked while you're subscribed</span>
+        <span>Hero 50% follows you if you move up</span>
       </div>
     </header>
 
@@ -211,6 +236,78 @@ img{max-width:100%;display:block}
         <div class="step"><span class="num">2</span><h3>We build — you approve</h3><p>We design and build your site and show it to you. Nothing goes live until you say it's right.</p></div>
         <div class="step"><span class="num">3</span><h3>We run it, every month</h3><p>Hosting, monitoring, analytics, search basics, and fresh content — handled. You get a simple monthly report and our suggestions.</p></div>
       </div>
+    </section>
+
+    <!-- PLANS -->
+    <section class="section" id="plans" aria-labelledby="plans-h">
+      <div class="section-head">
+        <p class="kicker gold">Plans</p>
+        <h2 id="plans-h">Three plans. The build is included in every one.</h2>
+      </div>
+      <div class="tiers">
+
+        <div class="tier">
+          <h3 class="tname">Presence</h3>
+          <p class="tfor">A complete business website, built and run for you. For businesses getting online properly for the first time.</p>
+          <div class="thero"><span class="amt">$100</span><span class="per">/month · hero</span></div>
+          <p class="tlist">$200/month after the Hero Program · $170 on a 3-year</p>
+          <ul>
+            <li>Built for you — nothing goes live until you approve it</li>
+            <li>Hosting, security, uptime monitoring and backups</li>
+            <li>Contact form that emails you the moment someone fills it in</li>
+            <li>Search-engine basics, plus Google Analytics with a monthly report</li>
+            <li>Your domain registered and managed as part of the service</li>
+            <li class="cap">Up to 5 pages</li>
+            <li class="cap">2 hours of active work each month</li>
+            <li class="cap">1 editor login</li>
+            <li class="cap">AI Chat Agent available for +$50/month (up to 250 chats)</li>
+          </ul>
+          <div class="tcta"><a href="#inquire" onclick="gtag('event','ras_cta',{placement:'tier_presence'})">Start with Presence</a></div>
+        </div>
+
+        <div class="tier feature">
+          <span class="tbadge">MOST BUSINESSES</span>
+          <h3 class="tname">Growth</h3>
+          <p class="tfor">Everything in Presence, plus the work that actually brings customers in — content, reviews, booking, and an assistant that never sleeps.</p>
+          <div class="thero"><span class="amt">$200</span><span class="per">/month · hero</span></div>
+          <p class="tlist">$400/month after the Hero Program · $340 on a 3-year</p>
+          <ul>
+            <li>Everything in Presence</li>
+            <li><strong>An article written and published for you every month</strong></li>
+            <li><strong>AI Chat Agent included</strong> — answers your customers 24/7</li>
+            <li>Online booking or scheduling built into your site</li>
+            <li>Your Google Business Profile kept current</li>
+            <li>Review requests sent automatically after a job</li>
+            <li class="cap">Up to 15 pages</li>
+            <li class="cap">5 hours of active work each month</li>
+            <li class="cap">3 editor logins</li>
+            <li class="cap">Up to 750 AI chats each month</li>
+          </ul>
+          <div class="tcta"><a href="#inquire" onclick="gtag('event','ras_cta',{placement:'tier_growth'})">Start with Growth</a></div>
+        </div>
+
+        <div class="tier">
+          <h3 class="tname">Commerce</h3>
+          <p class="tfor">Everything in Growth, plus selling. For businesses taking orders, deposits or paid bookings online.</p>
+          <div class="thero"><span class="amt">$350</span><span class="per">/month · hero</span></div>
+          <p class="tlist">$700/month after the Hero Program · $595 on a 3-year</p>
+          <ul>
+            <li>Everything in Growth</li>
+            <li><strong>An online store or paid booking</strong> on your site</li>
+            <li>Payments run through your own Stripe, Square or PayPal account</li>
+            <li>Abandoned-cart email, so half-finished orders still come back</li>
+            <li>A short strategy note from us every quarter</li>
+            <li class="cap">Up to 40 pages</li>
+            <li class="cap">10 hours of active work each month</li>
+            <li class="cap">5 editor logins</li>
+            <li class="cap">Up to 100 products or services</li>
+            <li class="cap">Up to 2,000 AI chats each month</li>
+          </ul>
+          <div class="tcta"><a href="#inquire" onclick="gtag('event','ras_cta',{placement:'tier_commerce'})">Start with Commerce</a></div>
+        </div>
+
+      </div>
+      <p class="tiers-note"><strong>The prices above are Hero prices</strong> — 50% off, for the first 20 clients only, locked for as long as you stay subscribed. Move up a plan later and the discount comes with you. Every plan includes the website build: there is no setup fee on Rent-a-Site, now or after the Hero Program ends. Plans are one-year agreements, or three-year at the lower rate shown. The monthly hours are a real cap and don't roll over — bigger projects get quoted separately or queued to the next month, so your price never moves. Want a native mobile app instead of a website? That's <a href="https://rent-an-app.ainovations.net/">Rent-an-App</a>.</p>
     </section>
 
     <!-- INCLUDED -->
@@ -232,25 +329,26 @@ img{max-width:100%;display:block}
           </ul>
         </div>
         <div class="inc-card">
-          <h3>Every month <span class="tag gold">2 HOURS OF WORK, ONGOING</span></h3>
+          <h3>Every month <span class="tag gold">2, 5 OR 10 HOURS OF WORK</span></h3>
           <ul>
             <li>Hosting, security, and uptime monitoring</li>
             <li>A simple report: who visited and what they looked at</li>
-            <li>Two hours of active work — a new article, content updates, or improvements we recommend</li>
+            <li>Active work on your site — a new article, content updates, or improvements we recommend</li>
+            <li>Two hours on Presence, five on Growth, ten on Commerce</li>
             <li>Our suggestions for what would help your site next</li>
           </ul>
-          <p class="note">The two hours is a real cap that keeps the price honest — bigger projects are quoted separately or queued to next month, so $100 is always $100.</p>
+          <p class="note">The hours are a real cap that keeps the price honest, and they don't roll over — bigger projects are quoted separately or queued to next month, so your monthly price never moves.</p>
         </div>
       </div>
       <div class="inc-card" style="margin-top:18px;border-color:rgba(255,209,102,.4)">
-        <h3>AI Chat Agent <span class="tag gold">ADD-ON — $50/MONTH</span></h3>
+        <h3>AI Chat Agent <span class="tag gold">INCLUDED ON GROWTH &amp; COMMERCE</span></h3>
         <ul>
           <li>An AI assistant on your site that answers customer questions 24/7 — even when you're closed</li>
           <li>Handles the basics from day one: your hours, services, service area, and how to reach you</li>
           <li>Want it to do more? It can take on advanced questions too — detailed FAQs, product and service specifics, pointing visitors to the right page</li>
           <li>We build it, train it on your real business information, and keep it current — you never touch it</li>
         </ul>
-        <p class="note">Optional add-on for Rent-a-Site clients. Covers normal small-business chat traffic — if your site gets unusually busy, we'll talk before anything changes.</p>
+        <p class="note">Included at no extra cost on <strong>Growth</strong> (up to 750 chats each month) and <strong>Commerce</strong> (up to 2,000). On <strong>Presence</strong> it's a $50/month add-on covering up to 250 chats. If your site gets busier than your plan allows, we'll talk before anything changes.</p>
       </div>
     </section>
 
@@ -261,14 +359,17 @@ img{max-width:100%;display:block}
         <h2 id="faq-h">Rent-a-Site FAQ</h2>
       </div>
       <div class="faq">
-        <details><summary>What does the $100/month include?</summary><div class="a">The initial website build, hosting, security and uptime monitoring, Google Analytics with a monthly report, search-engine basics done right, and two hours of ongoing work every month — a new article, content updates, or improvements we recommend. No setup fee, no surprise charges.</div></details>
-        <details><summary>What is the two-hour monthly scope?</summary><div class="a">Each month includes up to two hours of active work on your site beyond hosting and monitoring — typically one published article or one batch of content updates, plus our recommendations. Bigger requests are quoted separately or queued for the following month, so the price never surprises you.</div></details>
+        <details><summary>What do the plans cost?</summary><div class="a">Three plans on a one-year agreement: <strong>Presence $200/month</strong>, <strong>Growth $400/month</strong>, <strong>Commerce $700/month</strong>. On a three-year agreement they're $170, $340 and $595. Hero Program clients — the first 20 — pay half: <strong>$100, $200 and $350</strong>, locked for as long as they stay subscribed. The website build is included on every plan.</div></details>
+        <details><summary>Is there a setup fee?</summary><div class="a">No — not on any plan, and not after the Hero Program ends. Building your site is part of the subscription, which is what the one-year agreement is for. You'll never get a separate build invoice from us.</div></details>
+        <details><summary>What's the difference between the plans?</summary><div class="a"><strong>Presence</strong> is a complete business website: up to 5 pages, 2 hours of active work each month, 1 editor login. <strong>Growth</strong> adds up to 15 pages, 5 hours each month, 3 editor logins, an article written and published for you every month, the AI Chat Agent included, booking, Google Business Profile management, and automatic review requests. <strong>Commerce</strong> adds up to 40 pages, 10 hours each month, 5 editor logins, and an online store or paid booking with up to 100 products.</div></details>
+        <details><summary>How many hours of work do I get each month?</summary><div class="a">Two hours on Presence, five on Growth, ten on Commerce — active work on your site beyond hosting and monitoring, typically articles, content updates, or improvements we recommend. It's a real cap, and unused hours don't roll over. Bigger projects are quoted separately or queued to the following month, so your monthly price never moves.</div></details>
         <details><summary>Will my site rank #1 on Google?</summary><div class="a">Nobody can honestly promise rankings, and we won't. What we deliver: a fast, properly built site that search engines can index, set up the right way — titles, descriptions, local business info, analytics — plus fresh content monthly. For businesses starting with no web presence, that alone is a real, visible difference.</div></details>
-        <details><summary>What is the AI chat agent add-on?</summary><div class="a">For $50/month on top of your subscription, your site gets an AI assistant that talks to your visitors 24/7 — answering the basics like hours, services, and service area from your real business information. Want it handling more advanced questions? We set that up too. We build it, train it, and keep it current; you never touch it.</div></details>
-        <details><summary>Is there a contract?</summary><div class="a">Plans are one-year agreements — that's what lets us build your site with no setup fee and keep the price flat at $100. After the first year, it simply continues, and hero clients keep the $100 rate for as long as they stay subscribed.</div></details>
-        <details><summary>Who owns the site? Can I buy it?</summary><div class="a">AInovations builds and operates the site and everything behind it — that's what keeps it $100 a month. Your subscription covers the build, hosting, updates, and support. Want to own your site outright? Just like Rent-an-App, that's a conversation, not a menu item — reach out and we'll talk.</div></details>
+        <details><summary>What is the AI chat agent?</summary><div class="a">An AI assistant on your site that talks to visitors 24/7 — answering the basics like hours, services and service area from your real business information, and handling more advanced questions if you want. On <strong>Presence</strong> it's a $50/month add-on covering up to 250 chats. It's already <strong>included on Growth</strong> (up to 750 chats) <strong>and Commerce</strong> (up to 2,000). We build it, train it, and keep it current; you never touch it.</div></details>
+        <details><summary>Is there a contract?</summary><div class="a">Plans are one-year agreements — that's what lets us include the build with no setup fee. There's also a three-year option at a lower monthly rate. After the first term it simply continues, and Hero clients keep their rate for as long as they stay subscribed.</div></details>
+        <details><summary>Can I move up a plan later?</summary><div class="a">Yes — move up whenever your business is ready, and the new plan starts the following month. Hero clients keep their 50% discount when they move up, so it applies to the new plan too. Moving down waits until the end of your current term.</div></details>
+        <details><summary>Who owns the site? Can I buy it?</summary><div class="a">AInovations builds and operates the site and everything behind it — that's what keeps the monthly price where it is. Your subscription covers the build, hosting, updates, and support. Want to own your site outright? Just like Rent-an-App, that's a conversation, not a menu item — reach out and we'll talk.</div></details>
         <details><summary>What happens if I cancel?</summary><div class="a">The site and hosting are part of the service, so the site retires when the subscription ends — and we'll export your content and hand over your domain name so nothing you paid for is lost.</div></details>
-        <details><summary>Why is it only $100?</summary><div class="a">This is our Hero Program pricing for the first 20 clients — businesses willing to grow with us while we grow. Hero clients keep the $100 rate for as long as they stay subscribed. After 20, the price goes up for new clients.</div></details>
+        <details><summary>Why is the Hero Program half price?</summary><div class="a">The first 20 clients are the ones taking a chance on a new program, so they get 50% off any plan for as long as they stay subscribed — and that discount follows them if they move up later. After 20 clients, new customers pay full price.</div></details>
       </div>
     </section>
 
@@ -296,6 +397,14 @@ img{max-width:100%;display:block}
           <div class="field"><label for="name">Your name *</label><input id="name" name="contact_name" type="text" required autocomplete="name" /></div>
           <div class="field"><label for="business">Business name *</label><input id="business" name="business_name" type="text" required autocomplete="organization" /></div>
           <div class="field full"><label for="email">Email *</label><input id="email" name="email" type="email" required autocomplete="email" /></div>
+          <div class="field full"><label for="plan">Which plan are you interested in?</label>
+            <select id="plan" name="plan_interest">
+              <option value="">Not sure yet — help me pick</option>
+              <option>Presence — $100/mo hero ($200 after)</option>
+              <option>Growth — $200/mo hero ($400 after)</option>
+              <option>Commerce — $350/mo hero ($700 after)</option>
+            </select>
+          </div>
           <div class="field full"><label for="current">Do you have a website today?</label>
             <select id="current" name="current_website">
               <option value="">No website at all</option>
@@ -307,7 +416,7 @@ img{max-width:100%;display:block}
         </div>
         <div class="actions">
           <button class="submit" type="submit" onclick="gtag('event','ras_inquiry_submit',{})">Claim my spot</button>
-          <span class="note">Goes to jp@ainovations.net. Prefer email? <a href="mailto:jp@ainovations.net?subject=2-Hour%20Web">Email us directly</a>.</span>
+          <span class="note">Goes to jp@ainovations.net. Prefer email? <a href="mailto:jp@ainovations.net?subject=Rent-a-Site">Email us directly</a>.</span>
         </div>
       </form>
     </section>

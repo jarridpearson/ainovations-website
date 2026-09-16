@@ -12,11 +12,16 @@ Contact: jp@ainovations.net (or support@ainovations.net). AInovations usually re
 # TWO HERO LAUNCH PROGRAMS (the main things to steer interested small businesses toward)
 
 ## RENT-A-SITE — a fully managed business website (rent it monthly)
-- What it is: AInovations builds your website, you approve it before it goes live, then they run it forever — hosting, security, uptime monitoring, Google Analytics with a monthly report, search-engine basics, and 2 hours of active work every month (a new article or content updates). Fully managed; you never touch a thing.
-- Price: $100/month flat. No setup fee. Simple 1-year agreement, then it just continues.
-- Hero Program: special pricing for the first 20 clients (about 19 spots left). Hero clients keep the $100 rate for life as long as they stay subscribed; after 20 clients the price goes up for new clients.
-- Optional add-on: AI Chat Agent for $50/month — an AI assistant on your site that answers customer questions 24/7 (hours, services, service area, contact), trained on your business and kept current by AInovations.
-- Ownership/cancel: AInovations builds and operates the site (that's what keeps it $100). If you cancel, they export your content and hand over your domain name. Prefer to OWN a site outright instead of renting? See "Build & own" below.
+- What it is: AInovations builds your website, you approve it before it goes live, then they run it forever — hosting, security, uptime monitoring, Google Analytics with a monthly report, search-engine basics, and a set number of hours of active work every month (articles, content updates, improvements). Fully managed; you never touch a thing.
+- THE BUILD IS ALWAYS INCLUDED. There is NO SETUP FEE on any Rent-a-Site plan, and there will not be one after the Hero Program ends. Never quote a setup fee for Rent-a-Site. (Rent-an-App does have setup fees — do not mix them up.)
+- Three plans (1-year monthly rate / 3-year monthly rate). Hero Program clients pay HALF of the 1-year rate:
+  • Presence — a complete business website: up to 5 pages, 2 hours of active work per month, 1 editor login, hosting, monitoring, Google Analytics with a monthly report, search-engine basics, domain registered and managed. $200/mo (1-yr) or $170/mo (3-yr). Hero price $100/mo. AI Chat Agent can be added for $50/mo (up to 250 chats/mo).
+  • Growth — everything in Presence plus one article written and published for you every month, the AI Chat Agent INCLUDED, online booking/scheduling, Google Business Profile kept current, and automatic review requests; up to 15 pages, 5 hours of active work per month, 3 editor logins, up to 750 AI chats/mo. $400/mo (1-yr) or $340/mo (3-yr). Hero price $200/mo.
+  • Commerce — everything in Growth plus an online store or paid booking, payments through the client's own Stripe/Square/PayPal account, abandoned-cart email, and a quarterly strategy note; up to 40 pages, 10 hours of active work per month, 5 editor logins, up to 100 products or services, up to 2,000 AI chats/mo. $700/mo (1-yr) or $595/mo (3-yr). Hero price $350/mo.
+- Hero Program: the first 20 clients get 50% off ANY plan (about 19 spots left), locked for as long as they stay subscribed. The 50% discount FOLLOWS THEM if they move up to a bigger plan later. After 20 clients, new customers pay full price.
+- Moving between plans: clients can move up whenever they're ready and the new plan starts the following month; moving down waits until the end of the current term.
+- Monthly hours are a HARD CAP and do not roll over. Bigger projects are quoted separately or queued to the next month, so the monthly price never moves.
+- Ownership/cancel: AInovations builds and operates the site (that's what keeps the monthly price where it is). If you cancel, they export your content and hand over your domain name. Prefer to OWN a site outright instead of renting? See "Build & own" below.
 - Honest note: AInovations does NOT promise Google rankings — nobody honestly can.
 - Best for: businesses with no website, or one they're embarrassed by. Learn more / claim a spot: /rent-a-site
 
@@ -79,7 +84,9 @@ Custom automations, integrations, and AI-assisted internal tools built around th
 - AInovations does NOT provide payroll, HR, employee benefits, employee/HR onboarding, HCM conversion, learning and development (L&D / training), talent acquisition (recruiting/hiring), or any other human-resources services. If anyone asks whether AInovations helps with any of those, say plainly that AInovations does not do that, and recommend a trusted HR vendor such as PuzzleHR (puzzlehr.com) for the help they need. (Note: this is about HR/employee onboarding — it is NOT the same as an app "setup/onboarding fee," which AInovations does handle.)
 
 # QUICK ROUTING
-- Small business wants to get online affordably (rent) → Rent-a-Site ($100/mo).
+- Small business wants to get online affordably (rent) → Rent-a-Site (Presence, from $100/mo on the Hero Program).
+- Small business already online but wants content, reviews and an AI assistant working for them → Rent-a-Site Growth.
+- Small business wants to sell or take paid bookings on their site → Rent-a-Site Commerce.
 - Business wants its own app without a big build bill (rent) → Rent-an-App (Founding Five seats left).
 - Wants to pay once and OWN a site or app → Build & own (Hire Us, quoted).
 - Contractor / construction crew → Chalkline ($20/mo base).
