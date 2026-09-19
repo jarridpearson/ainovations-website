@@ -1,3 +1,10 @@
+CORRECTION (2026-09-19, after direct verification): the Expo Acceptable Use Policy finding below is WRONG as a recommendation.
+The "build or deploy apps for third parties" phrase sits inside Expo's anti-resale clause (service bureau / sublicensing / time-sharing)
+and means "don't resell EAS as a service." Expo's own consultants page (https://expo.dev/consultants) lists 14 agencies "that you can
+hire to help you with your next big Expo project"; Expo's docs recommend one organization per client; Expo staff publish a white-label
+demo. Building client apps on a paid Expo plan is Expo's core market. No permission email is needed. Keep the org on a paid plan.
+Item 3 (LLC/corp with D-U-N-S) was adopted by Jarrid on 2026-09-19 as a hard eligibility requirement.
+
 COVERAGE: [{"domain": "toast_feed", "items": 7, "refuted": 0}, {"domain": "toast_oo_inapp", "items": 5, "refuted": 1}, {"domain": "promo_codes", "items": 7, "refuted": 2}, {"domain": "checkin_geofence", "items": 6, "refuted": 3}, {"domain": "wallet", "items": 6, "refuted": 1}, {"domain": "sms_tcpa", "items": 6, "refuted": 1}, {"domain": "stripe_iap", "items": 8, "refuted": 4}, {"domain": "store_enrollment", "items": 5, "refuted": 4}, {"domain": "expo_backend", "items": 5, "refuted": 2}, {"domain": "toast_terms_data", "items": 5, "refuted": 4}, {"domain": "field_precedent", "items": 12, "refuted": 1}]
 
 === OVERALL ===
