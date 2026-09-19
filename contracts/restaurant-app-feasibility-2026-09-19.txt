@@ -1,0 +1,505 @@
+COVERAGE: [{"domain": "toast_feed", "items": 7, "refuted": 0}, {"domain": "toast_oo_inapp", "items": 5, "refuted": 1}, {"domain": "promo_codes", "items": 7, "refuted": 2}, {"domain": "checkin_geofence", "items": 6, "refuted": 3}, {"domain": "wallet", "items": 6, "refuted": 1}, {"domain": "sms_tcpa", "items": 6, "refuted": 1}, {"domain": "stripe_iap", "items": 8, "refuted": 4}, {"domain": "store_enrollment", "items": 5, "refuted": 4}, {"domain": "expo_backend", "items": 5, "refuted": 2}, {"domain": "toast_terms_data", "items": 5, "refuted": 4}, {"domain": "field_precedent", "items": 12, "refuted": 1}]
+
+=== OVERALL ===
+Yes: every one of the ten steps can be built and run by a solo developer on Toast standard API access with no partner program, no custom integration, and no writes to Toast, but four of them do not work as written and need structural changes: reward redemption cannot be confirmed from the feed at the counter (deduct points at activation and use one shared single-use-per-phone code per reward tier), the iOS/Android geofence is a minority opt-in bonus running on an API Apple has deprecated (a QR scan or manual tap is the real check-in), Apple's per-restaurant publishing model only works for restaurants enrolled as an Organization (LLC/corp with a D-U-N-S, a domain email and a live website; a sole proprietor's Individual account cannot add AInovations to a team), and Expo's Acceptable Use Policy forbids using EAS to build apps for third parties without written permission, which must be in hand before client zero's first build. The single biggest technical risk is the attribution loop through Toast's read-only feed: guest identity exists only on takeout/delivery orders and only as whatever phone or email the guest typed at Toast's checkout, so every loyalty promise on the page reduces to "did the member use the same phone number in Toast online ordering as in the app", and nothing rung at the counter can be tied to a member by the feed at all. Second is store review: nobody has published a restaurant app that orders through SFSafariViewController, and Apple has rejected white-label apps submitted from clients' own accounts under 4.3(a). Client zero must prove, in this order, that the credential screen has no click-through terms and exposes all seven scopes, that the self-serve Manage webhooks screen exists and an order_updated arrives within a minute, that a real Toast OO order comes back with Check.customer matching the member's phone on both the express and guest checkout paths, that single-use codes are enforced online and appliedPromoCode is visible on GET, and that a build with in-app-browser ordering passes App Review under the restaurant's own Organization account. Confidence is high that it can be built, moderate that the first restaurant is live in both stores inside six weeks, and low that the geofence nudge will ever reach more than about a quarter of members.
+
+=== PRECEDENT ===
+No one has published this exact stack. The individual pieces have real precedent: several products ingest Toast orders from customer-created standard API credentials with the same webhook-plus-nightly-ordersBulk pattern (nimble-pnl, Nango, restly, pantry-iq, a Houston bar's ETL, Coursed, LineNow), and Toast's own Branded Mobile App and ChowNow publish one native app per restaurant from restaurant-owned Organization developer accounts with the vendor invited as Admin, which is the compliant 4.2.6 model the design already uses. Twilio's ISV subaccount-per-customer architecture, Stripe direct charges from React Native, and Google Wallet's aggregator/parent-issuer model are all vendor-documented for exactly this shape. What has no precedent anywhere: a loyalty app awarding points from standard-access order reads (the one restaurant marketing bot that tried it concluded guest data only exists inside individual takeout/delivery orders), a native app that opens Toast Online Ordering in SFSafariViewController/Custom Tabs (every code hit is a restaurant website linking out), and Wallet passes signed with each client's own Pass Type ID certificate (all four small-shop loyalty repos found sign every client under one shared cert, the pattern PassKit itself calls a workaround). The closest commercial analogues for the loyalty loop (Incentivio, Toast Loyalty, PassKit's Toast page) all run through the partner API, and Incentivio awards points next-day rather than instantly. The Aug 2026 community post from a bar on standard access is the single most important field report: it proves a POS promo redemption shows the code but never the guest, and Toast answered with a private ticket rather than a fix. Client zero is therefore the precedent for the whole assembly, not a repeat of someone else's.
+
+=== DESIGN CHANGES ===
+1. Rewards (item 3): deduct points at activation, not on API confirmation. Member taps Redeem, backend deducts, app shows the code with a 15-minute expiry, staff applies it. One shared single-use-per-phone Toast promo code per reward tier and one for the 'download the app, 10% off today' counter deal, each created once in Toast Web with description blank and Display on Online Menus off, Permissions Level = Any User, Start/End dates rotated monthly. Use the read API only as a reconciliation signal on Toast OO orders (Check.customer present and appliedPromoCode equal to a configured code) and read GET /config/v2/discounts (config:read) at sync time to verify each code exists and its usageType. Drop per-member code pools (no write API; codes are hand-entered one at a time), drop any 'first N guests' cap, one code per order, no kiosk redemption, free-item rewards built as BOGO/fixed item-level with Eligible # of Get Items = 1.
+2. Loyalty feed (item 1): webhook + GET, never match from the webhook body. Ack order_updated with 2xx inside 2 s, enqueue the GUID, GET /orders/v2/orders/{guid} with guest.pi:read, match on E.164-normalized phone then lowercased email, accrue only for source in {Online, Branded Online Ordering, eCommerce Online ordering}, idempotent ledger keyed by order GUID + modifiedDate, reverse on voided/refundStatus. Fallback ordersBulk poll every 60-120 s over a trailing 15-minute modified window (max 5 req/s/location, always send Toast-Restaurant-External-ID), nightly per-businessDate reconciliation, alert when no webhook arrives for 15 minutes during posted hours. Onboarding copy tells members to use the same phone in Toast online ordering; dine-in is check-in only and is never attributed from the feed.
+3. Restaurant eligibility gate, applied before any quote: an LLC/corp (no DBA/sole prop unless they form an entity or accept an owner-in-the-loop path) with a D-U-N-S, a mailbox on its own domain, a live website on that domain, RMS Essentials with the Standard API line visible in Toast Shop, and an EIN whose legal name matches the IRS letter. The OWNER creates a dedicated standard-access credential set (all seven scopes, minus delivery_info.address:read unless needed), screenshots the New Credentials page (stop and read if any terms checkbox appears), and shares the JSON only through a password manager or an HTTPS onboarding form backed by Supabase Vault. Contract names AInovations as the restaurant's development contractor, includes a short DPA, and the restaurant's privacy notice mentions the app provider.
+4. Expo: obtain Expo's written permission under the Acceptable Use Policy to build and deploy apps for third parties before client zero's first EAS build (citing the per-client-organization pattern in Expo's own docs); keep the local-build + Transporter/Play API + direct APNs/FCM fallback documented. One Firebase project per restaurant for FCM; one APNs key per restaurant on its EAS project; stay in managed/CNG; keep all projects on a paid Expo plan.
+5. Store accounts (item 9): Organization enrollment on Apple (Account Holder = real owner/officer), Organization account on Google Play; the Account Holder requests App Store Connect API access, invites Jarrid's own Apple Account as App Manager with Certificates, Identifiers & Profiles access, and issues a team API key stored in EAS; on Play invite Jarrid's Google account with release permissions only. Every app must be visibly restaurant-specific beyond branding with a unique listing per store (4.3(a) / repetitive content); keep the single-binary 'picker' app as the documented fallback; quote 4-6 weeks for an LLC/corp with no accounts, 6-8 weeks for a sole prop.
+6. Check-in (item 4): QR scan or manual tap is the primary and only guaranteed check-in; the geofence is an opt-in 100-200 m 'you're nearby, tap to check in' nudge. Two-step permission flow (When In Use, then a separately explained one-time Always request after first value; never NSLocationDefaultAccuracyReduced; skip Always if Allow Once), re-arm on every foreground launch, ship isIosBackgroundLocationEnabled: true with a per-app 2.5.4 review note until expo PR #50199 lands, register the geofence only when outside the radius, ignore ENTER events within minutes of registration, notifyOnExit false, one check-in per day, Android prominent disclosure + Play background-location declaration and 30-second video per app filed weeks before launch, Samsung battery-optimization explainer, and a native CLMonitor/CLServiceSession + DWELL module on the roadmap.
+7. Wallet (item 6): Apple pass signed with the restaurant's Pass Type ID certificate (CSR generated by AInovations so the key never leaves it, uploaded by the restaurant's Account Holder/Admin on an Organization account), restaurant name/address/contact on the pass back, up to 10 locations with relevantText, APNs updates via the pass cert on the production host, 30-day cert-expiry reminders per restaurant. Google: one AInovations issuer taken to publishing mode before the first launch, one LoyaltyClass per restaurant, merchantLocations (not locations), no more than 3 notify-triggering updates per object per day, written authorization from each restaurant on file.
+8. SMS (item 7): Low-Volume Standard brand and a MARKETING campaign per restaurant under its own subaccount (owner as campaign contact with a domain email); loyalty/transactional notices stay in push. Per-restaurant public 'SMS program' page with hosted screenshots of the in-app opt-in and its post-submit state, SMS Terms (frequency, 'Msg & data rates may apply', HELP/STOP, carrier disclaimer) and Privacy (Twilio's no-sharing sentence). Rewrite the in-app checkbox as a standalone, unchecked, optional consent naming the restaurant, automated marketing texts, 'not a condition of any purchase', frequency, rates, STOP/HELP and links; the account and the 10% deal never require it. Consent records kept 5 years; 8 a.m.-9 p.m. local send window (8 p.m. in FL/OK/WA/MD/CT) by the member's known timezone; any STOP-family keyword honored immediately with one plain confirmation; GSM-7 single-segment templates, restaurant name in every text, links only on the restaurant's own https domain; no drink specials unless a real 21+ gate exists; one-time NY-counsel read (or NY DOS registration) on GBL 399-pp before restaurant #1 sends. SMS lists are built only from in-app opt-ins, never from Orders API phone numbers.
+9. Stripe (item 8): complete Platform setup + Platform profile in the LIVE Dashboard as a SaaS platform on direct charges, set Availability = Platform, enable OAuth with registered redirect URIs and a state parameter, weeks before client zero. Direct charges on the restaurant's account with stripeAccountId in StripeProvider; CustomerSession created with the Stripe-Account header; never call retrievePaymentIntent/retrieveSetupIntent on Android; treat payment as done only on the Connect webhook; omit application_fee_amount entirely; NSCameraUsageDescription for card scanning. Memberships: default_incomplete subscriptions, a pre-sheet disclosure screen per Apple 4.9 with RecurringCartSummaryItem and a managementUrl, the 0.7% Billing fee listed neutrally on the onboarding sheet, an offboarding rule for subscriptions on disconnect. Apple Pay Merchant ID in the restaurant's Apple account with one live test to settle which Dashboard holds the certificate; Google Pay enabled only in a second release after the Play account owner is invited into the Pay & Wallet Console and production access is granted.
+10. Backend ops (item 10): one pg_cron job per minute invoking one Edge Function that loops all restaurants (explicit timeout_milliseconds, heartbeat row, a second cron job that alerts when the heartbeat is stale, nightly purge of cron.job_run_details); 'Toast connection failing' alert on 401/403 or a stopped-webhook email that tells the restaurant to rotate/re-enter credentials; ops mailbox subscribed to status-dev.toasttab.com and the API release notes; service_role poller filters by restaurant_id itself; tenant claims in app_metadata with the 1-hour stale-claim window accepted; menu Q&A on /menus/v2 with the menus webhook plus a 30-minute metadata poll, kept informational so the app never recreates Toast's ordering UI.
+
+=== CLIENT ZERO TEST PLAN ===
+1. Day 0 gate: confirm the restaurant is an LLC/corp with a D-U-N-S, a domain mailbox and a live website, and that Toast Web > Shop or Subscriptions shows Restaurant Management Essentials with the Standard API line (record the price). PASS: all present, or the missing pieces (LLC, mailbox, site, RMS) are ordered on day 0 with dates.
+2. Credential screen: the owner creates a dedicated standard-access credential set and screenshots every step of Integrations > Toast API access > Manage credentials > Create new credentials. PASS: no 'I agree'/terms checkbox anywhere in the flow (if one appears, stop and read it before proceeding); orders:read, guest.pi:read, menus:read, config:read, restaurants:read and stock:read are all selectable; the JSON arrives via a password manager, not email or text.
+3. Webhook self-serve: the owner opens Manage credentials > Manage webhooks and creates an Orders subscription pointed at the backend. PASS: the UI exists, a subscription GUID and secret key are shown, the notification email is set, and a test order produces an HMAC-valid order_updated at the backend within 60 seconds. FAIL path: polling only, page reworded to 'within a couple of minutes'.
+4. Attribution on a real Toast OO order: a member places one takeout order via Express checkout and one via Checkout as guest using the phone they registered in the app. PASS: GET /orders/v2/orders/{guid} returns Check.customer.phone/email matching the member on both orders, source = 'Online' (or the OO Pro value), and points post within 60 s via webhook and within 120 s via the fallback poll; record the exact phone string format Toast returns.
+5. Promo code enforcement online: create a single-use test code, redeem it on a Toast OO order with the member's phone, then attempt it again from the same phone via Express checkout and via guest checkout with the same contact phone. PASS: the second attempt is rejected on both paths; the first order's GET shows appliedPromoCode equal to the code and Check.customer populated; GET /config/v2/discounts lists the code with usageType SINGLE_USE_PHONE. FAIL path: counter deal becomes POS-only and OO rewards get short date windows.
+6. Promo code at the POS: staff applies the same single-use code on a dine-in check and enters the guest's phone. PASS: GET returns appliedPromoCode populated and customer = null (expected), confirming that deduct-at-activation is the only workable design; second attempt with the same phone is rejected at the register.
+7. Marketplace exclusion: observe the first DoorDash/Uber/Grubhub order (or a test order if the integration allows). PASS: the recorded Order.source value is outside the allowlist and earns nothing; document the string.
+8. Expo written permission: send the AUP authorization request to Expo before the first EAS build for this client. PASS: written reply on file (or the local-build fallback is exercised for this client's builds).
+9. Apple account chain: Organization enrollment completes, the Account Holder requests App Store Connect API access, invites Jarrid's Apple Account as App Manager with Certificates access, and issues a team API key. PASS: eas build (signing generated by EAS on the restaurant's team) and eas submit both succeed to TestFlight under the restaurant's account within the quoted window; log the elapsed days for D-U-N-S, enrollment and API approval.
+10. In-app ordering on physical devices: on an iPhone and an Android phone, tap Order, complete a full Toast OO checkout (including Apple Pay on iOS) inside SFSafariViewController / Custom Tabs, force-quit the app, relaunch, and tap Order again. PASS: checkout completes, the order appears in the feed with Check.customer, and the Toast login persists (or re-login is only the SMS code).
+11. App Review: submit the iOS build with points, check-in, Wallet pass and membership on the first screens, the 3.1.3(e) note, the 2.5.4 background-location note, and a test account + sample QR. PASS: approved with at most one Resolution Center round and no 4.2, 4.3(a), 4.2.6 or 3.1.3 rejection; if rejected under 4.2/4.3, book Meet with Apple before resubmitting.
+12. Google Play: Organization account verified, first production release approved, Google Pay hidden in v1; then invite the Play account owner into the Google Pay & Wallet Console and request production access with release-key screenshots. PASS: v1 live within a week of submission; production access granted before v1.1 enables Google Pay and card scanning.
+13. Stripe: the restaurant connects its existing account via OAuth (read_write), a member buys a membership through PaymentSheet on both platforms, Apple Pay is tried with the certificate on the restaurant's connected-account Dashboard first (then the platform Dashboard if the token fails). PASS: PaymentIntent and Subscription live on the restaurant's account, the Connect webhook delivers payment_intent.succeeded, no retrievePaymentIntent call is made on Android, and the Apple Pay certificate location is documented once.
+14. Wallet: pass signed with the restaurant's Pass Type ID cert installs on iOS, an APNs push (pass cert, production host) updates the points balance, and the pass appears on the lock screen within roughly 100 m of the restaurant; Google pass is issued from the AInovations issuer in publishing mode with merchantLocations set. PASS: both passes install without '[TEST ONLY]', points update within a minute of an order, iOS lock-screen relevance observed on site.
+15. Geofence: on an iOS 18+ phone with Always granted and an Android phone with Allow all the time, drive away and return. PASS: the 'you're nearby, tap to check in' notification arrives within 5 minutes on at least one platform, the one-check-in-per-day rule holds, no spurious ENTER fires at registration; re-test the iOS phone after 14 days without opening the app and after an Android reboot and record whether it still fires. The QR/manual check-in must pass regardless.
+16. Twilio: LVS brand and MARKETING campaign submitted with the hosted opt-in screenshots and the restaurant's SMS Terms/Privacy pages. PASS: approved within 3 weeks without a resubmission; a test promo goes out from the restaurant's local number naming the restaurant, a STOP reply blocks the number immediately with one confirmation, and the scheduler refuses a send at 9:30 p.m. local.
+17. Void/refund clawback: void one attributed order and partially refund another from the POS. PASS: voided = true and refundStatus = PARTIAL arrive via webhook and poll, the ledger reverses the right amounts, and the member's balance never goes negative.
+18. Secret menu and menu Q&A: mark one item POS-only in the Menu builder. PASS: /menus/v2 returns it with visibility ['POS'], the app labels it as in-person only, it is absent from the Toast OO page inside the app, and the Anthropic Q&A answers a question about it from cached menu JSON.
+
+=== PAGE CLAIMS AFFECTED ===
+- Claim: points land 'a minute later'. Weakened by: the feed only carries guest identity on takeout/delivery orders placed through Toast online ordering, matching depends on the guest using the same phone number, webhooks have no SLA and the fallback poll runs every 1-2 minutes, and dine-in orders are never attributed. Safer wording: 'Order pickup or delivery through your Toast online ordering and the points show up in the app, usually within a couple of minutes.'
+- Claim: 'Walk in, tap once' check-in. Weakened by: the arrival nudge needs Always location (roughly 10-25% of members grant it), runs on an API Apple has deprecated, can go silent after two weeks unopened on iOS and after a reboot or app-sleep on Android, and is a 100-200 m 'nearby' signal rather than proof of presence. Safer wording: 'Walk in and check in with one tap or a quick scan of the code on the table.'
+- Claim: 'Get near your place and it can pop up on the lock screen'. Weakened by: on iPhone the Wallet card surfaces silently (no alert, no sound) within about 100 m; on Android the nearby notice only fires if the guest has turned on Wallet notifications and always-on precise location for Google Wallet, with Google choosing the distance and wording. Safer wording: 'Their wallet card can show up on the lock screen when they're close by, on phones set to allow it.'
+- Claim: 'Order in your app' via Toast OO inside the app. Weakened by: the order is placed and paid on Toast's own ordering page opened in an in-app browser, the app never sees the cart or payment, and no other restaurant app is known to have passed App Review with this pattern yet. Safer wording: 'Order from your app: it opens your own Toast online ordering right inside the app, so nothing changes on your side.'
+- Claim: promo-code rewards 'one use per person — Toast keeps track'. Weakened by: Toast tracks single-use codes per phone number (staff types the phone at the register; online enforcement on guest checkout is unproven), a shared code can be used once by any phone, and the app confirms counter redemptions by deducting at activation rather than by seeing who used the code. Safer wording: 'one use per phone number — Toast enforces it at the register and at online checkout.'
+- Claim: 'four to six weeks' to the stores. Weakened by: it holds only for an LLC/corp that can enroll as an Organization on Apple and Google; a sole proprietor faces Apple's Individual-account limits and Google's 12-tester, 14-day closed test, and Apple organization enrollment backlogs ran 2-7 weeks in early 2026. Safer wording: 'typically four to six weeks for an LLC or corporation, mostly waiting on Apple and Google account approvals; we start the paperwork on day one.'
+- Claim: memberships, tickets and merch sold in your app through your own Stripe. Weakened by: Stripe Billing adds 0.7% on recurring memberships, Apple requires renewal/cancel disclosures before the payment sheet, and Apple Pay/Google Pay arrive in a follow-up release after per-restaurant approvals. Safer wording: 'Memberships, tickets and merch are sold in your app and paid straight into your own Stripe account at Stripe's published rates.'
+- Claim: texts 'signed with your name'. Weakened by: US texts go out from a local 10-digit number registered to the restaurant's business, not an alphanumeric sender name; the restaurant's name appears in the message body, and the campaign must be registered before any text can leave. Safer wording: 'Texts go out from a local number registered to your business, with your name in every message.'
+- Claim: 'the carriers want your EIN once'. Weakened by: registration also needs the exact IRS legal name and address, a live website showing the business, an owner contact email on the business's own domain, a published SMS terms and privacy page, hosted screenshots of the opt-in, and 1-3 weeks of carrier vetting before the first text; it costs about $19.50 once plus $10/month. Safer wording: 'The carriers register your business once (EIN, legal name and website), which takes a week or three before texts can go out.'
+
+=== RISK REGISTER ===
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 1. Standard API credentials with guest.pi:read return Check.customer (phone/email) on Toast Online Ordering orders
+  WHY: Standard access is read-only and guest.pi:read is a self-selectable scope (no legal approval gate today). Check.customer (firstName, lastName, phone, phoneCountryCode, email) is returned on Takeout/Delivery/Curbside orders, which is what Toast OO produces; it is never returned on dine-in checks (a 2026 standard-access dine-in test came back customer = null). Toast OO's guest checkout marks email, first name, last name and phone as required and the express path logs in by phone + SMS code, so every OO order carries a phone to match on.
+  CHANGE: None to the mechanism. Onboarding copy must tell members to use the same phone number in Toast online ordering as in the app; match on E.164 phone first and lowercased email second.
+  MITIGATION: If a member checks out with a different phone, offer an in-app 'claim a missed order' flow keyed on order time plus last-4 of the card is NOT possible (no card data on standard access); instead show a 'points not showing? use this phone number' notice and let staff add points manually from the owner dashboard.
+    - https://doc.toasttab.com/doc/devguide/devApiAccessFAQs.html
+      "Guest data is only provided for orders that have a dining behavior of either Takeout or Delivery. Guest data is not provided for in-store orders."
+    - https://doc.toasttab.com/doc/devguide/apiOrdersGetScopes.html
+      "If your Toast API client does not have the guest.pi:read scope, then the response does not include the customer or curbsidePickupInfo values."
+    - https://support.toasttab.com/en/article/Online-Ordering-FAQ
+      "Guests create and log in to their account at checkout using their mobile number (not an email address). After entering their number, they receive a one-time SMS code to complete the login."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 1. Orders webhook on standard access ('within a minute') plus the ordersBulk fallback poll
+  WHY: Toast's standard-access page documents a self-serve Manage webhooks UI (one event category per subscription, HMAC-signed, secret shown in Toast Web), but two older doc pages still say subscriptions are maintained by Toast support and there is no public live confirmation of standard-access webhooks. The webhook body strips firstName/lastName/phone, so matching requires a follow-up GET /orders/v2/orders/{guid}. Toast publishes no delivery SLA, has had multi-hour non-delivery incidents (2026-07-10, 2026-08-28), pauses a subscription after 50 errors in 5 minutes and stops it after 9 pauses in 10 minutes, and its own checklist says every webhook needs a fallback poll.
+  CHANGE: Ack every webhook with 2xx inside 2 seconds and process asynchronously; on each order_updated enqueue the GUID and GET the order with guest.pi:read; dedupe on order GUID + modifiedDate; run a 60-120 s trailing-window ordersBulk poll (max 5 req/s/location) plus a daily businessDate reconciliation; alert if no webhook arrives for 15 minutes during posted hours.
+  MITIGATION: If the Manage webhooks UI does not exist on client zero's Toast Web, the polling path alone still delivers points in 1-2 minutes; reword the page from 'a minute later' to 'within a couple of minutes'. Subscribe the ops mailbox to status-dev.toasttab.com and the webhook notification email.
+    - https://doc.toasttab.com/doc/devguide/devApiAccessWebhookSubscriptions.html
+      "You must have standard API access to create and manage webhook subscriptions. For more information, see Standard API access overview. Webhook subscription access allows you to create and manage webhoo"
+    - https://doc.toasttab.com/doc/devguide/devOrdersWebhookRef.html
+      "For performance and security, the following values are either omitted from the orders webhook messages, or return as null. Guest personal information and delivery details (omitted) firstName lastName "
+    - https://doc.toasttab.com/doc/cookbook/apiWebhookUsageChecklist.html
+      "All Toast webhooks have a fallback API. Your integration should periodically query the fallback API in case you miss a webhook."
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 1. Phone number format and normalization for matching
+  WHY: Customer.phone is the national significant number (digits, possibly dashed in samples) and phoneCountryCode is the E.164 country code without the plus; legacy US records may lack a country code. Since March 2024 multiple Toast guest records can exist for one phone number, so matching must be on the normalized phone string, never on Toast's guest GUID.
+  CHANGE: Normalize: strip non-digits; default country code to 1; drop a leading 1 on 11-digit US numbers; compare E.164 strings; secondary key lowercased trimmed email.
+  MITIGATION: Log every unmatched OO order with its normalized phone so mismatches (typos, second numbers) are visible in the owner dashboard for manual credit.
+    - https://technology.toasttab.com/entry/supporting-international-phone-numbers-at-toast/
+      "phone: type: string description: The national significant number (excluding the country code). example: "555123XXXX" phoneCountryCode: type: string description: The E.164 country code of the phone num"
+    - https://doc.toasttab.com/doc/devguide/apiOrdersGetDetailedInfoAboutMultipleOrders.html
+      ""phone": "333-555-5555","
+    - https://community.toasttab.com/t5/product-updates/march-2024-product-updates-us/m-p/10008
+      "multiple guests can now exist for a single phone number. Since guests can choose to checkout as a guest OR use an account, multiple guests could be created for a given phone number."
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 1. Marketplace (DoorDash/Uber/Grubhub) orders earn nothing: Order.source filtering
+  WHY: Order.source is an enumerated response-only string; standard Toast OO reports 'Online', OO Pro reports 'Branded Online Ordering' or 'eCommerce Online ordering'. No Toast page maps marketplace orders to a specific source string (partner-injected orders are documented as 'API'), so the exclusion must be an allowlist of OO sources, not a blocklist.
+  CHANGE: Accrue points only for source in {Online, Branded Online Ordering, eCommerce Online ordering} (decide separately on Toast Local); treat any unknown value as non-earning and log it.
+  MITIGATION: Verify the actual source string on client zero's first marketplace order before finalizing; Toast tells integrations to tolerate new enum values.
+    - https://doc.toasttab.com/openapi/orders/tag/Data-definitions/schema/Order/
+      "source string Indicates the way that the order was placed. Valid values: In Store Online Order-and-Pay-at-Table API Kiosk Caller Id Google Invoice Toast Pickup App Toast Local Toast Pay Branded Online"
+    - https://doc.toasttab.com/doc/relnotes/devPortalApiChangeLog.html
+      "Your integration should handle unexpected values in any Toast API enumerated value without disrupting restaurant operations."
+
+[WORKS_AS_DESIGNED] 1. Voids and refunds: clawing points back
+  WHY: Order.voided/voidDate and Payment.refundStatus (NONE/PARTIAL/FULL) with Payment.refund.refundAmount are all readable; every void or refund is an order modification, so it arrives as order_updated and is caught by a modified-time poll. Check.totalAmount is not reduced by refunds, so clawback math must use refundAmount.
+  CHANGE: Store points as a ledger keyed by order GUID; reverse when voided flips true or refundStatus != NONE; re-read orders with awarded points from the last 30 days nightly as belt-and-suspenders.
+  MITIGATION: Cap negative balances at zero and flag members whose net points go negative for owner review.
+    - https://doc.toasttab.com/openapi/orders/tag/Data-definitions/schema/Payment/
+      "refundStatus string Indicates whether the payment was refunded. Response only. Valid values: NONE - The payment was not refunded. PARTIAL - The payment was partially refunded. FULL - The payment was r"
+    - https://doc.toasttab.com/doc/devguide/apiOrdersOrderObjectSummary.html
+      "totalAmount is not affected by refunds. Refund information is provided in the menu item selection and payment details. totalAmount is affected by voids."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 1. Credential lifecycle: RMS Essentials dependency, employee ownership, rotation, compromise deactivation, no sandbox
+  WHY: Credentials persist until rotated, but access dies if the location drops RMS Essentials (the whole suite cancels at once) or the creating employee loses Manage Integrations. Toast deems a client secret sent in plain text by email or messenger 'compromised' and its integrations team deactivates compromised credentials; Merchant Agreement 4.1(f) binds the merchant to posted guidelines. Standard access has no sandbox, so the first test runs on the live restaurant. Bearer tokens last one day and Toast asks for no more than 1-2 token requests per day.
+  CHANGE: The OWNER (not a manager) creates a dedicated credential set and shares it only through a password manager or an HTTPS onboarding form that stores it in Supabase Vault; cache the bearer token and refetch only on 401; build a 'Toast connection failing' alert on 401/403 or a stopped-webhook email that tells the restaurant to rotate/re-enter credentials.
+  MITIGATION: Put the RMS Essentials subscription and the credential-owner's continued employment in the restaurant contract; document the rotation runbook in the onboarding sheet.
+    - https://doc.toasttab.com/doc/devguide/authentication.html#apiAuthTokenStorage
+      "If your API credentials are exposed, the Toast integrations team deactivates the compromised credentials and generates new ones."
+    - https://doc.toasttab.com/doc/devguide/apiEnvironments.html
+      "Sandbox environment access is limited to partner and custom integrations. Standard API access and analytics API access are only available in the production environment."
+    - https://support.toasttab.com/en/article/Toast-Suites-Overview
+      "Removing a suite removes every product included in it — you can't cancel only one product inside a suite and keep the rest."
+
+[UNKNOWN_NEEDS_LIVE_TEST] (PROVE WITH CLIENT ZERO) 1. What Restaurant Management Essentials costs the restaurant
+  WHY: Standard API access is included with Restaurant Management Essentials for U.S. customers and absent from the base POS suite; Toast publishes no price. Reddit snippets (2024-2025) put the suite at about $50/month/location; one June 2026 comment claims standard access is now free by default.
+  CHANGE: None to the design; do not put a dollar figure in prospect-facing copy until a real restaurant screenshots its Toast Shop or Subscriptions page.
+  MITIGATION: Budget $50/mo/location in the pitch math; if the Shop shows $0 the pitch improves.
+    - https://support.toasttab.com/en/article/Standard-API-Access
+      "For U.S. customers, Standard API Access is included as part of Restaurant Management Essentials (RMS), so a related charge on your invoice is tied to your RMS subscription rather than a specific third"
+    - https://support.toasttab.com/en/article/Toast-Suites-Overview
+      "For the full, current catalog and pricing, visit Toast Shop or check your Subscriptions page."
+    - https://support.toasttab.com/en/article/Review-and-Manage-Your-Toast-Subscriptions
+      "Navigate to Toast Web > Toast account > My Products > Subscriptions."
+
+[UNKNOWN_NEEDS_LIVE_TEST] (PROVE WITH CLIENT ZERO) 1. Toast API Terms of Use: does the standard credential screen make the restaurant click through 2.6 (third-party consent), 2.4(xiii) (no unsolicited marketing from Toast Data) and 4.8 ($5M cyber insurance)?
+  WHY: The documented standard-access create flow has no terms checkbox (raw page has zero 'agree'/'terms'/'accept'; the only checkbox is the rotate-secret confirmation) and Toast's docs affirmatively describe sharing credentials with 'your development team'. The click-through API Terms of Use (June 23, 2026) is tied to the partner application path. But if Toast adds an 'I agree' step to the New Credentials page, the restaurant becomes 'You' and 2.6 would require Toast's written consent before engaging AInovations, and 4.8 imposes insurance minimums.
+  CHANGE: Have the owner screenshot the New Credentials page on day one; if a terms checkbox appears, stop and read before proceeding. Regardless: the restaurant owns the credentials, the contract names AInovations as its development contractor, and SMS marketing lists are built only from in-app opt-ins, never from phone numbers first seen in Orders API data.
+  MITIGATION: If the terms do appear and 2.6 applies, send Toast a written consent request describing a read-only internal integration; keep the SMS program separate from Toast data either way.
+    - https://doc.toasttab.com/doc/devguide/devApiAccessCredentials.html
+      "When sharing standard API access credentials with your development team, always use a password manager or secure secret management service. Never share credentials via email or messaging applications."
+    - https://pos.toasttab.com/api-terms-of-use
+      "You must obtain Toast's prior written consent before engaging any third-party provider to use the Toast API(s) in connection with the development of Your Application. If Toast grants such consent, You"
+    - https://pos.toasttab.com/api-terms-of-use
+      "(xiii) not use the Toast API(s) or any Toast Data to send Unsolicited Commercial Email ("UCE") or other unsolicited marketing communications to any person;"
+
+[WORKS_WITH_CHANGE] 1. Toast Merchant Agreement (competitive-product clause) and guest privacy obligations
+  WHY: Nothing in the Merchant Agreement bars a merchant from handing its own read-only credentials to a contractor ('Employees' includes contractors; Merchant owns Merchant Data; the word 'API' never appears). Exposure is 4.1(c) 'competitive with the Services' (Toast sells Loyalty and a Branded Mobile App) and Toast's definition of standard access as connecting 'internal systems'. Separately the Merchant DPA and 5.3 make the restaurant responsible for notice/consent when Customer Data is used beyond Toast's scope, which phone-matching for a third-party loyalty program is.
+  CHANGE: Restaurant creates and owns the credentials; contract names AInovations as the restaurant's contractor building its internal system; app drives orders into Toast OO and never markets itself as a Toast Loyalty replacement. Add a privacy layer: restaurant privacy notice mentions the app provider, sign-up screen states the phone will be matched to Toast takeout/delivery orders, a short DPA between restaurant and AInovations, and request only orders:read + guest.pi:read + menus:read + config:read + restaurants:read (skip delivery_info.address:read unless needed).
+  MITIGATION: Keep polling far under the 5 req/s/location limit so usage never looks like scraping under 4.1(e); re-read pos.toasttab.com terms before each onboarding.
+    - https://pos.toasttab.com/merchant-agreement
+      "(c) use or access the Services to build or support, and/or assist a third party in building or supporting, products or services competitive with the Services;"
+    - https://pos.toasttab.com/merchant-agreement
+      "To the extent Merchant's use of the Customer Data is outside the scope described in this Agreement or within Toast's Privacy Statement, Merchant shall be solely responsible for putting in place any ad"
+    - https://pos.toasttab.com/privacy/merchantdpa
+      "Merchant represents and warrants that it has provided the appropriate notices to Individuals and collected any required consents"
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 2. Toast Online Ordering inside SFSafariViewController / Chrome Custom Tabs, with login persistence
+  WHY: Toast's only restriction is iframe embedding; linking is explicitly allowed and Toast itself sends guests through Instagram's in-app browser. order.toasttab.com sits behind Cloudflare bot management (curl with a Safari UA gets a 403 challenge; real browsers pass), so a WKWebView/react-native-webview is the wrong choice but SFSafariViewController and Custom Tabs are real browser engines. Apple Pay works in SFSafariViewController. Since iOS 11 SFSafariViewController keeps a persistent per-app cookie store; Custom Tabs share Chrome's cookie jar. Whether Toast issues a long-lived or session cookie is undocumented.
+  CHANGE: Use expo-web-browser openBrowserAsync (not openAuthSessionAsync, not an ephemeral Custom Tab, not a WebView).
+  MITIGATION: If Toast uses a session cookie the guest re-enters the SMS code each visit; acceptable. Label the button 'Order' and leave Toast's page untouched.
+    - https://support.toasttab.com/en/article/Online-Ordering-FAQ
+      "Toast does not currently support embedding the online ordering page directly on a website. However, you can add your online ordering URL as a link on your site."
+    - https://order.toasttab.com/online/
+      "HTTP/2 403 ... cf-mitigated: challenge ... x-frame-options: SAMEORIGIN ... server: cloudflare (curl with iPhone Safari UA, 2026-09-19)"
+    - https://asciiwwdc.com/2017/sessions/225
+      "On iOS 11, Safari View Controller will have a separate persistent data store in each app that it's used in. This means that cookies, local storage, and other browsing data will be contained within you"
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 2. App Store Review: web checkout inside the app vs 4.2 minimum functionality and 3.1.3(e)
+  WHY: 3.1.3(e) requires non-IAP payment for physical goods consumed outside the app, so Toast processing the card on its web checkout is mandatory, not merely allowed. The real risk is 4.2: the app must be visibly more than the Order button, and push + location alone have been ruled insufficient. Apple's own rejection template names 'mobile ordering' as functionality that helps a restaurant app pass. No first-hand report of a restaurant app approved with SFSafariViewController ordering exists.
+  CHANGE: Put points balance, check-in, Wallet pass, membership purchase and menu Q&A on the first screens; cite 3.1.3(e) and describe physical fulfillment in App Review notes; do not let a reviewer land on a screen that is only the Order button.
+  MITIGATION: If rejected under 4.2, book the free weekly Meet with Apple App Review consultation rather than resubmitting blind; keep the single-binary 'picker' model as a documented fallback.
+    - https://developer.apple.com/app-store/review/guidelines/
+      "3.1.3(e) Goods and Services Outside of the App: If your app enables people to purchase physical goods or services that will be consumed outside of the app, you must use purchase methods other than in-"
+    - https://developer.apple.com/app-store/review/guidelines/
+      "Your app should include features, content, and UI that elevate it beyond a repackaged website. If your app is not particularly useful, unique, or "app-like," it doesn't belong on the App Store."
+    - https://developer.apple.com/forums/thread/108931
+      "Your app provides a limited user experience as it is not sufficiently different from a mobile browsing experience. As such, the experience it provides is similar to the general experience of using Saf"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 3. Confirming a reward redemption from the read API and deducting points
+  WHY: Works only for Toast OO redemptions: there Check.customer and appliedPromoCode are both on the check. At the POS the staff types the guest's phone into a Toast prompt that never reaches any Orders API field: a standard-access developer's Aug 2026 dine-in test returned appliedPromoCode = 'FBLT10' with customer = null and Toast's only reply was a private ticket; AppliedDiscount's 17 fields contain no phone or guest identifier. So a counter redemption can be seen (the code appears on the check) but never attributed to a member. Field evidence also shows GET does return appliedPromoCode for a POS-applied code, though Toast never documents it. Per-member unique codes were considered, but standard access is GET-only and promo codes are added one at a time in Toast Web, so a code pool means the owner hand-types every code.
+  CHANGE: Deduct points at activation, not on API confirmation: member taps Redeem, backend deducts and shows the code with a 15-minute expiry, staff applies it. Use ONE shared single-use-per-phone code per reward tier and one for the counter deal, created once in Toast Web with description blank / Display on Online Menus off. Use the read API only as a reconciliation signal on OO orders (Check.customer present + appliedPromoCode equal to a configured code) and to load the live code list via GET /config/v2/discounts (config:read) so the app never offers a code that no longer exists.
+  MITIGATION: A leaked shared code is bounded by once-per-phone plus a short Start/End date window; rotate reward codes monthly; for high-value rewards accept hand-entered per-member codes as an owner option; exclude kiosks (single-use codes unsupported there).
+    - https://developers.toasttab.com/hc/en-us/community/posts/52062260252052
+      "appliedPromoCode  = "FBLT10" ... customer            = null ... But the phone number is nowhere in the payload."
+    - https://developers.toasttab.com/api/v2/community/posts/52062260252052/comments.json
+      "This forum is meant for general questions rather than issues tied to specific locations. Therefore, for something like this, I'll open an internal ticket and have someone from our team reach out direc"
+    - https://support.toasttab.com/en/article/Using-Single-Use-Promotion-Codes
+      "Then, you will be prompted to enter the guest's phone number. Enter your guest's phone number, then select Apply code."
+
+[UNKNOWN_NEEDS_LIVE_TEST] (PROVE WITH CLIENT ZERO) 3. 'One use per person, Toast keeps track': how single-use is enforced on Toast OO, and the SINGLE_USE_UNIQUE_CODE type
+  WHY: Toast documents single-use as once per phone number on POS and OO, but the Single-Use article only gives POS steps and no page says whether OO checks the SMS-verified account phone or the contact phone typed at guest checkout, or whether 'Checkout as guest' dodges it. The Configuration API defines a third usage type, SINGLE_USE_UNIQUE_CODE ('a unique code that can only be used once'), but the Toast Web 'Single-use' checkbox is documented as the per-phone type and no UI path to create true one-time codes is documented.
+  CHANGE: Do not promise 'once per guest' online until a live guest-checkout test shows the second attempt is rejected; read each code's usageType from GET /config/v2/discounts and only market 'one per person' when it is SINGLE_USE_PHONE with a date window.
+  MITIGATION: If OO enforcement proves weak, keep the counter deal POS-only (staff enters phone) and make OO rewards short-dated.
+    - https://support.toasttab.com/en/article/Basic-Discount-Configuration
+      "Select Single-use if the code can only be used once per guest. Single-use codes work on the POS and through online ordering and are tracked by customer phone number."
+    - https://doc.toasttab.com/openapi/configuration/tag/Data-definitions/schema/PromoCode/
+      "SINGLE_USE_UNIQUE_CODE - the promo code is a unique code that can only be used once."
+    - https://doc.toasttab.com/openapi/configuration/tag/Data-definitions/schema/PromoCode/
+      "SINGLE_USE_PHONE - the promo code can only be used once per phone number. Some promotional discounts require a guest's phone number when applying the promo code."
+
+[WORKS_WITH_CHANGE] 3. Promo code configuration limits: no total-uses cap, one code per online order, no manager-level discounts online, codes can leak onto the public OO menu
+  WHY: Toast offers single-use-per-guest and Start/End dates but no total redemption cap anywhere; only one promo code or discount per check, and on OO there is no stacking or manager-permission support; a promo code with a description can display on the restaurant's public online menu; auto-apply does not work online; item-level rewards on OO discount every matching item unless built as BOGO with Eligible # of Get Items = 1. Since Feb 2026 offers can be limited by dining behavior.
+  CHANGE: Drop 'first N guests' style promises; enforce budgets with dates + single-use + backend redemption counting with an owner alert to expire the code. Design every promotion as one code per order. Set every app-facing discount to Any User. Leave description blank and Display on Online Menus off. Build free-item rewards as BOGO/fixed item-level with Eligible # = 1. Build one Toast discount per reward TYPE so redemptions are readable by discount.guid.
+  MITIGATION: Re-test rewards after Toast POS releases (operators report discount-engine behavior changes between versions).
+    - https://support.toasttab.com/en/article/Basic-Discount-Configuration
+      "Only one promo code or discount can be applied to a single check."
+    - https://support.toasttab.com/en/article/Supported-Discounts-for-Online-Ordering
+      "No manager permission settings"
+    - https://support.toasttab.com/en/article/How-to-set-up-a-discount-code-for-online-orders
+      "If the promo code is only available for online ordering and not for POS orders, you must add a description to the promo code to be able to toggle the Display on Online Menus on and off."
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 3. 'Secret menu' = items visible on the POS but hidden from online ordering
+  WHY: Every menu, group, item and modifier group has per-channel visibility (POS; Kiosk/Order & Pay; Toast Online Ordering/Local; ordering partners), hierarchy applies, and the Menus v2 API returns a visibility array so the app can label POS-only items. A secret item is therefore in-person only: the app can show it and the guest asks staff, but it cannot be ordered through the in-app OO browser.
+  CHANGE: None; put secret items in a dedicated POS-only menu group and render them in the app from the menus:read visibility flag.
+  MITIGATION: If menus v2 visibility proves unreliable on real data, keep a manual 'secret menu' list in the restaurant's config.
+    - https://support.toasttab.com/en/article/Setting-Ordering-Visibility-in-the-Menu-Builder
+      "Visibility follows menu hierarchy. If a parent menu or menu group is hidden from a channel, every group, item, and modifier below it is also hidden from that channel — even if you select that channel "
+    - https://doc.toasttab.com/doc/platformguide/adminSpecifyingOrderingChannelVisibility.html
+      "The menu entity is visible on your restaurant's Toast Online Ordering website and in the Toast Takeout (Local by Toast) app."
+    - https://doc.toasttab.com/doc/devguide/devApiAccessFAQs.html
+      "You made a POST request. Standard API access only supports GET requests. You tried to access the menus /v3 endpoints. Standard API access only supports menus /v2 endpoints."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 4. iOS geofence check-in nudge ('Walk in, tap once')
+  WHY: Only Always authorization delivers region events to a suspended/terminated app; When In Use gives nothing in the background. iOS 18+ additionally requires a foreground-created CLServiceSession(.always) for CLMonitor events, a June 2026 report shows sessions dying after 2-3 weeks unopened ('Service Session Required'), and Apple has deprecated CLLocationManager.startMonitoring(for:)/CLCircularRegion (the API expo-location uses) in iOS 27.2 in favor of CLMonitor. Radius must be 100-500 m with minutes of latency, so the notification means 'near', not 'inside'.
+  CHANGE: Ask When In Use first, then a separately explained one-time Always request after the user has seen value; never set NSLocationDefaultAccuracyReduced; skip the Always request if the user chose Allow Once; re-arm on every foreground launch; budget a small native config-plugin module (CLMonitor + CLServiceSession) for the long term; make QR/manual tap the primary check-in and the geofence a 100-200 m 'you're nearby, tap to check in' nudge.
+  MITIGATION: Treat the geofence as a bonus for the minority who grant Always; the Wallet pass lock-screen relevance (item 6) is a permission-free 'nearby' surface on iOS.
+    - https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services
+      "Launches a terminated app automatically — When in Use: No. The user must launch the app. Always: Yes for significant location change, visits, and region monitoring services; no for others"
+    - https://developer.apple.com/videos/play/wwdc2024/10212/
+      "Note that starting this year, Always authorization will only be effective when you hold one of these, and you can only start holding one when your app is in the foreground."
+    - https://developer.apple.com/tutorials/data/documentation/corelocation/cllocationmanager/startmonitoring(for:).json
+      "Deprecated in iOS 27.2, iPadOS 27.2, macOS 27.2"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 4. Android geofence and the Google Play background-location declaration
+  WHY: Needs ACCESS_BACKGROUND_LOCATION; on Android 11+ the user must be sent to a settings page for 'Allow all the time'; each app listing must pass Play's background-location declaration with a demo video, which Google says may take several weeks and blocks the release meanwhile. The geofence service uses network location, may never fire with Wi-Fi off, has 2-6 minute latency, loses geofences on reboot, and Samsung sleeps unused apps after 3 days. Expo says a terminated Android app is not restarted by a geofence event.
+  CHANGE: Two-step permission flow with prominent disclosure; file the Play declaration + video per restaurant app well before launch; treat Android geofencing as opportunistic; verify re-registration after reboot; keep QR/manual as the only guaranteed path.
+  MITIGATION: If Play rejects the declaration for a given app, remove ACCESS_BACKGROUND_LOCATION from that app; nothing else depends on it.
+    - https://developer.android.com/develop/sensors-and-location/location/geofencing
+      "To use geofencing, your app must request the following: ACCESS_FINE_LOCATION, ACCESS_BACKGROUND_LOCATION if your app targets Android 10 (API level 29) or higher"
+    - https://support.google.com/googleplay/android-developer/answer/9214102?hl=en
+      "Your request may require up to several weeks to process."
+    - https://developer.android.com/develop/sensors-and-location/location/geofencing
+      "Having Wi-Fi on can significantly improve the location accuracy, so if Wi-Fi is turned off, your application might never get geofence alerts depending on several settings including the radius of the g"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 4. expo-location geofencing library gaps (UIBackgroundModes bug, deprecated iOS path, no dwell on Android)
+  WHY: expo-location through 58.0.3 refuses to start geofencing on iOS unless 'location' is in UIBackgroundModes (Core Location does not need it for region monitoring), and that entry has caused 2.5.4 rejections; PR #50199 is still open and removing only the JS guard would crash because the native consumer sets allowsBackgroundLocationUpdates unconditionally. The Android consumer uses INITIAL_TRIGGER_ENTER with no loitering delay, so a member who registers while inside the radius gets an immediate spurious ENTER and drive-bys cannot be filtered.
+  CHANGE: Ship with isIosBackgroundLocationEnabled: true plus a per-app App Review note until the PR lands; register the geofence only when the device is outside the radius or ignore ENTER within minutes of registration/cold launch; notifyOnExit false; one check-in per day; make the notification 'tap to check in', never an automatic check-in.
+  MITIGATION: Plan a native geofence module (CLMonitor/CLServiceSession on iOS; Geofence.Builder with DWELL on Android) if the nudge proves valuable.
+    - https://github.com/expo/expo/issues/50194
+      "Background location has not been configured, make sure to add 'location' to 'UIBackgroundModes' in the Info.plist file"
+    - https://developer.apple.com/tutorials/data/documentation/corelocation/cllocationmanager/allowsbackgroundlocationupdates.json
+      "Setting the value to true but omitting the UIBackgroundModes key and location value in your app's Info.plist file is a fatal error that terminates the app."
+    - https://raw.githubusercontent.com/expo/expo/main/packages/expo-location/android/src/main/java/expo/modules/location/taskConsumers/GeofencingTaskConsumer.kt
+      ".setInitialTrigger(
+    GeofencingRequest.INITIAL_TRIGGER_ENTER | 
+    GeofencingRequest.INITIAL_TRIGGER_EXIT
+  )"
+
+[WORKS_WITH_CHANGE] 4. Realistic Always-location opt-in and the QR fallback
+  WHY: Foursquare's own location-first apps saw only 22% of new users choose Always after iOS 14; a single-restaurant loyalty app should plan on 10-25% at best, lower on Android. No Apple or Google rule blocks a table-QR check-in as long as the scan only records a visit for physical perks (3.1.1 bars QR codes that unlock in-app content).
+  CHANGE: Check-in and 'nearby' must be complete without the geofence; ask for Always only after the second session or first check-in; supply a sample QR and test account in review notes.
+  MITIGATION: Rotate QR codes and enforce one check-in per day to limit photo replay.
+    - https://foursquare.com/resources/blog/ad-tech/ios-14-heres-how-the-new-privacy-permissions-could-impact-apps/
+      "22% of users opted in to "Always""
+    - https://developer.apple.com/app-store/review/guidelines/
+      "Apps may not use their own mechanisms to unlock content or functionality, such as license keys, augmented reality markers, QR codes, cryptocurrencies and cryptocurrency wallets, etc."
+
+[WORKS_WITH_CHANGE] 5. Push alerts via Expo push (weather, games, win-back, nearby)
+  WHY: Expo push is free with a 600/s/project limit but has no SLA. Each restaurant's Apple account must supply its own APNs key (max 2 per account). One shared Firebase project is capped at 30 apps and Firebase's own guidance says each white-label app should have its own project. Win-back 'lapsed' only means lapsed on takeout/delivery orders and check-ins, since dine-in visits are invisible to the feed.
+  CHANGE: One push-only Firebase project per restaurant (link a billing account and raise the project quota early); one APNs key per restaurant on its EAS project; define 'lapsed' on the signals you actually have.
+  MITIGATION: If a restaurant already has two APNs keys from a prior vendor, they must revoke one or hand over an existing .p8.
+    - https://docs.expo.dev/push-notifications/sending-notifications/
+      "The Expo push notification service does not have an SLA"
+    - https://firebase.google.com/support/faq
+      "Firebase restricts the total number of Firebase Apps within a Firebase project to 30. ... In the rare case your project requires more than 30 apps, you can request an app limit increase. Your project "
+    - https://firebase.google.com/docs/projects/dev-workflows/general-best-practices
+      "each independently labeled app should have its own Firebase project, and the iOS and Android versions of that label should be in the same Firebase project."
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 6. Apple Wallet pass signed with the RESTAURANT's Pass Type ID certificate, key held by AInovations; APNs updates
+  WHY: Apple's PLA lets a Service Provider hold and use pass certificates on the member's behalf (the App Store distribution-cert prohibition does not cover pass certs) provided there is a written agreement; AInovations generates the CSR so the private key never leaves it, and the restaurant's Account Holder or Admin uploads it. Certs last a year and are replaced, not renewed; installed passes keep working. Pass updates use an empty APNs push authenticated with the same pass cert, production host only. Prerequisite: the restaurant must be an Organization account, since users added to an Individual membership are not team members and cannot touch Certificates, Identifiers & Profiles.
+  CHANGE: Sign a written service agreement per restaurant (PLA 2.9); put the restaurant's name, address and contact on the pass back (Attachment 5 s2.3); backend reminder 30 days before each cert expires; swap the APNs client cert when replaced.
+  MITIGATION: None needed beyond the Organization-account gate in item 9.
+    - https://developer.apple.com/support/downloads/terms/apple-developer-program/Apple-Developer-Program-License-Agreement-English-UK.pdf
+      "5.1 (d) You will not provide or transfer Apple Certificates or keys provided under this Programme to any third party (except for a Service Provider who is using them on Your behalf in compliance with "
+    - https://developer.apple.com/support/certificates/
+      "Pass Type ID - Sign and send updates to passes in Wallet. ... If your certificate expires, passes that are already installed on users' devices will continue to function normally. However, you'll no lo"
+    - https://developer.apple.com/tutorials/data/documentation/walletpasses/adding-a-web-service-to-update-passes.json
+      "Create and send a push notification for each registered device. The notification uses the same certificate and private key that the creator of the pass used to sign the original, the push token regist"
+
+[WORKS_AS_DESIGNED] 6. One Google Wallet issuer for all restaurants; lock-screen / nearby relevance on both platforms
+  WHY: Google's Wallet API terms expressly allow an aggregator submitting content for other parties with their authorization; one LoyaltyClass per restaurant with its own issuerName/programName/logo; 20 req/s; new issuers start in demo mode with a '[TEST ONLY]' banner until publishing access (typically about two business days, no screenshots required). Apple store cards surface passively on the lock screen from up to 10 'locations'. Google DOES support proximity via merchantLocations (the deprecated 'locations' field does not); Google picks radius, dwell and wording, the user must have Wallet notifications and always-on precise location enabled, and at most 3 push-triggering updates/messages per object per 24 hours.
+  CHANGE: Use merchantLocations, not locations, on the Google class/object; batch points updates and keep notify-triggering updates under 3/day; get the AInovations issuer into publishing mode with a representative class before the first launch; keep each restaurant's written authorization on file.
+  MITIGATION: The app's own geofence push (item 5) remains the customizable Android 'nearby' channel.
+    - https://developers.google.com/wallet/terms-of-service
+      "If you are an aggregator submitting content to Google via the API on behalf of other parties, including any third-party Brand Features, you represent and warrant that you are authorized by such partie"
+    - https://developers.google.com/wallet/retail/loyalty-cards/getting-started/request-publishing-access
+      "In Demo Mode, you are limited to issuing passes only to Google Wallet users whose accounts either have the Admin or Developer role for your Issuer account, or who have been added by your as test accou"
+    - https://developers.google.com/wallet/retail/loyalty-cards/rest/v1/loyaltyclass
+      "Merchant locations. There is a maximum of ten on the class. Any additional MerchantLocations added beyond the 10 will be rejected. These locations will trigger a notification when a user enters within"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 7. Twilio ISV: master account, subaccount per restaurant, A2P 10DLC brand on the restaurant's EIN
+  WHY: Twilio documents subaccount-per-customer as a supported ISV architecture; a restaurant with an EIN cannot use Sole Proprietor, so each is a Low-Volume Standard Brand ($4.50 brand, $15 campaign vetting, $10/mo Marketing campaign; 2,000 segments/day to T-Mobile, far above ~2,000/month). Legal name must match the IRS CP 575 exactly; the campaign contact must be an authorized business representative with an email on the restaurant's own domain; every restaurant needs a live public website showing the business.
+  CHANGE: Register each restaurant as an LVS brand under its own subaccount with its EIN, exact legal name, a domain email and a live website; the restaurant's owner, not AInovations, is the campaign contact; budget $19.50 one-time + $10/mo + roughly $25/mo in segment and number fees per restaurant.
+  MITIGATION: A restaurant with no website or only a Gmail address is a Rent-a-Site prospect first and an SMS client second.
+    - https://www.twilio.com/docs/messaging/compliance/a2p-10dlc/onboarding-isv
+      "Create a Secondary Customer Profile under the customer's subaccount. Register a Brand under the customer's subaccount. Register Campaigns for each messaging use case."
+    - https://help.twilio.com/articles/4407882914971-Comparison-between-Sole-Proprietor-Low-Volume-Standard-and-Standard-registration-for-A2P-10DLC
+      "Customers with EIN number are NOT ELIGIBLE for Sole Prop"
+    - https://help.twilio.com/articles/11847054539547-A2P-10DLC-Campaign-Approval-Requirements
+      "ISVs: If you provide software for dentists, don't register your software company. Register the specific dental practice that's actually sending the messages."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 7. Campaign vetting: MARKETING use case, opt-in evidence for an in-app flow, per-restaurant SMS Terms and Privacy pages, approval time
+  WHY: Most rejections happen on the message flow / call-to-action. An in-app opt-in screen is behind a login, so reviewers need a public URL with hosted screenshots of the consent screen and its post-submit state; marketing and transactional consent need separate checkboxes; the privacy page must carry Twilio's no-sharing sentence; PrivacyPolicyUrl and TermsAndConditionsUrl are now mandatory. Approval quotes range from 5 business days to 2-3 weeks. The $15 fee is non-refundable on rejection.
+  CHANGE: Register MARKETING only and keep balance/transactional notices in push; host an 'SMS program' page on each restaurant's site with screenshots, Terms (frequency, 'Msg & data rates may apply', HELP/STOP, carrier disclaimer) and Privacy ('We do not sell or share your SMS opt-in data...'); submit 3 weeks before launch; send a confirmation SMS on every opt-in.
+  MITIGATION: If rejected, fix the CTA per the granular 309xx code and resubmit; do not change use case to Mixed (higher cost, lower throughput, two-checkbox rule).
+    - https://help.twilio.com/articles/11847054539547-A2P-10DLC-Campaign-Approval-Requirements
+      "This is the heart of your registration, and it's also where most rejections happen. Your message flow needs to include a clear description of the opt-in method(s) you use to collect consent."
+    - https://help.twilio.com/articles/11847054539547-A2P-10DLC-Campaign-Approval-Requirements
+      "If your web form isn't live yet, or is behind a login, provide a publicly accessible URL link to a screenshot or image of your webform via Google Drive, OneDrive, etc. Also be sure to include a screen"
+    - https://help.twilio.com/articles/11847054539547-A2P-10DLC-Campaign-Approval-Requirements
+      "Include this statement, "We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes.""
+
+[WORKS_WITH_CHANGE] 7. In-app SMS consent wording and TCPA / New York obligations
+  WHY: Prior express written consent needs a separate, unchecked, optional checkbox (not bundled with T&C, not required for the account or the 10% deal) naming the restaurant as sender, stating automated marketing texts, 'not a condition of purchase', frequency, rates, STOP/HELP and Terms/Privacy links; the design's draft wording lacks several of these. The one-to-one consent rule is dead (vacated Jan 2025, deleted July 2025). Revocation by any reasonable means must be honored within 10 business days (FCC is voting Sept 30, 2026 on letting callers designate standard keywords). Quiet hours 8 a.m.-9 p.m. local (NY GBL 399-z covers texts; FL/OK/WA/MD/CT cut off at 8 p.m.). NY GBL 399-pp telemarketer registration ($500) may apply to an SMS-only program and its retail exemption needs 3 years under the same name.
+  CHANGE: Rewrite the checkbox per the required elements; store consent proof (phone, restaurant, timestamp, disclosure version, action) for 5 years; scheduler enforces 8-9 local time by the member's known timezone with 8 p.m. for the five stricter states; honor any STOP-family keyword immediately with one plain confirmation; every text names the restaurant; get a one-time NY-counsel read (or register) on 399-pp before restaurant #1 sends.
+  MITIGATION: Keep drink specials out of the SMS program unless the restaurant's site and opt-in carry a real 21+ gate (codes 30955/30956 are ineligible for resubmission).
+    - https://www.law.cornell.edu/cfr/text/47/64.1200
+      "Prior express written consent means an agreement, in writing, bearing the signature of the person called that clearly authorizes the seller to deliver or cause to be delivered to the person called adv"
+    - https://help.twilio.com/articles/11847054539547-A2P-10DLC-Campaign-Approval-Requirements
+      "Checkbox for consent (must NOT be pre-selected)"
+    - https://www.nysenate.gov/legislation/laws/GBS/399-Z
+      "No telemarketer or seller shall engage in telemarketing at any time other than between 8:00 A.M. and 9:00 P.M. at the location of the customer unless the customer has given their express consent to th"
+
+[WORKS_WITH_CHANGE] 7. Carrier filtering of promo texts (links, emoji, shorteners)
+  WHY: Public shorteners and unsecured links are a documented vetting rejection (30892) and a filtering trigger; links must represent the registered brand; emoji/smart quotes force 70-character segments and inflate segment counts against the daily cap.
+  CHANGE: Backend template rules: GSM-7 only, one 160-character segment, restaurant name in every text, 'Reply STOP to opt out' at least monthly, links only to the restaurant's own https domain (never ainovations.net or bit.ly), no ALL-CAPS or '!!!'; warm up new numbers.
+  MITIGATION: Twilio branded link shortening on a restaurant-owned domain is the paid alternative if links must be short.
+    - https://www.twilio.com/docs/api/errors/30892
+      "If you need shortened links, configure link shortening with your own branded domain through Messaging Services instead of using a free public shortener."
+    - https://help.twilio.com/articles/11847054539547-A2P-10DLC-Campaign-Approval-Requirements
+      "Third-party URLs: Links within the messaging content must represent the registered brand. Third-party redirects aren't permitted."
+
+[WORKS_AS_DESIGNED] (PROVE WITH CLIENT ZERO) 8. Apple and Google policy: memberships, tickets, merch and deposits paid through the restaurant's Stripe (no IAP)
+  WHY: 3.1.3(e) requires non-IAP payment for physical goods/services consumed outside the app, and App Review staff have written that Stripe is acceptable for physical purchases; Google Play's billing must NOT be used for physical services and names gym memberships and live-event tickets. The line is 3.1.1: any paid perk that unlocks app content (member-only screens, digital vouchers, purchased points, tips) must be IAP, and a SKU must stay majority-physical on Google. Reviewers have misfired on physical goods via Stripe, so budget a Resolution Center round.
+  CHANGE: Keep every paid benefit physically redeemable in the restaurant; the secret menu must be a POS perk, not an in-app unlock; describe tickets/deposits as admission and reservations fulfilled in person in review notes.
+  MITIGATION: Reply in Resolution Center citing 3.1.3(e) with a fulfillment description if a reviewer claims IAP applies.
+    - https://developer.apple.com/app-store/review/guidelines/
+      "3.1.1 In-App Purchase: If you want to unlock features or functionality within your app, (by way of example: subscriptions, in-game currencies, game levels, access to premium content, or unlocking a fu"
+    - https://support.google.com/googleplay/android-developer/answer/9858738
+      "Google Play's billing system must not be used in cases where: payment is primarily: for the purchase or rental of physical goods (such as groceries, clothing, housewares, electronics); for the purchas"
+    - https://developer.apple.com/forums/thread/653021
+      "External payments such as Stripe are acceptable for physical purchases. When users have the option of sending tips to users like it is the case in your app, this should use in-app purchases."
+
+[WORKS_WITH_CHANGE] 8. Stripe Connect: connecting the restaurant's existing Standard account by OAuth, zero application fee, platform profile gate
+  WHY: OAuth remains the documented way to attach an existing account (and creates one if none), requires read_write scope (read_only is Extensions-only) and cannot attach an account controlled by another platform. Stripe charges no Connect fees when the connected account pays its own Stripe fees and does not require an application fee. But live connected accounts are refused until the LIVE Dashboard's Platform setup AND Platform profile are completed and acknowledged (a sandbox completion does nothing), Stripe reviews the profile, and the Availability setting must be Platform.
+  CHANGE: Weeks before client zero: complete Platform setup + Platform profile in live mode as a SaaS platform using direct charges on Stripe-hosted-dashboard accounts, set Availability = Platform, enable OAuth with registered redirect URIs and a state parameter; never send application_fee_amount (omit it; 0 is rejected).
+  MITIGATION: Treat account_create_activation_required as 'profile incomplete'; handle account.application.deauthorized.
+    - https://docs.stripe.com/connect/standard-accounts
+      "The process described here is the recommended method for creating standard accounts. If you're an extension or an application that needs access to an existing account so you can provide services to yo"
+    - https://docs.stripe.com/connect/dashboard/managing-individual-accounts
+      "The user creating the account must be an Administrator or Developer, and the platform must have a completed platform profile."
+    - https://docs.stripe.com/connect/oauth-reference
+      "Note read_only can only be specified for extensions."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 8. PaymentSheet direct charges from React Native/Expo on the restaurant's account
+  WHY: StripeProvider stripeAccountId scopes PaymentSheet to the connected account on both platforms, but on Android retrievePaymentIntent/retrieveSetupIntent drop stripeAccountId and hit the platform account ('No such payment_intent'); the fix PR #2403 (Apr 2026) is still open. Stripe's own sample creates the CustomerSession without the Stripe-Account header even though the Customer lives on the connected account. Apple Pay/Google Pay do not run in Expo Go; Google Pay only on a physical device.
+  CHANGE: Never call retrievePaymentIntent/retrieveSetupIntent from the app on Android; treat payment as done only when the Connect webhook delivers payment_intent.succeeded; create the CustomerSession with the Stripe-Account header; one Customer per guest per restaurant; NSCameraUsageDescription for card scanning; pin the SDK and re-test after bumps.
+  MITIGATION: Backend fetches status with the Stripe-Account header if the app needs it.
+    - https://docs.stripe.com/connect/direct-charges?platform=react-native
+      "Transaction objects such as PaymentIntents and Charges exist on the connected account, not on the platform. To access direct charge data, you must query the Stripe API using the connected account ID i"
+    - https://github.com/stripe/stripe-react-native/pull/2403
+      "fix(android): forward stripeAccountId and catch errors in retrievePaymentIntent / retrieveSetupIntent"
+    - https://docs.stripe.com/connect/direct-charges?platform=react-native
+      "Enabling card scanning is required for Apple's iOS app review process. Card scanning is not required for Android's app review process, but we recommend enabling it."
+
+[WORKS_WITH_CHANGE] 8. Recurring memberships with Stripe Billing on the restaurant's account
+  WHY: Direct-charge subscriptions with payment_behavior=default_incomplete and the first invoice's confirmation_secret in PaymentSheet are documented and recommended for Standard accounts. Costs and duties missing from the design: Stripe Billing adds 0.7% of volume on top of card fees and the fee payer is the restaurant; Apple 4.9 requires disclosing renewal term, per-period benefit, exact charge and how to cancel before the sheet; subscriptions keep running after the platform disconnects.
+  CHANGE: List the 0.7% Billing fee neutrally on the restaurant onboarding sheet next to 2.9% + 30c; pre-sheet disclosure screen per Apple 4.9 with RecurringCartSummaryItem and a managementUrl (customer portal on the restaurant's account); write the offboarding rule (cancel app-sold subscriptions or hand the restaurant a list) and never attach application_fee_percent.
+  MITIGATION: Give members a cancel button that calls the API with the Stripe-Account header.
+    - https://docs.stripe.com/connect/subscriptions
+      "Direct charges are recommended for connected accounts with access to the full Stripe Dashboard, which includes Standard accounts."
+    - https://stripe.com/billing/pricing
+      "0.7% of Billing volume"
+    - https://developer.apple.com/app-store/review/guidelines/
+      "Apps using Apple Pay to offer recurring payments must, at a minimum, disclose the following information: The length of the renewal term and the fact that it will continue until canceled; What will be "
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 8. Apple Pay and Google Pay in PaymentSheet on a connected account (per-app Merchant ID, certificate location, Google Pay production access)
+  WHY: Both wallets support Connect. Apple Pay needs a Merchant ID in the RESTAURANT's Apple Developer account and a CSR/certificate from a Stripe Dashboard, but Stripe never says whether, for direct charges, the certificate lives on the restaurant's connected account or AInovations' platform account (the web analog requires per-connected-account registration). Google Pay production access can only be requested from a Google Pay & Wallet Console where the app is visible, which means the restaurant's Play account owner must be invited as a console user and the app must already be published and release-signed; then Google's onboarding team reviews.
+  CHANGE: Per restaurant: Merchant ID in the restaurant's Apple account; one live test (real card, test keys, EAS dev build on a physical iPhone) to settle which Dashboard holds the Apple Pay certificate, then document it once. Ship v1 to Google Play with Google Pay hidden, invite the Play account owner into the Pay & Wallet Console, file production access with release-key screenshots (Gateway, Visa liability shift on), then enable Google Pay in a follow-up release.
+  MITIGATION: Cards work on day one on both platforms even before the wallets are approved.
+    - https://docs.stripe.com/connect/direct-charges?platform=react-native
+      "Obtain an Apple Merchant ID by registering for a new identifier on the Apple Developer website. Fill out the form with a description and identifier. Your description is for your own records and you ca"
+    - https://docs.stripe.com/apple-pay?platform=web
+      "When using direct charges with Connect, you need to configure the domain for each connected account using the API. This isn't a requirement for connected accounts using other charge types."
+    - https://developers.google.com/pay/api/android/guides/test-and-deploy/publish-your-integration
+      "The Google Pay & Wallet Console only shows the Android applications published in the Google Play under the same Google Account."
+
+[WORKS_AS_DESIGNED] 8. PCI scope
+  WHY: Card entry only through Stripe's mobile SDK keeps the integration at SAQ A; card numbers go from the device to Stripe, the backend only handles client secrets and IDs, and Stripe pre-fills the questionnaire.
+  CHANGE: None; never add a custom card field or pass PANs through Supabase.
+  MITIGATION: Each restaurant attests in its own Dashboard when volume triggers it.
+    - https://support.stripe.com/questions/what-is-pci-compliance
+      "Using Stripe Elements, Checkout, or a mobile SDK qualifies you for SAQ A, the lowest-burden option."
+    - https://stripe.com/guides/pci-compliance
+      "When you only use UI components from our official SDKs for iOS or Android, or build a payment form with Elements in a WebView, card numbers pass directly from your customers to Stripe"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 9. Apple Developer Program enrollment under the restaurant's own account (legal entity + D-U-N-S)
+  WHY: Organization enrollment is as assumed for an LLC/corp (legal entity, D-U-N-S, no DBAs, work email on the organization's domain, functional website on that domain, owner/officer as Account Holder). A sole-proprietor restaurant can only enroll as an Individual: the owner's personal name is the seller, users added are not team members, Certificates, Identifiers & Profiles is unavailable to them, and the PLA forbids giving account access to non-team members, so AInovations cannot manage signing or receive a team API key. Paying with a card not in the individual's name triggers an ID request.
+  CHANGE: Make 'restaurant is an LLC/corp with a D-U-N-S, a domain mailbox and a live website' a hard prerequisite (or price a sole-prop path where the owner personally generates certificates/profiles and supplies them to EAS as local credentials, or forms an LLC first); start D-U-N-S and enrollment on day 0 and plan 4 weeks.
+  MITIGATION: Rent-a-Site plus an M365/Google Workspace mailbox covers the domain/website gate; a link to social media or a parked domain is not accepted.
+    - https://developer.apple.com/help/account/membership/D-U-N-S/
+      "DBAs, fictitious businesses, trade names, and branches are not accepted."
+    - https://developer.apple.com/help/account/membership/program-enrollment
+      "If you are a sole proprietor/single-person business, you must join as an individual and your legal name will appear as the seller. If you have enrolled as an individual and need to convert your indivi"
+    - https://developer.apple.com/support/roles/
+      "* Certificates, Identifiers & Profiles is only available to Account Holders and members of an organization's team."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 9. App Store Guidelines 4.2.6 (template apps) and 4.3(a) (spam) for a fleet of near-identical apps
+  WHY: 4.2.6 is satisfied structurally by client-owned accounts (Toast and ChowNow run this model at scale), but 4.3(a) is not: Apple fingerprints binaries across developers and has rejected white-label apps submitted from clients' own accounts that differed only in logo/name (Jul 2024, Jan 2025), and a 180-restaurant vendor reports 'insufficient business ownership documentation' challenges despite signed authorizations.
+  CHANGE: Every build must be visibly restaurant-specific beyond branding (real menu, tiers, secret menu, local alerts, only the features that restaurant uses); unique metadata, icon, screenshots and description per listing; the Account Holder is the real owner with business registration ready for Resolution Center; never resubmit a rejected binary under another account; keep the 4.2.6 single-binary 'picker' app as the documented fallback.
+  MITIGATION: Budget one Resolution Center round (2-7 days) per app in the quote.
+    - https://developer.apple.com/app-store/review/guidelines/
+      "4.2.6 Apps created from a commercialized template or app generation service will be rejected unless they are submitted directly by the provider of the app's content. These services should not submit a"
+    - https://developer.apple.com/forums/thread/759119
+      "We noticed your app shares a similar binary, metadata, and/or concept as apps submitted to the App Store by other developers, with only minor differences. Submitting similar or repackaged apps is a fo"
+    - https://support.toasttab.com/en/article/Get-Started-With-the-Branded-Mobile-App
+      "Register as an organization, input DUNS number, and invite brandedmobileapp@toasttab.com"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 9. AInovations as a team member: App Store Connect roles, API key, EAS Submit
+  WHY: The compliant shape is 'invited team member', not 'vendor holding the client's key': the restaurant's Account Holder must first click Request Access for the App Store Connect API (approved case by case), only Account Holder/Admin can mint team keys (Expo's guide asks for an Admin-level key; individual keys cannot use provisioning endpoints), and the PLA bars using a Service Provider to submit or use TestFlight while allowing contractors with their own Apple Account as Authorized Developers. Toast and ChowNow are invited as Admin.
+  CHANGE: Restaurant's Account Holder requests API access, invites Jarrid's own Apple Account as App Manager with Certificates, Identifiers & Profiles access (Admin if they will let him mint team keys), and generates a team API key that Jarrid stores in EAS; EAS Build signing uses the team key or Jarrid's Apple ID login to that team; a written service agreement per restaurant; never accept the owner's Apple ID password; never submit from AInovations' own account.
+  MITIGATION: If a restaurant will not grant Admin, the owner mints the team key personally and hands it over through a password manager.
+    - https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api
+      "Required role: Account Holder. ... Click Request Access. ... Once submitted, your request is reviewed and approved on a case-by-case basis."
+    - https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api
+      "There are two types of API keys: Team: Access to all apps, with varying levels of access based on selected roles. Individual: Access and roles of the associated user. Individual keys aren't able to us"
+    - https://developer.apple.com/support/terms/apple-developer-program-license-agreement/
+      "Notwithstanding the foregoing, You may not use a Service Provider to submit an Application to the App Store or use TestFlight on Your behalf. You agree to have a binding written agreement with Your Se"
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 9. Google Play: organization account, closed-testing gate, third-party permissions, repetitive-content policy
+  WHY: Organization accounts need a D-U-N-S, a payments profile whose legal name/address match it exactly, ID plus an organization document, and publish the legal name, address, email and phone; they skip the 12-testers/14-days gate. A sole-proprietor restaurant is steered to a Personal account, which adds device verification by the owner on a physical Android phone, the 12-tester closed test, and possibly 7-day-plus first reviews. Google explicitly recommends the decentralized white-label model but demands a unique listing per app.
+  CHANGE: LLC/corp restaurants: Organization account; invite Jarrid's Google account / an EAS service account with the release permissions only (Admin not needed). Sole-prop restaurants: plan for device verification + 12 testers x 14 days, or have them form an entity first. Unique description, icon, graphics and screenshots per listing; warn owners whose registered address is their home.
+  MITIGATION: Test once whether Google accepts a sole prop holding a D-U-N-S as an Organization before promising the faster path.
+    - https://support.google.com/googleplay/android-developer/answer/13634885?hl=en
+      "To create a developer account for an organization, you must have a D-U-N-S number."
+    - https://support.google.com/googleplay/android-developer/answer/14151465?hl=en
+      "Google Play requires personal developer accounts created after November 13, 2023, to test their apps before those apps are eligible for distribution on Google Play. ... Developers with personal accoun"
+    - https://support.google.com/googleplay/android-developer/community-guide/255621488/everything-about-the-12-testers-requirement?hl=en
+      "There is no impact on current personal accounts and organizational accounts."
+
+[WORKS_WITH_CHANGE] (PROVE WITH CLIENT ZERO) 9. Time from signed agreement to live in both stores
+  WHY: Toast budgets about four weeks for the identical workflow; Apple organization enrollment ran 2-7+ weeks in early 2026 backlogs; a new D-U-N-S is up to 5 business days (Apple) or 30 days (D&B/Google); App Review is under 24 hours for 90% but 4.3(a) loops add days; Play org verification is days but sole-prop personal accounts add 14+ days of closed testing. The owner personally doing 2FA, ID upload and payments profile is the real critical path.
+  CHANGE: Quote 4-6 weeks for an LLC/corp with no existing accounts (1-2 weeks if accounts exist), 6-8 weeks for a sole prop; start D-U-N-S, domain mailbox, site and both enrollments on day 0 and build in parallel.
+  MITIGATION: Escalate Apple enrollment after 4 weeks; use paid D-U-N-S expedite (~8 business days) when the free path stalls.
+    - https://support.toasttab.com/en/article/Branded-Mobile-App-FAQ
+      "The typical timeline to launch a Branded Mobile App is up to four weeks. If you already have developer accounts, this will significantly reduce the time it takes to launch with Toast."
+    - https://developer.apple.com/help/account/membership/D-U-N-S/
+      "After requesting a D‑U‑N‑S Number, please allow up to 5 business days to receive your number from D&B. ... Once you receive your D‑U‑N‑S Number, please allow up to 2 business days for Apple to receive"
+    - https://developer.apple.com/forums/thread/813766
+      "They said they are very behind on these and that there is no specific timeline for completion."
+
+[WORKS_WITH_CHANGE] 9/10. Expo Acceptable Use Policy: building and deploying apps for third parties
+  WHY: Expo's AUP (May 29, 2025), incorporated by the Terms, forbids using the Services 'to build or deploy apps for third parties' without express written permission, and the Terms license is for 'your own apps'. Expo's docs simultaneously describe creating an organization per client and its staff publish a white-label demo, so client work is tolerated in practice, but the fleet runs on an ungranted policy exception until Expo says yes in writing.
+  CHANGE: Before client zero's first EAS build, email Expo (or sales) for written authorization citing the per-client-organization pattern in their own docs; keep the reply on file; keep every project on a paid plan (Starter covers 50 projects).
+  MITIGATION: If refused: eas build --local / Xcode + Gradle in CI, Transporter/Fastlane and the Play Developer API for uploads, and direct APNs/FCM for push, so no Expo cloud service touches third-party apps.
+    - https://expo.dev/acceptable-use
+      "You may not use the Services in a service bureau, outsourcing, renting, sublicensing, or time-sharing capacity, including to build or deploy apps for third parties, or otherwise reproduce, duplicate, "
+    - https://expo.dev/terms
+      "limited, personal, non-exclusive, non-transferable, non-sublicensable and revocable right to access and use the Services in accordance with these Terms and solely for your own business purposes of bui"
+    - https://docs.expo.dev/accounts/account-types/
+      "when working for different clients, a new organization may be created for each client"
+
+[WORKS_AS_DESIGNED] 10. Expo fleet mechanics: one codebase, per-restaurant EAS projects, per-client store credentials, costs
+  WHY: Project caps are 25/50/100/300 by plan, members unlimited; eas.json submit profiles carry per-client ASC key and Google service-account paths; Expo staff publish the same one-repo/many-projects pattern. Costs: about $2 per iOS and $1 per Android build past the $45 credit, 1 build concurrency, 50 pending builds per platform, EAS Update MAUs pooled at $0.005/user past 3,000.
+  CHANGE: Stay in managed/CNG (never commit android/ios folders); keep all projects in the AInovations org (or one org per client per Expo's docs, each billed separately); budget roughly $90 per fleet-wide rebuild at 30 restaurants.
+  MITIGATION: Set serviceAccountKeyPath in eas.json rather than relying on the interactive prompt (known eas-cli issue).
+    - https://expo.dev/pricing
+      "Projects: 25 (Free), 50 (Starter), 100 (Production), 300 (Enterprise); Members: Unlimited; Starter — $19/month plus additional usage cost; $45 of credit, then usage-based pricing; 1 concurrency (Free "
+    - https://github.com/keith-kurak/expo-white-label-demo
+      "Each app will have its own distinct slug and project ID, so each will be a distinct project in EAS"
+    - https://docs.expo.dev/build-reference/limitations/
+      "Maximum number of pending builds is 50 per platform per account"
+
+[WORKS_WITH_CHANGE] 10. One multi-tenant Supabase project, scheduled jobs, Toast rate-limit math
+  WHY: Supabase publishes no tenant limit; billing is org-level (Pro $25 with 100,000 MAU, $10 compute credit = one Micro); a revoked user's JWT claims stay valid up to an hour. pg_cron supports sub-minute jobs but neither it nor Cloudflare cron retries a failed run, pg_net is fire-and-forget with a short default timeout, and cron.job_run_details is never cleaned. One poll per restaurant per 30-60 s is about 0.3% of Toast's 5 req/s/location and 10,000 per 15 min limits, but the limit is per location only when the Toast-Restaurant-External-ID header is sent.
+  CHANGE: One pg_cron job every 60 s invoking one Edge Function that loops all restaurants; explicit timeout_milliseconds; heartbeat row + a second cron job that alerts when stale; nightly purge of job_run_details; always send the Toast-Restaurant-External-ID header; service_role bypasses RLS so the poller filters by restaurant_id itself; every table has restaurant_id with a composite index; store tenant claims in app_metadata.
+  MITIGATION: Upgrade compute to Small ($15) if the poller plus 30 apps' reads saturate Micro; anonymous auth needs CAPTCHA/Turnstile so keep it out of the counter-deal flow.
+    - https://supabase.com/docs/guides/platform/org-based-billing
+      "The quota is applied to your entire organization, independent of how many projects you launch within that organization."
+    - https://supabase.com/docs/guides/cron/quickstart
+      "You can use [1-59] seconds (e.g. 30 seconds) as the cron syntax to schedule sub-minute Jobs. ... The records in the cron.job_run_details table are not cleaned up automatically."
+    - https://doc.toasttab.com/doc/devguide/apiRateLimiting.html
+      "The GET /ordersBulk endpoint of the orders API uses an endpoint rate limit of five requests per client per location per second. Requests to the /ordersBulk endpoint for historical data using the start"
+
+[WORKS_AS_DESIGNED] 10. Anthropic API menu Q&A from menus:read
+  WHY: Standard access supports menus v2 only (not v3); the menus webhook is available on standard access and Toast documents a 30-minute /metadata poll as backup; per-entity visibility flags let the app label POS-only items. Merchant Agreement 4.1(i) bars copying Toast's UI, so the app must not rebuild Toast's ordering page natively from menu data; a plain Q&A over the menu is fine.
+  CHANGE: Build on /menus/v2; refresh on the menus webhook plus a 30-minute metadata poll; keep the Q&A informational (no native cart).
+  MITIGATION: Cache menu JSON per restaurant so Anthropic calls never block on Toast.
+    - https://doc.toasttab.com/doc/devguide/devApiAccessUserGuide.html
+      "The following is not included with Standard API access: Write access. Your integration can only read data from Toast. Sandbox access"
+    - https://pos.toasttab.com/merchant-agreement
+      "(i) copy any features, functions, text or graphics of the Services, including without limitation, the structure, sequence or organization of the user interface of the Toast Platform."
+
+[UNKNOWN_NEEDS_LIVE_TEST] (PROVE WITH CLIENT ZERO) Cross-cutting: nobody has shipped this exact stack
+  WHY: Multiple products ingest orders from customer-created standard credentials (nimble-pnl, Nango, restly, a Houston bar ETL) and Toast/ChowNow publish per-restaurant apps from restaurant-owned accounts, but no public precedent exists for a loyalty app awarding points from standard-access reads, for opening Toast OO in SFSafariViewController from a native app, or for signing Wallet passes with each client's own certificate (every small-shop repo found uses one shared cert). The first restaurant is the precedent.
+  CHANGE: None beyond the test plan; treat client zero as a paid pilot with the loyalty promises worded conservatively until the feed and store review are proven.
+  MITIGATION: Keep the Toast-native alternative (their Branded Mobile App via partner path) as the honest fallback pitch if standard access proves unusable for loyalty.
+    - https://github.com/toyiyo/nimble-pnl/blob/main/docs/TOAST_STANDARD_API_IMPLEMENTATION.md
+      "Completed full implementation of Toast POS Standard API Access integration, replacing the previous OAuth-based Partner API approach. This integration uses client credentials authentication and support"
+    - https://raw.githubusercontent.com/amr522/Marketing/master/docs/TOAST_SUMMARY.md
+      "No direct customer/CRM endpoint found - Guest data requires fetching each order individually - Loyalty/Marketing endpoints return 404"
+    - https://incentivio.com/integrations/toast/
+      "Incentivio has been a Toast integration partner for over 7 years"

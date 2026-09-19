@@ -286,7 +286,7 @@ img{max-width:100%;display:block}
       "name": "How long until it's live?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The slow part is Apple and Google. Getting your business set up with them and the app through their review usually takes four to six weeks, and we do that paperwork with you. Toast has no say in it at any point."
+        "text": "The slow part is Apple and Google. Getting your business set up with them and the app through their review usually takes four to six weeks for an LLC or corporation, and we do that paperwork with you. They'll want a D-U-N-S number — free, and we'll get it started on day one. Toast has no say in it at any point."
       }
     },
     {
@@ -499,8 +499,8 @@ img{max-width:100%;display:block}
         </div>
       </div>
       <div class="req">
-        <h4>You need Toast with Online Ordering, on their Restaurant Management Essentials suite or higher</h4>
-        <p>Restaurant Management Essentials is what lets us see your orders. Online Ordering is what runs the Order button. If you've got both, you're set. On something other than Toast? Tell us anyway — we'll let you know when we get there.</p>
+        <h4>You need Toast with Online Ordering, on their Restaurant Management Essentials suite or higher — and the restaurant has to be an LLC or corporation</h4>
+        <p>Restaurant Management Essentials is what lets us see your orders. Online Ordering is what runs the Order button. If you've got both, you're set. The app goes in the stores under your business, so the business has to be an LLC or corporation with a D-U-N-S number — Apple and Google won't publish under a sole proprietor's name for you. On something other than Toast? Tell us anyway — we'll let you know when we get there.</p>
       </div>
     </section>
 
@@ -629,7 +629,7 @@ img{max-width:100%;display:block}
         </details>
         <details>
           <summary>How long until it's live?</summary>
-          <div class="a">The slow part is Apple and Google. Getting your business set up with them and the app through their review usually takes four to six weeks, and we do that paperwork with you. Toast has no say in it at any point.</div>
+          <div class="a">The slow part is Apple and Google. Getting your business set up with them and the app through their review usually takes four to six weeks for an LLC or corporation, and we do that paperwork with you. They'll want a D-U-N-S number — free, and we'll get it started on day one. Toast has no say in it at any point.</div>
         </details>
         <details>
           <summary>What do I actually have to do?</summary>
@@ -659,6 +659,14 @@ img{max-width:100%;display:block}
               <option>Clover</option>
               <option>SpotOn</option>
               <option>Something else</option>
+            </select>
+          </div>
+          <div class="field full"><label for="entity">Is the restaurant an LLC or corporation? *</label>
+            <select id="entity" name="business_entity" required>
+              <option value="">Select one</option>
+              <option>Yes — LLC or corporation</option>
+              <option>No — sole proprietor</option>
+              <option>Not sure</option>
             </select>
           </div>
           <div class="field full"><label for="locations">How many locations?</label>
