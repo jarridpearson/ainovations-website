@@ -12,25 +12,25 @@
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Websites for body shops and towing outfits in Central New York. Let people send you photos of the damage, check on their car without calling, and find out they can pick your shop instead of the insurance company's. We build it and run it from $200 a month. No setup fee." />
-<meta name="keywords" content="body shop website, collision repair website, auto body website, towing website, photo estimate body shop" />
+<meta name="description" content="Websites for marinas, boatyards and boat repair shops in Central New York. Put your winterization price on the page, let people book a haul-out date, and show them which slips are actually open. From $200 a month. No setup fee." />
+<meta name="keywords" content="marina website, boatyard website, boat storage website, winterization booking, slip availability marina" />
 <meta name="theme-color" content="#071c2f" />
-<link rel="canonical" href="https://ainovations.net/auto-body" />
+<link rel="canonical" href="https://ainovations.net/marinas" />
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="AInovations" />
-<meta property="og:title" content="Websites for Body Shops &amp; Towing | AInovations" />
-<meta property="og:description" content="Let people send you photos of the damage instead of calling. Let them check on their own car instead of calling. And tell them the thing nobody does — that they get to pick your shop." />
-<meta property="og:url" content="https://ainovations.net/auto-body" />
+<meta property="og:title" content="Websites for Marinas &amp; Boatyards | AInovations" />
+<meta property="og:description" content="One winterization job you lost pays for two years of this. Put your prices up, let them book a haul-out date, and stop reciting slip rates all April." />
+<meta property="og:url" content="https://ainovations.net/marinas" />
 <meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Websites for Body Shops &amp; Towing | AInovations" />
-<meta name="twitter:description" content="Let people send photos of the damage. Let them check on their car without calling you. From $200 a month." />
+<meta name="twitter:title" content="Websites for Marinas &amp; Boatyards | AInovations" />
+<meta name="twitter:description" content="Put your winterization price up. Let them book a haul-out date. Show them which slips are open. From $200 a month." />
 <meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
-<title>Websites for Body Shops &amp; Towing | AInovations</title>
+<title>Websites for Marinas &amp; Boatyards | AInovations</title>
 <style>
 :root{
   --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06);
@@ -100,10 +100,10 @@ img{max-width:100%;display:block}
 .contact > p{margin:16px auto 0;max-width:56ch;color:var(--muted);font-size:17px;line-height:1.6}
 .inquire-form{max-width:680px;margin:34px auto 0;padding:clamp(26px,4vw,40px);border-radius:20px;background:#fff;color:var(--ink);text-align:left;box-shadow:0 22px 54px rgba(0,0,0,.34)}
 .inquire-form .fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.inquire-form .field{display:flex;flex-direction:column;gap:6px}
+.inquire-form .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .inquire-form .field.full{grid-column:1 / -1}
 .inquire-form label{font-size:.85rem;font-weight:800;color:var(--ink)}
-.inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--light-border);border-radius:11px;background:#fbfdfe;color:var(--ink)}
+.inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--light-border);border-radius:11px;background:#fbfdfe;color:var(--ink);width:100%;max-width:100%;min-width:0}
 .inquire-form input:focus,.inquire-form textarea:focus,.inquire-form select:focus{outline:2px solid var(--teal-dark);border-color:var(--teal-dark)}
 .inquire-form textarea{min-height:130px;resize:vertical}
 .inquire-form .actions{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -125,7 +125,9 @@ img{max-width:100%;display:block}
 .pcard .who{display:inline-block;margin-bottom:12px;padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:900;letter-spacing:.05em;background:rgba(29,200,198,.16);color:var(--teal-soft)}
 .bad{border-color:rgba(255,95,95,.36);background:rgba(255,95,95,.06)}
 .bad .who{background:rgba(255,95,95,.16);color:#ff9b9b}
-.codebit{display:inline-block;padding:2px 7px;border-radius:5px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;color:#ffb4b4}
+.bignum{display:block;font-size:clamp(46px,8vw,72px);font-weight:900;letter-spacing:-.05em;color:#ff9b9b;line-height:1;margin:0 0 6px}
+.shout{display:block;margin:12px 0 0;padding:14px 16px;border-radius:10px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);
+  font-family:Arial Black,Arial,sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:.01em;color:#fff;font-size:14px;line-height:1.35;text-align:center}
 .price-band{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
 .pb{position:relative;display:flex;flex-direction:column;padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
 .pb.feature{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.06)}
@@ -146,16 +148,16 @@ img{max-width:100%;display:block}
 {
   "@context":"https://schema.org",
   "@type":"Service",
-  "name":"Websites for body shops and towing outfits",
-  "serviceType":"Website built and run for collision repair and towing businesses",
+  "name":"Websites for marinas, boatyards and boat repair",
+  "serviceType":"Website built and run for marinas, boatyards, boat storage and boat repair businesses",
   "provider":{"@type":"Organization","name":"AInovations LLC","url":"https://ainovations.net/"},
-  "url":"https://ainovations.net/auto-body",
-  "description":"A website built and run for body shops and towing outfits. Customers send photos of the damage instead of driving a wrecked car over. They check on their car without calling you. And they find out they can pick your shop instead of the one their insurance company named. Built and run by AInovations from $200 a month, with no setup fee.",
+  "url":"https://ainovations.net/marinas",
+  "description":"A website built and run for marinas, boatyards and boat repair shops. Your winterization price goes on the page, boat owners book a haul-out date off a real calendar, and they can see which slips are actually open. Built and run by AInovations from $200 a month, with no setup fee.",
   "areaServed":"Central New York",
   "offers":[
-    {"@type":"Offer","name":"Presence","price":"200","priceCurrency":"USD","description":"A 5-page website we build for you, with your work, your certifications and the insurance answer on it. We keep it online, safe and backed up. 2 hours a month of changes. $170 a month on a three-year. No setup fee."},
-    {"@type":"Offer","name":"Growth","price":"400","priceCurrency":"USD","description":"Everything in Presence, plus customers send photos of the damage to get a ballpark, they check on their car without calling, your before-and-after gallery grows by text message, and we keep your Google listing right. 5 hours a month of changes. $340 a month on a three-year. No setup fee."},
-    {"@type":"Offer","name":"Commerce","price":"700","priceCurrency":"USD","description":"Everything in Growth, plus taking deposits or payments online and listing up to 100 services. Most body shops do not need this. 10 hours a month of changes. $595 a month on a three-year. No setup fee."}
+    {"@type":"Offer","name":"Presence","price":"200","priceCurrency":"USD","description":"A 5-page website we build for you, with your slip rates and winterization prices on it and a dock card a boater can read from the water. We keep it online, safe and backed up. 2 hours a month of changes. $170 a month on a three-year. No setup fee."},
+    {"@type":"Offer","name":"Growth","price":"400","priceCurrency":"USD","description":"Everything in Presence, plus a winterization price calculator that ends in a booked haul-out date, a spring launch list customers can watch, a slip waitlist, and a service request form with photos. 5 hours a month of changes. $340 a month on a three-year. No setup fee."},
+    {"@type":"Offer","name":"Commerce","price":"700","priceCurrency":"USD","description":"Everything in Growth, plus taking a card deposit when somebody books a haul-out or holds a slip. 10 hours a month of changes. $595 a month on a three-year. No setup fee."}
   ]
 }
 </script>
@@ -165,7 +167,7 @@ img{max-width:100%;display:block}
   <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="/" aria-label="AInovations home"><img src="/ainovations-logo-header.png" alt="AInovations — The AI Product Studio That Ships" /></a>
     <div class="nav-links">
-      <a href="#problem">Go look at your site</a>
+      <a href="#problem">The problem</a>
       <a href="#build">What we build</a>
       <a href="#pricing">Pricing</a>
       <a href="/rent-a-site">Rent-a-Site</a>
@@ -176,169 +178,166 @@ img{max-width:100%;display:block}
   <main id="main">
 
     <header class="hero">
-      <span class="eyebrow">BODY SHOPS · COLLISION · TOWING &amp; STORAGE</span>
-      <h1>Your website has your phone number on it. <span class="gold">That's about all it does.</span></h1>
-      <p class="lede">Somebody gets rear-ended on a Tuesday. They want to send you a picture of the bumper and find out roughly what it runs. They can't — so they call. And so do the four people whose cars are already in your shop, asking if they're done yet. We build the site that handles all of that, and we run it for you.</p>
+      <span class="eyebrow">MARINAS · BOATYARDS · STORAGE · BOAT REPAIR</span>
+      <h1>One winterization you lost <span class="gold">pays for two years of this.</span></h1>
+      <p class="lede">A boat owner wants a haul-out price and a date. It's Saturday. Nobody's in the office. He can't get either one off your website, so he calls the next yard down the lake — and that's a thousand to three thousand dollars that went somewhere else. We put the price up and let him book the date himself. We build it, we run it, you never have to touch it.</p>
       <div class="price-hero">
         <span class="amt">$200</span><span class="per">a month</span><span class="flat">Building it costs nothing extra · No setup fee</span>
       </div>
       <div class="hero-cta">
-        <a class="btn btn-gold" href="#inquire" onclick="gtag('event','autobody_cta',{placement:'hero'})">Show me what mine would look like →</a>
-        <a class="btn btn-ghost" href="#problem">First, go look at your own site</a>
+        <a class="btn btn-gold" href="#inquire" onclick="gtag('event','marina_cta',{placement:'hero'})">Show me what mine would look like →</a>
+        <a class="btn btn-ghost" href="#problem">See what we found on the lake</a>
       </div>
       <div class="hero-points">
-        <span>We're not trying to fill your bays</span>
-        <span>Probably cheaper than what you pay now</span>
+        <span>We're not trying to fill your slips</span>
+        <span>Fewer April phone calls</span>
         <span>You own it, and you can log in</span>
       </div>
     </header>
 
-    <!-- THE PROBLEM — cost substitution + the template-garbage wedge. Checkable in 30 seconds. -->
     <section class="section" id="problem" aria-labelledby="problem-h">
       <div class="section-head">
-        <p class="kicker">Two minutes, on your phone</p>
-        <h2 id="problem-h">Pull up your own website and read it.</h2>
-        <p>We looked at body shops all over Central New York before writing any of this. Here's what we kept finding.</p>
+        <p class="kicker">We looked</p>
+        <h2 id="problem-h">We went through the lake association's own list.</h2>
+        <p>Every marina and launch on it. Then we opened each one to see what a boat owner would actually find.</p>
       </div>
       <div class="proof">
         <div class="pcard bad">
-          <span class="who">REAL, RIGHT NOW</span>
-          <h3>Some of these sites are showing customers raw computer code</h3>
-          <p>One shop near Syracuse has this sitting on its homepage where words should be: <span class="codebit">This is a placeholder for the Yext Knowledge Tags</span>. Another one's menu says <span class="codebit">[GEOTITLE]</span> instead of “Syracuse.” A shop up in Lewis County has a copyright that stops at <strong>2021</strong>. Nobody at the company that sold them the site has looked at it in years — and neither has anybody at the shop, because why would you.</p>
+          <span class="who">WE CHECKED, 2026</span>
+          <span class="bignum">16 of 30</span>
+          <h3>Have nothing but a phone number</h3>
+          <p>More than half. And of the ones that do have a site, <strong>not a single one publishes a price</strong> — not a slip rate, not winterizing, not shrink wrap, not storage. A 200-slip marina's whole services page ends in two bare phone numbers and no instruction about what to do next.</p>
         </div>
         <div class="pcard bad">
-          <span class="who">REAL, RIGHT NOW</span>
-          <h3>You're probably already paying for that</h3>
-          <p>Most of these sites came from a big national outfit that sells them over the phone as a monthly package — a few hundred a month, six months minimum, and good luck getting somebody on the line. Here's the part that gets people: <strong>it isn't even your website.</strong> You can't log in and fix your own hours. We're not asking you for new money. We're asking you to stop paying them.</p>
+          <span class="who">WE CHECKED, 2026</span>
+          <h3>Some of these are actively turning people away</h3>
+          <p>One marina's site has <strong>no security certificate at all</strong>, so the browser flags it before anybody reads a word. Another's is <strong>a parked domain</strong> — and the state tourism site is still sending boaters to it. One still has a page selling “new” pontoons from <strong>2009</strong>, and a fax number. And one owner has given up and is shouting on his own homepage in giant capital letters:</p>
+          <span class="shout">We do not rent boats or jet skis here</span>
+          <p style="margin-top:12px">That's a man using his website as a megaphone to stop one phone call — because the site can't answer a single question for him.</p>
         </div>
       </div>
       <div class="inc-card" style="margin-top:18px;border-color:rgba(29,200,198,.4)">
         <h3>What we're not going to tell you <span class="tag teal">STRAIGHT</span></h3>
         <ul>
           <li>We're not promising to get you to the top of Google. Nobody can, and anybody who says they can is lying.</li>
-          <li>We're not telling you your site looks bad on a phone unless we've looked and it does. Plenty of them are fine.</li>
-          <li><strong>We're not trying to fill your bays.</strong> If you're six weeks out, more calls is the last thing you need. What you need is the phone ringing less for dumb reasons, and the right kind of job when it does ring.</li>
+          <li><strong>We're not trying to fill your slips.</strong> You've got a waitlist. We know.</li>
+          <li>What you don't have is a way to sell winterizing, storage and service to the boats already on your list — without somebody standing at the counter reciting prices all April.</li>
         </ul>
       </div>
     </section>
 
-    <!-- WHAT WE BUILD -->
     <section class="section" id="build" aria-labelledby="build-h">
       <div class="section-head">
         <p class="kicker gold">What we build</p>
-        <h2 id="build-h">Six things built for a body shop.</h2>
-        <p>Not a five-page brochure with a phone number on it. These are the things your customers are trying to do — and right now every one of them turns into a phone call you have to take.</p>
+        <h2 id="build-h">Six things built for a boatyard.</h2>
+        <p>Every one of them is a phone call you're taking right now that you wouldn't have to.</p>
       </div>
 
       <div class="included">
         <div class="inc-card">
-          <h3>They send you photos of the damage <span class="tag gold">THE BIG ONE</span></h3>
+          <h3>Winterizing: a price, then a date <span class="tag gold">THE BIG ONE</span></h3>
           <ul>
-            <li>Six photos off their phone, their plate number, and three questions: <strong>can you drive it, did the airbags go off, is anything leaking?</strong></li>
-            <li>They get a ballpark range and a time you'll call them back</li>
-            <li>It lands on your phone as a text with the pictures attached</li>
+            <li>They put in the length and the engine and get <strong>a real number</strong> — haul, winterize, shrink wrap</li>
+            <li>Then they pick from the haul-out days <strong>you actually still have open</strong></li>
+            <li>It's on your board before you've read the email</li>
           </ul>
-          <p class="note">We opened six body shop websites around here. Not one of them lets a customer send a photo. Somebody standing in a parking lot looking at a caved-in door has the same one option on every single site: call, and hope somebody picks up.</p>
+          <p class="note">This is the most repeated phone call of your year, and it's worth a thousand to three thousand dollars a boat. Right now a guy who can't get an answer on a Saturday just calls the next yard. This turns that call into a booked job.</p>
         </div>
 
         <div class="inc-card">
-          <h3>“You can pick your own shop” <span class="tag gold">THE ONLY QUESTION THEY HAVE</span></h3>
+          <h3>Which slips are open, right now <span class="tag teal">NOBODY HAS THIS</span></h3>
           <ul>
-            <li>A plain page telling them what most people don't know: <strong>the insurance company can suggest a shop, but they can't make you use it.</strong></li>
-            <li>Your DMV shop number, right there, so they know you're legitimate</li>
-            <li>And the sentence that closes it: <strong>we deal with the adjuster and the paperwork, you don't</strong></li>
+            <li>Your real dock layout, with every slip marked <strong>open, held or taken</strong></li>
+            <li>They filter by how long and how wide their boat is, and what power they need</li>
+            <li>Full up? They get on the waitlist themselves, boat measurements and all</li>
           </ul>
-          <p class="note">This is the one thing every collision customer wonders and nobody answers. Not one shop site in the region has written it down. It also brings you people searching for exactly that.</p>
+          <p class="note">No marina we looked at around here has anything close. And the waitlist is the point — when a slip opens in March you've got a list with the dimensions already on it instead of a shoebox of phone messages.</p>
         </div>
 
         <div class="inc-card">
-          <h3>They check on their car without calling <span class="tag teal">KILLS THE CALLS</span></h3>
+          <h3>“When's my boat going in?” <span class="tag gold">KILLS APRIL</span></h3>
           <ul>
-            <li>They put in their last name and plate and see where it's at: <strong>torn down, waiting on parts, in paint, going back together, ready</strong></li>
-            <li>With a date, and a couple of real pictures you texted in from the floor</li>
-            <li>That's four “is it done yet” calls a car your front desk doesn't have to take</li>
+            <li>They look up their own boat and see <strong>“you're number 14, week of May 4”</strong></li>
+            <li>They get a text when it's in the water</li>
           </ul>
-          <p class="note">Owners light up when they see this one. It doesn't bring you a single new customer. It just gives your office person their day back.</p>
+          <p class="note">That one question is most of your April. Every owner asks it, several times, and somebody has to stop and answer. Put it on the screen and the spring crush gets quieter without you hiring anybody.</p>
         </div>
 
         <div class="inc-card">
-          <h3>Before and afters, added by text <span class="tag teal">YOUR BEST SALESMAN</span></h3>
+          <h3>The dock card, for one bar of signal <span class="tag teal">FOR TRANSIENTS</span></h3>
           <ul>
-            <li>You text two photos to a number. They show up on the site. That's the whole job.</li>
-            <li><strong>No logging in. No password. No uploading anything.</strong></li>
+            <li>Depth at the dock, longest boat you can take, fuel and today's price, pumpout, power, showers, food you can walk to, your radio channel</li>
+            <li>All of it <strong>on one screen without scrolling</strong>, with a button to call you</li>
           </ul>
-          <p class="note">A quarter panel on a Silverado, before and after, sells harder than every word on your website put together. The reason most shops don't have a gallery isn't that they don't have photos — it's that adding them is a pain. So we made it a text message.</p>
+          <p class="note">He's deciding from the water, on a phone, with one bar. If he has to pinch and scroll around a page built for a desktop in 2009, he's going somewhere else.</p>
         </div>
       </div>
 
       <div class="included" style="margin-top:18px">
         <div class="inc-card">
-          <h3>What you're certified in, up top <span class="tag teal">WHY YOU, NOT THEM</span></h3>
+          <h3>Service requests with pictures <span class="tag teal">FOR THE SHOP</span></h3>
           <ul>
-            <li>I-CAR, your manufacturer certifications, years in business, your written warranty</li>
-            <li><strong>Whether you do the camera and sensor calibration in house</strong> — more cars need it every year, and if you do it and the shop down the road farms it out, that's worth saying out loud</li>
+            <li>Engine year and make, what it's doing, photos of it — sent from the dock</li>
+            <li>Comes back as a numbered job they can check on instead of calling the shop</li>
           </ul>
-          <p class="note">Most shops have real credentials sitting in a drawer and nothing about them anywhere a customer can see.</p>
+          <p class="note">Same idea as the launch list. Every status they can look up is a call your service writer doesn't take.</p>
         </div>
         <div class="inc-card">
-          <h3>If you tow: the impound page <span class="tag teal">FOR COMBINED SHOPS</span></h3>
+          <h3>Find your boat in the yard <span class="tag teal">THEY SHOW THEIR FRIENDS</span></h3>
           <ul>
-            <li>Their car got towed. Where is it, what are the gate hours, what's the daily charge</li>
-            <li><strong>Exactly what to bring</strong> — registration, ID, insurance card — and what you take for payment</li>
-            <li>Plus a one-tap tow request that sends your driver a map pin</li>
+            <li>An owner looks up his boat and sees where it's sitting and what's been done — <strong>hauled, winterized, wrapped, blocked at C-12</strong></li>
           </ul>
-          <p class="note">This is the busiest phone call in the towing business and nobody around here has put it on a page. If you run trucks and a lot, this one alone is worth the money.</p>
+          <p class="note">This is the one that gets talked about at the launch ramp. Costs you nothing once it's built, and it's the reason somebody's buddy switches yards next season.</p>
         </div>
       </div>
     </section>
 
-    <!-- PRICING -->
     <section class="section" id="pricing" aria-labelledby="pricing-h">
       <div class="section-head">
         <p class="kicker gold">Pricing</p>
         <h2 id="pricing-h">Building it costs you nothing extra.</h2>
-        <p>No setup fee. You sign up for a year, or three years for a cheaper monthly rate. Compare it to what the phone-sales outfit is charging you now.</p>
+        <p>No setup fee. You sign up for a year, or three years for a cheaper monthly rate. Put it against one winterizing job.</p>
       </div>
       <div class="price-band">
         <div class="pb">
           <h3>Presence</h3>
-          <p class="tfor">A good, fast website that says who you are and what you're certified in. For a smaller shop.</p>
+          <p class="tfor">A good, fast website with your rates on it and a dock card that works from the water. For a smaller yard.</p>
           <div class="thero"><span class="amt">$200</span><span class="per">a month</span></div>
           <p class="tlist">$170 a month if you sign for three years</p>
           <ul>
             <li>A 5-page website, built for you</li>
-            <li>Your certifications and your warranty up front</li>
-            <li>The “you can pick your own shop” page</li>
+            <li>Slip rates and winterizing prices, published</li>
+            <li>The dock card for boats coming through</li>
             <li>We keep it online, safe and backed up</li>
             <li>2 hours a month of changes</li>
           </ul>
         </div>
         <div class="pb feature">
-          <span class="tbadge">MOST SHOPS WANT THIS ONE</span>
+          <span class="tbadge">MOST YARDS WANT THIS ONE</span>
           <h3>Growth</h3>
-          <p class="tfor">Everything above, plus the photo estimates, the car tracker and the gallery you feed by text.</p>
+          <p class="tfor">Everything above, plus the winterizing booking, the launch list, the slip waitlist and service requests.</p>
           <div class="thero"><span class="amt">$400</span><span class="per">a month</span></div>
           <p class="tlist">$340 a month if you sign for three years</p>
           <ul>
             <li>Everything in Presence</li>
-            <li><strong>They send photos of the damage and get a ballpark</strong></li>
-            <li><strong>They check on their car without calling you</strong></li>
-            <li><strong>Before-and-afters you add by text message</strong></li>
+            <li><strong>Winterizing price, then a haul-out date they book</strong></li>
+            <li><strong>The spring launch list they can watch</strong></li>
+            <li><strong>Open slips and a real waitlist</strong></li>
+            <li><strong>Service requests with photos</strong></li>
             <li>Something on your site that answers questions at 9 at night</li>
             <li>We keep your Google listing right — hours, photos, phone</li>
-            <li>We ask your customers for a review after pickup</li>
             <li>5 hours a month of changes</li>
           </ul>
         </div>
         <div class="pb">
           <h3>Commerce</h3>
-          <p class="tfor">Only if you want to take money online. Most body shops don't — the insurance company pays, or they pay at pickup.</p>
+          <p class="tfor">If you want a card deposit when somebody books a haul-out or holds a slip. Worth it for a bigger yard.</p>
           <div class="thero"><span class="amt">$700</span><span class="per">a month</span></div>
           <p class="tlist">$595 a month if you sign for three years</p>
           <ul>
             <li>Everything in Growth</li>
-            <li>Take deposits or payment online</li>
-            <li>List up to 100 services</li>
+            <li>Take a deposit when they book</li>
+            <li>Sell storage and service packages online</li>
             <li>10 hours a month of changes</li>
           </ul>
         </div>
@@ -346,67 +345,58 @@ img{max-width:100%;display:block}
       <p class="section-head" style="margin:22px 0 0;color:#9fb3bf;font-size:14.5px;max-width:860px">Those hours are a real limit and they don't carry over. If you want something bigger done, we price it separately — your monthly bill doesn't move on you. <strong>And if the cheap one is all you need, we'll tell you that.</strong></p>
     </section>
 
-    <!-- FAQ -->
     <section class="section" id="faq" aria-labelledby="faq-h">
       <div class="section-head">
         <p class="kicker">Questions</p>
         <h2 id="faq-h">The things you're actually thinking</h2>
       </div>
       <div class="faq">
-        <details><summary>I'm booked six weeks out. Why do I need this?</summary><div class="a">You don't need more cars. What you might need is <strong>better</strong> cars — customer-pay work instead of whatever the insurance company sends. And you definitely don't need your front desk taking four calls a car about whether it's done. That's what this is for. If your bays are full and your phone is quiet, don't buy this.</div></details>
-        <details><summary>Most of my work comes from the insurance company anyway.</summary><div class="a">For now. Ask yourself what percentage of your work is customer-pay today versus two years ago. If that number is going the wrong way, you've got maybe a year before you find out nobody outside that pipeline can find you. Shops that are getting out from under the insurance programs are the ones who need this first.</div></details>
-        <details><summary>I already pay somebody for a website.</summary><div class="a">Probably one of the big phone-sales companies, a few hundred a month, six-month minimum. Tell us what you pay and when it's up. If ours costs less and does more, switch when your term ends — we'll build yours first and flip it the day the old one dies. Worth checking whether you can even log into the one you have now. Most shops can't.</div></details>
-        <details><summary>Can you really give somebody a price off a photo?</summary><div class="a">No, and we'd never build it that way. A photo gets them a <strong>range</strong> and a callback time — nothing more, and the page says exactly that. You still write the real estimate after you put hands on the car. What it does is stop somebody with a wrecked car from calling four shops and going with whoever answered first.</div></details>
-        <details><summary>Who keeps it up to date? I don't have time.</summary><div class="a">We do. The gallery you feed by texting photos — that's it, that's the whole job on your end. Everything else is ours: keeping it online, keeping it safe, putting something new on it, keeping your Google listing right.</div></details>
-        <details><summary>Can you get me to the top of Google?</summary><div class="a">No. Anybody who promises you that is lying. What we do is build a site that loads fast, that Google can actually read, with your towns and your certifications spelled out, and put something new on it every month. If you're starting from a Facebook page or a dead site, that alone makes a real difference.</div></details>
-        <details><summary>I do towing and storage too. Does this cover that?</summary><div class="a">Yes, and it's one of the better reasons to do it. The tow request goes straight to your driver's phone with a map pin, and the impound page answers the busiest call you take — where's my car, what do I owe, what do I bring. Nobody around here has that page.</div></details>
-        <details><summary>What if I want out?</summary><div class="a">The site comes down, we hand you your content and your domain name, and that's that. We don't hold anything hostage — which is more than you can say for how you probably got your current one.</div></details>
+        <details><summary>I'm full. I've got a waitlist. Why would I want this?</summary><div class="a">Because slips aren't where your money is. Winterizing, shrink wrap, storage and service are — and those you lose one at a time, quietly, to whoever answered the phone first. Being full doesn't protect any of that. One haul-out job you didn't get costs more than a year of this.</div></details>
+        <details><summary>My season's five months long. Why pay all year?</summary><div class="a">Fair question, and here's the honest answer: the site is doing its hardest work in the months you're closed. September through November people are looking for winterizing. February and March they're shopping slips and storage for spring. If it only ran during the season you'd miss both of the times people are actually deciding.</div></details>
+        <details><summary>Who's going to keep it up to date? I'm on the travel lift all day.</summary><div class="a">We do. You change prices yourself in seconds from your phone if you want to. Everything else is ours — keeping it online, keeping it safe, putting something new on it, your Google listing. If we need something from you, it's one text.</div></details>
+        <details><summary>My customers are older. They're not booking online.</summary><div class="a">Some won't, and they'll keep calling you, and that's fine. But the transient coming through the canal is deciding on a phone with one bar of signal, and the guy shopping winterizing in October is comparing you to the yard down the lake at nine at night. Those two don't call. They just go somewhere else, and you never find out.</div></details>
+        <details><summary>Can you get me to the top of Google?</summary><div class="a">No. Anybody who promises that is lying. What we do is build a site that loads fast, that Google can read, with your lake, your towns and your services spelled out, and put something new on it every month. If you're starting from a phone number or a dead address, that by itself makes a real difference.</div></details>
+        <details><summary>I do boat repair, not slips. Does this still fit?</summary><div class="a">Yes, and it's a cleaner fit than you'd think. The service requests with photos and the numbered job tracking are the whole thing for a repair shop, plus winterizing pricing. You'd skip the slip map. Tell us what you actually run and we build it that way around.</div></details>
+        <details><summary>What if I want out?</summary><div class="a">The site comes down, we hand you your content and your domain name, and that's that. Nothing gets held hostage.</div></details>
       </div>
     </section>
 
-    <!-- FORM -->
     <section class="contact" id="inquire" aria-labelledby="inquire-h">
       <h2 id="inquire-h">Let's see what yours would look like.</h2>
-      <p>Tell us about your shop. We'll come back with a straight answer about whether this is worth it for you — including if it isn't. Usually within one business day.</p>
-      <form class="inquire-form" name="auto-body-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/rent-a-site-thanks">
-        <input type="hidden" name="form-name" value="auto-body-inquiry" />
+      <p>Tell us what you run and where. We'll come back with a straight answer about whether this is worth it for you — including if it isn't. Usually within one business day.</p>
+      <form class="inquire-form" name="marina-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/rent-a-site-thanks">
+        <input type="hidden" name="form-name" value="marina-inquiry" />
         <p hidden><label>Don't fill this out: <input name="bot-field" /></label></p>
         <div class="fg">
           <div class="field"><label for="name">Your name *</label><input id="name" name="contact_name" type="text" required autocomplete="name" /></div>
-          <div class="field"><label for="business">Shop name *</label><input id="business" name="business_name" type="text" required autocomplete="organization" /></div>
+          <div class="field"><label for="business">Business name *</label><input id="business" name="business_name" type="text" required autocomplete="organization" /></div>
           <div class="field"><label for="email">Email *</label><input id="email" name="email" type="email" required autocomplete="email" /></div>
           <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" autocomplete="tel" /></div>
           <div class="field full"><label for="services">What do you run?</label>
             <select id="services" name="services">
-              <option value="">Body shop only</option>
-              <option>Body shop and towing</option>
-              <option>Body shop, towing and a storage lot</option>
-              <option>Body shop and mechanical repair</option>
-              <option>Towing only</option>
+              <option value="">Marina with slips</option>
+              <option>Marina plus winter storage</option>
+              <option>Boatyard — haul-out, storage and service</option>
+              <option>Boat repair and winterizing only</option>
+              <option>Mobile boat service</option>
+              <option>Marina plus a campground</option>
             </select>
           </div>
-          <div class="field full"><label for="work">Where does most of your work come from?</label>
-            <select id="work" name="work_source">
-              <option value="">Mostly insurance program work</option>
-              <option>Mix of insurance and customer-pay</option>
-              <option>Mostly customer-pay</option>
-              <option>We just left an insurance program</option>
-            </select>
-          </div>
+          <div class="field full"><label for="water">Which water?</label><input id="water" name="water_body" placeholder="Oneida Lake, the river, Lake Ontario, a Finger Lake..." /></div>
           <div class="field full"><label for="current">Your website right now</label>
             <select id="current" name="current_website">
               <option value="">No website at all</option>
               <option>Facebook page only</option>
+              <option>Had one, but the web address is dead or parked</option>
               <option>Old site nobody has touched in years</option>
               <option>Paying a monthly company and unhappy</option>
-              <option>Paying a monthly company and stuck in a contract</option>
             </select>
           </div>
-          <div class="field full"><label for="about">Anything else worth knowing?</label><textarea id="about" name="business_description" placeholder="Towns you cover, how many bays, what you're certified in, what eats your day."></textarea></div>
+          <div class="field full"><label for="about">Anything else worth knowing?</label><textarea id="about" name="business_description" placeholder="How many slips, whether you store and winterize, whether you'd take more service work, and what eats your April."></textarea></div>
         </div>
         <div class="actions">
-          <button class="submit" type="submit" onclick="gtag('event','autobody_inquiry_submit',{})">Send it</button>
-          <span class="note">Goes to jp@ainovations.net. Prefer email? <a href="mailto:jp@ainovations.net?subject=Body%20Shop%20Website">Email us directly</a>.</span>
+          <button class="submit" type="submit" onclick="gtag('event','marina_inquiry_submit',{})">Send it</button>
+          <span class="note">Goes to jp@ainovations.net. Prefer email? <a href="mailto:jp@ainovations.net?subject=Marina%20Website">Email us directly</a>.</span>
         </div>
       </form>
     </section>
@@ -422,12 +412,10 @@ img{max-width:100%;display:block}
       <div>
         <h5>Rent-a-Site</h5>
         <a href="/rent-a-site">Plans &amp; pricing</a>
+        <a href="/marinas">Marinas &amp; boatyards</a>
         <a href="/well-water">Wells &amp; water treatment</a>
         <a href="/auto-body">Body shops &amp; towing</a>
         <a href="/site-services">Septic, digging &amp; rentals</a>
-        <a href="/marinas">Marinas &amp; boatyards</a>
-        <a href="/churches">Churches</a>
-        <a href="/restaurants">Restaurants</a>
       </div>
       <div>
         <h5>Straight answers</h5>
