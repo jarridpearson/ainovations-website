@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Request a pump-out — Drumlin Septic</title>
+<meta name="description" content="Pick your route week. We text you the morning before we're out your way." />
+<link rel="stylesheet" href="site.css" />
+</head>
+<body>
+
+<div class="demobar">
+  <b>Demo site.</b> Drumlin Septic &amp; Site Services is a <b>fictional company</b> built by
+  <a href="https://ainovations.net/rent-a-site">AInovations</a> to show what a Rent-a-Site looks like. Nothing here is a real business.
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="bar">
+      <a class="logo" href="index.html">
+        <span class="mark">DS</span>
+        <span>Drumlin Septic<small>&amp; Site Services · Since 1994</small></span>
+      </a>
+      <a class="callbtn" href="tel:+13155550142">📞 (315) 555-0142</a>
+    </div>
+    <nav class="tabs">
+      <a href="index.html">Home</a>
+      <a href="prices.html">Prices</a>
+      <a href="overdue.html">Am I overdue?</a>
+      <a class="on" href="request.html">Request a pump-out</a>
+      <a href="rentals.html">Toilets &amp; dumpsters</a>
+      <a href="realtors.html">Realtors</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <form onsubmit="return drumlinDemoSubmit(this,'Your request would have landed on the owner’s phone with the address, the gate code, the dog warning and your photo attached — and you’d have the week confirmed by text.')">
+
+      <section class="blk">
+        <h2>Pick your week</h2>
+        <p class="lead">We run by town. Pick a week and we’ll text you the morning before we’re in your area, then call when we’re 30 minutes out.</p>
+        <div class="weeks" id="weeks"></div>
+        <div class="honest"><b>Emergency — backing up right now?</b> Don’t use this form.
+          <a href="tel:+13155550142">Call (315) 555-0142</a>. Somebody picks up 24/7 and after-hours is +$<span data-price="after">150</span>.</div>
+      </section>
+
+      <section class="blk">
+        <h2>Where are we going?</h2>
+        <div><label for="addr">Service address</label><input id="addr" placeholder="1428 Drumlin Rd, Baldwinsville NY" required /></div>
+        <div class="grid2">
+          <div><label for="nm">Your name</label><input id="nm" placeholder="Dave Kowalczyk" required /></div>
+          <div><label for="ph">Mobile <span class="hint">— for the heads-up text</span></label><input id="ph" type="tel" placeholder="(315) 555-0142" required /></div>
+        </div>
+        <div><label for="tanksz">Tank size, if you know it</label>
+          <select id="tanksz">
+            <option>I don’t know</option>
+            <option>Up to 1,000 gallons</option>
+            <option>1,000–1,500 gallons</option>
+            <option>1,500–2,000 gallons</option>
+            <option>Over 2,000 / commercial</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- The fields below are the ones the DRIVER actually needs. Nobody else asks for them. -->
+      <section class="blk">
+        <h2>Things the driver needs to know</h2>
+        <p class="lead">This is the difference between a 40 minute stop and a wasted trip.</p>
+
+        <label>Can we find the lid?</label>
+        <div class="chips" id="lid">
+          <button type="button" class="chip" data-v="yes">It’s exposed</button>
+          <button type="button" class="chip on" data-v="unknown">Not sure</button>
+          <button type="button" class="chip" data-v="buried">It’s buried</button>
+        </div>
+        <p class="muted" id="lidnote" style="margin-top:8px">If it turns out to be buried, dig-up is +$<span data-price="lid">75</span> — and we call you from the driveway before we start.</p>
+
+        <label>Is there a dog?</label>
+        <div class="chips" id="dog">
+          <button type="button" class="chip" data-v="no">No dog</button>
+          <button type="button" class="chip on" data-v="yes">Yes — we’ll be put away</button>
+          <button type="button" class="chip" data-v="loose">Yes — usually loose</button>
+        </div>
+
+        <div class="grid2">
+          <div><label for="gate">Gate or keypad code <span class="hint">— optional</span></label><input id="gate" placeholder="#4412" /></div>
+          <div><label for="park">Where should the truck park?</label><input id="park" placeholder="Second driveway, past the barn" /></div>
+        </div>
+
+        <label for="photo">Photo of the lid or the area <span class="hint">— optional, but it saves us both a trip</span></label>
+        <input id="photo" type="file" accept="image/*" capture="environment" />
+
+        <label for="notes">Anything else?</label>
+        <textarea id="notes" placeholder="Soft ground by the tank after rain. Alarm went off Tuesday."></textarea>
+      </section>
+
+      <section class="blk">
+        <h2>That’s it</h2>
+        <p class="lead">No account, no password, no “someone will be in touch.” You’ll get a text confirming the week within the hour.</p>
+        <button class="btn" type="submit">Send my request →</button>
+        <div data-confirm></div>
+        <p class="muted" style="margin-top:14px">Prices as of <b data-price="asof">February 2, 2026</b>. Pump-out from $<span data-price="pump1000">340</span>. We take cards, checks and cash on the truck.</p>
+      </section>
+
+    </form>
+
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div><strong>Drumlin Septic &amp; Site Services</strong>Serving Onondaga, Oswego &amp; Madison counties.<br />Family run since 1994.</div>
+    <div><strong>Reach us</strong><a href="tel:+13155550142">(315) 555-0142</a><br />Mon–Fri 7am–5pm · Emergency 24/7</div>
+    <div><strong>Demo notice</strong>Fictional company. Built as a Rent-a-Site template by <a href="https://ainovations.net/rent-a-site">AInovations</a>. <span data-ownertap style="cursor:default">© 2026</span></div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+drumlinWeeks('weeks', 5);
+['lid','dog'].forEach(function(id){
+  document.getElementById(id).addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(!b) return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+    if(id==='lid'){
+      var n=document.getElementById('lidnote');
+      n.style.color = b.dataset.v==='buried' ? '#d97706' : '';
+      n.style.fontWeight = b.dataset.v==='buried' ? '700' : '';
+    }
+  });
+});
+</script>
+</body>
+</html>

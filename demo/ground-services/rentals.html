@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Porta-potty &amp; dumpster rental — Drumlin Septic</title>
+<meta name="description" content="Reserve a porta-potty or a roll-off dumpster online. Included tonnage and overage rate stated before you book." />
+<link rel="stylesheet" href="site.css" />
+</head>
+<body>
+
+<div class="demobar">
+  <b>Demo site.</b> Drumlin Septic &amp; Site Services is a <b>fictional company</b> built by
+  <a href="https://ainovations.net/rent-a-site">AInovations</a> to show what a Rent-a-Site looks like. Nothing here is a real business.
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="bar">
+      <a class="logo" href="index.html">
+        <span class="mark">DS</span>
+        <span>Drumlin Septic<small>&amp; Site Services · Since 1994</small></span>
+      </a>
+      <a class="callbtn" href="tel:+13155550142">📞 (315) 555-0142</a>
+    </div>
+    <nav class="tabs">
+      <a href="index.html">Home</a>
+      <a href="prices.html">Prices</a>
+      <a href="overdue.html">Am I overdue?</a>
+      <a href="request.html">Request a pump-out</a>
+      <a class="on" href="rentals.html">Toilets &amp; dumpsters</a>
+      <a href="realtors.html">Realtors</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <!-- ============ PORTA-POTTY ============ -->
+    <section class="blk">
+      <h2>How many toilets do I need?</h2>
+      <p class="lead">The question everyone calls to ask. Answer it here and it stops being a phone call.</p>
+
+      <label for="guests">How many people?</label>
+      <input id="guests" type="number" min="1" max="2000" value="120" inputmode="numeric" />
+
+      <label for="hours">How long is it running?</label>
+      <select id="hours">
+        <option value="4">Up to 4 hours</option>
+        <option value="6" selected>4–6 hours</option>
+        <option value="8">6–8 hours</option>
+        <option value="10">All day / 8+ hours</option>
+        <option value="40">Jobsite — ongoing, weekly service</option>
+      </select>
+
+      <label>Is alcohol being served?</label>
+      <div class="chips" id="booze">
+        <button type="button" class="chip on" data-v="0">No</button>
+        <button type="button" class="chip" data-v="1">Yes</button>
+      </div>
+      <p class="muted" style="margin-top:8px">It genuinely matters — people use the toilet roughly a third more often when there’s a bar.</p>
+
+      <button class="btn" type="button" onclick="units()">Work out my units →</button>
+
+      <div class="result" id="uout">
+        <p class="big" id="uhead"></p>
+        <p id="ubody" style="margin:0"></p>
+      </div>
+    </section>
+
+    <!-- ============ DUMPSTERS — in human units, with the weight math up front ============ -->
+    <section class="blk">
+      <h2>Which dumpster?</h2>
+      <p class="lead">Sized by what you’re actually throwing out, not by cubic yards you’d have to go look up.</p>
+
+      <div class="cards" id="bins">
+        <div class="card" data-ton="1" data-over="95" data-price="425">
+          <div class="top"><span class="nm">10 yard</span><span class="pr">$425</span></div>
+          <p class="plain">One bathroom gut. A single room of carpet. Roof tear-off up to about 15 squares.</p>
+          <p class="ton">Includes <b>1 ton</b>. Over that, <b>$95 per ton</b>. 7 day rental.</p>
+        </div>
+        <div class="card" data-ton="2" data-over="95" data-price="525">
+          <div class="top"><span class="nm">15 yard</span><span class="pr">$525</span></div>
+          <p class="plain">A kitchen and a bath. Flooring through most of a house. Heavy debris — plaster, tile, shingles.</p>
+          <p class="ton">Includes <b>2 tons</b>. Over that, <b>$95 per ton</b>. 7 day rental.</p>
+        </div>
+        <div class="card" data-ton="3" data-over="95" data-price="595">
+          <div class="top"><span class="nm">20 yard</span><span class="pr">$595</span></div>
+          <p class="plain">A two-car garage cleanout. A full basement. Most whole-house decluttering jobs.</p>
+          <p class="ton">Includes <b>3 tons</b>. Over that, <b>$95 per ton</b>. 7 day rental.</p>
+        </div>
+        <div class="card" data-ton="4" data-over="95" data-price="695">
+          <div class="top"><span class="nm">30 yard</span><span class="pr">$695</span></div>
+          <p class="plain">Whole-house cleanout, a big addition, or a commercial job. Bulky but light material.</p>
+          <p class="ton">Includes <b>4 tons</b>. Over that, <b>$95 per ton</b>. 7 day rental.</p>
+        </div>
+      </div>
+
+      <div class="honest"><b>The overage rate is right there on purpose.</b>
+        A surprise weight bill two weeks after the truck left is the single most common complaint in this business. You’ll know the included tonnage and the per-ton rate before you book, and we weigh at a certified scale and send you the ticket.</div>
+
+      <h3>What we can’t take</h3>
+      <p class="muted">Paint, tires, batteries, appliances with refrigerant, propane tanks, asbestos. Ask us — some of it we can take separately, and we’d rather tell you now than leave the can sitting in your driveway.</p>
+    </section>
+
+    <!-- ============ BOOK IT ============ -->
+    <section class="blk">
+      <h2>Reserve it</h2>
+      <form onsubmit="return drumlinDemoSubmit(this,'This would have taken a card deposit, put the drop on the dispatch board, and texted you the morning of delivery.')">
+        <div class="grid2">
+          <div><label for="d1">Drop-off date</label><input id="d1" type="date" required /></div>
+          <div><label for="d2">Pick-up date</label><input id="d2" type="date" required /></div>
+        </div>
+        <div><label for="daddr">Drop address</label><input id="daddr" placeholder="1428 Drumlin Rd, Baldwinsville NY" required /></div>
+        <div><label for="dplace">Where exactly should it sit?</label><input id="dplace" placeholder="End of the driveway, left side, past the oak" /></div>
+        <div class="grid2">
+          <div><label for="dn">Name</label><input id="dn" required /></div>
+          <div><label for="dp">Mobile</label><input id="dp" type="tel" required /></div>
+        </div>
+        <div class="honest" style="margin-top:16px"><b>Driveway protection.</b> Roll-off wheels mark blacktop. We lay boards at no charge — just say so above and we’ll bring them.</div>
+        <button class="btn amber" type="submit">Reserve — card deposit on the next step →</button>
+        <div data-confirm></div>
+      </form>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div><strong>Drumlin Septic &amp; Site Services</strong>Serving Onondaga, Oswego &amp; Madison counties.<br />Family run since 1994.</div>
+    <div><strong>Reach us</strong><a href="tel:+13155550142">(315) 555-0142</a><br />Mon–Fri 7am–5pm · Emergency 24/7</div>
+    <div><strong>Demo notice</strong>Fictional company. Built as a Rent-a-Site template by <a href="https://ainovations.net/rent-a-site">AInovations</a>. <span data-ownertap style="cursor:default">© 2026</span></div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+document.getElementById('booze').addEventListener('click',function(e){
+  var b=e.target.closest('.chip'); if(!b) return;
+  this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+  b.classList.add('on');
+});
+document.getElementById('bins').addEventListener('click',function(e){
+  var c=e.target.closest('.card'); if(!c) return;
+  this.querySelectorAll('.card').forEach(function(x){x.classList.remove('on');});
+  c.classList.add('on');
+});
+
+/* Standard event-sanitation guidance: ~1 unit per 50 people for a 4hr event,
+   scaled by duration, +~33% when alcohol is served. One ADA unit by default. */
+function units(){
+  var g=Math.max(1,+document.getElementById('guests').value||0);
+  var h=+document.getElementById('hours').value;
+  var booze=+document.querySelector('#booze .chip.on').dataset.v===1;
+
+  var jobsite = h===40;
+  var n;
+  if(jobsite){
+    n = Math.max(1, Math.ceil(g/10));           // OSHA-style: ~1 per 10 workers
+  } else {
+    var base = g/50;                             // 1 per 50 for a 4-hour event
+    var dur  = Math.max(1, h/4);
+    n = Math.ceil(base * dur * (booze?1.33:1));
+    n = Math.max(1,n);
+  }
+  var ada = 1;
+  var out=document.getElementById('uout'), head=document.getElementById('uhead'), body=document.getElementById('ubody');
+  out.className='result show ok';
+  head.textContent = n + ' unit' + (n===1?'':'s') + (jobsite?' on weekly service':'') + ', including 1 accessible';
+  var lines = [];
+  lines.push((n-ada>0? (n-ada)+' standard unit'+((n-ada)===1?'':'s')+' and ' : '') + ada + ' ADA accessible unit');
+  if(jobsite){
+    lines.push('Jobsite pricing is <b>$135 per unit per month</b>, serviced weekly — pumped, restocked, sanitized.');
+  } else {
+    lines.push('Event pricing is <b>$175 per unit</b> for the weekend, delivered Friday and picked up Monday.');
+    if(booze) lines.push('Bumped up because alcohol is being served — that’s a real effect, not an upsell.');
+  }
+  lines.push('A hand-wash station is <b>$65</b> and we’d recommend one per every 2 units.');
+  body.innerHTML = lines.join('<br>');
+  out.scrollIntoView({behavior:'smooth',block:'center'});
+}
+</script>
+</body>
+</html>

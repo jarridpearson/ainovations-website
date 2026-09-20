@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Drumlin Septic &amp; Site Services — Onondaga, Oswego &amp; Madison County</title>
+<meta name="description" content="Septic pumping with published prices, porta-potty and dumpster rental. Pick your route week online. Serving Onondaga, Oswego and Madison counties." />
+<link rel="stylesheet" href="site.css" />
+</head>
+<body>
+
+<div class="demobar">
+  <b>Demo site.</b> Drumlin Septic &amp; Site Services is a <b>fictional company</b> built by
+  <a href="https://ainovations.net/rent-a-site">AInovations</a> to show what a Rent-a-Site looks like. Nothing here is a real business.
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="bar">
+      <a class="logo" href="index.html">
+        <span class="mark">DS</span>
+        <span>Drumlin Septic<small>&amp; Site Services · Since 1994</small></span>
+      </a>
+      <a class="callbtn" href="tel:+13155550142">📞 (315) 555-0142</a>
+    </div>
+    <nav class="tabs">
+      <a class="on" href="index.html">Home</a>
+      <a href="prices.html">Prices</a>
+      <a href="overdue.html">Am I overdue?</a>
+      <a href="request.html">Request a pump-out</a>
+      <a href="rentals.html">Toilets &amp; dumpsters</a>
+      <a href="realtors.html">Realtors</a>
+    </nav>
+  </div>
+</header>
+
+<!-- THE PRICE BAND. Nothing goes above this. Zero competitors in the region publish a number. -->
+<div class="band">
+  <div class="wrap">
+    <h1>Septic pumping, priced up front.</h1>
+    <p class="sub">No “call for a quote.” Here is what it costs.</p>
+
+    <div class="ptable">
+      <div class="prow"><span class="lbl">Pump-out — up to 1,000 gal</span><span class="amt">$<span data-price="pump1000">340</span></span></div>
+      <div class="prow"><span class="lbl">Pump-out — 1,000–1,500 gal</span><span class="amt">$<span data-price="pump1500">395</span></span></div>
+      <div class="prow"><span class="lbl">Pump-out — 1,500–2,000 gal</span><span class="amt">$<span data-price="pump2000">460</span></span></div>
+      <div class="prow addon"><span class="lbl">Lid dig-up, if it’s buried</span><span class="amt">+$<span data-price="lid">75</span></span></div>
+      <div class="prow addon"><span class="lbl">Hose pull over 100 ft</span><span class="amt">+$<span data-price="hose">45</span></span></div>
+      <div class="prow addon"><span class="lbl">Effluent filter clean</span><span class="amt">+$<span data-price="filter">65</span></span></div>
+      <div class="prow addon"><span class="lbl">After-hours / weekend</span><span class="amt">+$<span data-price="after">150</span></span></div>
+    </div>
+
+    <p class="asof">Prices as of <b data-price="asof">February 2, 2026</b>. Residential tanks, Onondaga, Oswego and Madison counties.</p>
+  </div>
+</div>
+
+<main>
+  <div class="wrap">
+
+    <!-- ROUTE WEEK, not a clock time. This is the feature that gets used instead of ignored. -->
+    <section class="blk">
+      <h2>Get on the route</h2>
+      <p class="lead">We run by town, not by appointment. Pick the week that works and we text you the morning before we’re out your way.</p>
+      <div class="weeks" id="weeks"></div>
+      <a class="btn" href="request.html">Continue →</a>
+      <div class="honest"><b>Why weeks, not times?</b> Because a truck that promises 2:15 on Thursday is a truck that’s late to everyone after it. You’ll get a text the night before and a call when we’re 30 minutes out.</div>
+    </section>
+
+    <section class="blk">
+      <h2>Not sure if you’re due?</h2>
+      <p class="lead">Most people have no idea. Four questions, and you’ll know the month to watch for — plus we can text you when it comes around.</p>
+      <a class="btn ghost" href="overdue.html">Check if I’m overdue →</a>
+    </section>
+
+    <section class="blk">
+      <h2>What we do</h2>
+      <ul class="ticks">
+        <li><b>Septic pumping</b> — residential and commercial, tanks up to 2,000 gallons</li>
+        <li><b>Porta-potty rental</b> — jobsites, graduations, weddings, hunting camps</li>
+        <li><b>Roll-off dumpsters</b> — with the included tonnage and overage rate stated before you book</li>
+        <li><b>Real estate inspections</b> — flat price, report in 48 hours</li>
+        <li><b>Lid locating and riser installation</b> — so next time nobody digs</li>
+      </ul>
+      <div class="honest"><b>If your lid is buried, we tell you what it costs before we dig.</b> No surprise line on the invoice. If we can’t find it in 20 minutes we stop and talk to you first.</div>
+    </section>
+
+    <section class="blk">
+      <h2>Contractors &amp; builders</h2>
+      <p class="lead">Certificate of insurance, downloadable at 10pm without calling anybody.</p>
+      <a class="btn ghost" href="#" onclick="drumlinToast('Demo — a real client site serves the live COI PDF here.');return false;">⬇ Download our COI (PDF)</a>
+      <p class="muted" style="margin-top:10px">General liability, auto and workers’ comp. Additional insured on request, same day.</p>
+    </section>
+
+  </div>
+</main>
+
+<div class="ownerbar" id="ownerbar">
+  <span>Owner mode — tap any price to edit</span>
+  <span class="sp"></span>
+  <button class="btn ghost" onclick="drumlinCancelPrices()">Cancel</button>
+  <button class="btn amber" onclick="drumlinSavePrices()">Save</button>
+</div>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div><strong>Drumlin Septic &amp; Site Services</strong>Serving Onondaga, Oswego &amp; Madison counties.<br />Family run since 1994.</div>
+    <div><strong>Reach us</strong><a href="tel:+13155550142">(315) 555-0142</a><br />Mon–Fri 7am–5pm · Emergency 24/7</div>
+    <div><strong>Demo notice</strong>Fictional company. Built as a Rent-a-Site template by <a href="https://ainovations.net/rent-a-site">AInovations</a>. <span data-ownertap style="cursor:default">© 2026</span></div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script>drumlinWeeks('weeks', 5);</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Septic inspections for closings — agents &amp; lenders | Drumlin Septic</title>
+<meta name="description" content="Flat-price septic inspection for real estate closings. Report in 48 hours, emailed to agent, buyer and lender." />
+<link rel="stylesheet" href="site.css" />
+</head>
+<body>
+
+<div class="demobar">
+  <b>Demo site.</b> Drumlin Septic &amp; Site Services is a <b>fictional company</b> built by
+  <a href="https://ainovations.net/rent-a-site">AInovations</a> to show what a Rent-a-Site looks like. Nothing here is a real business.
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="bar">
+      <a class="logo" href="index.html">
+        <span class="mark">DS</span>
+        <span>Drumlin Septic<small>&amp; Site Services · Since 1994</small></span>
+      </a>
+      <a class="callbtn" href="tel:+13155550142">📞 (315) 555-0142</a>
+    </div>
+    <nav class="tabs">
+      <a href="index.html">Home</a>
+      <a href="prices.html">Prices</a>
+      <a href="overdue.html">Am I overdue?</a>
+      <a href="request.html">Request a pump-out</a>
+      <a href="rentals.html">Toilets &amp; dumpsters</a>
+      <a class="on" href="realtors.html">Realtors</a>
+    </nav>
+  </div>
+</header>
+
+<div class="band">
+  <div class="wrap">
+    <h1>Septic inspections for closings.</h1>
+    <p class="sub">Bookmark this page. You will need it again in about three weeks.</p>
+    <div class="ptable">
+      <div class="prow"><span class="lbl">Inspection + pump + written report</span><span class="amt">$<span data-price="inspect">295</span></span></div>
+      <div class="prow"><span class="lbl">Report turnaround</span><span class="amt">48 hrs</span></div>
+    </div>
+    <p class="asof">Flat price. Prices as of <b data-price="asof">February 2, 2026</b>. Onondaga, Oswego &amp; Madison counties.</p>
+  </div>
+</div>
+
+<main>
+  <div class="wrap">
+
+    <section class="blk">
+      <h2>What your file gets</h2>
+      <ul class="ticks">
+        <li><b>A written report inside 48 hours</b>, emailed to you, the buyer and the lender at the same time — you don’t have to forward anything</li>
+        <li><b>Photos of the tank, baffles and filter</b>, dated, so nobody argues later about what condition it was in</li>
+        <li><b>Tank pumped as part of the inspection</b> — you can’t honestly assess a tank you haven’t emptied, and some inspectors don’t</li>
+        <li><b>A plain-English verdict</b>: passing, passing with a note, or a problem — and what the problem will cost to fix</li>
+        <li><b>The as-built location on file</b>, so the buyer knows where their tank is on day one</li>
+      </ul>
+      <div class="honest"><b>We won’t pass a tank to save a deal.</b> If it needs a leach field, the report says so and gives you a number. Agents who send us repeat work do it because the report holds up — not because it always says yes.</div>
+    </section>
+
+    <section class="blk">
+      <h2>Book an inspection</h2>
+      <p class="lead">Closing date first — we’ll work backwards from it and tell you straight away if it’s tight.</p>
+      <form onsubmit="return drumlinDemoSubmit(this,'This would have gone straight to dispatch with your closing date flagged, and you’d have a confirmation text inside the hour.')">
+        <div class="grid2">
+          <div><label for="close">Closing date</label><input id="close" type="date" required /></div>
+          <div><label for="paddr">Property address</label><input id="paddr" placeholder="1428 Drumlin Rd" required /></div>
+        </div>
+        <div class="grid2">
+          <div><label for="an">Your name</label><input id="an" placeholder="Agent name" required /></div>
+          <div><label for="ab">Brokerage</label><input id="ab" /></div>
+        </div>
+        <div class="grid2">
+          <div><label for="ae">Your email</label><input id="ae" type="email" required /></div>
+          <div><label for="ap">Your mobile</label><input id="ap" type="tel" required /></div>
+        </div>
+        <div><label for="also">Also send the report to <span class="hint">— buyer, lender, attorney</span></label>
+          <textarea id="also" placeholder="buyer@email.com&#10;loanofficer@bank.com"></textarea></div>
+        <div><label for="occ">Is the house occupied?</label>
+          <select id="occ"><option>Occupied — need to coordinate access</option><option>Vacant — lockbox</option><option>Vacant — open access</option></select></div>
+        <button class="btn" type="submit">Request the inspection →</button>
+        <div data-confirm></div>
+      </form>
+    </section>
+
+    <section class="blk">
+      <h2>Why lenders ask for this</h2>
+      <p class="lead">New York doesn’t require a septic inspection to sell a house. Lenders routinely do — FHA, VA and USDA files in particular — and a deal can sit for a week waiting on one.</p>
+      <p class="muted">We keep two slots a week open for closings specifically, because a closing date doesn’t move for a route schedule. If you’re inside ten days, call rather than use the form.</p>
+      <a class="btn ghost" href="tel:+13155550142">Call about a tight closing →</a>
+    </section>
+
+  </div>
+</main>
+
+<div class="ownerbar" id="ownerbar">
+  <span>Owner mode — tap any price to edit</span>
+  <span class="sp"></span>
+  <button class="btn ghost" onclick="drumlinCancelPrices()">Cancel</button>
+  <button class="btn amber" onclick="drumlinSavePrices()">Save</button>
+</div>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div><strong>Drumlin Septic &amp; Site Services</strong>Serving Onondaga, Oswego &amp; Madison counties.<br />Family run since 1994.</div>
+    <div><strong>Reach us</strong><a href="tel:+13155550142">(315) 555-0142</a><br />Mon–Fri 7am–5pm · Emergency 24/7</div>
+    <div><strong>Demo notice</strong>Fictional company. Built as a Rent-a-Site template by <a href="https://ainovations.net/rent-a-site">AInovations</a>. <span data-ownertap style="cursor:default">© 2026</span></div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>

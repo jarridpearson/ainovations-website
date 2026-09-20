@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Am I overdue for a septic pump-out? — Drumlin Septic</title>
+<meta name="description" content="Four questions and you'll know roughly when your septic tank is due. Free text reminder when the month comes around." />
+<link rel="stylesheet" href="site.css" />
+</head>
+<body>
+
+<div class="demobar">
+  <b>Demo site.</b> Drumlin Septic &amp; Site Services is a <b>fictional company</b> built by
+  <a href="https://ainovations.net/rent-a-site">AInovations</a> to show what a Rent-a-Site looks like. Nothing here is a real business.
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="bar">
+      <a class="logo" href="index.html">
+        <span class="mark">DS</span>
+        <span>Drumlin Septic<small>&amp; Site Services · Since 1994</small></span>
+      </a>
+      <a class="callbtn" href="tel:+13155550142">📞 (315) 555-0142</a>
+    </div>
+    <nav class="tabs">
+      <a href="index.html">Home</a>
+      <a href="prices.html">Prices</a>
+      <a class="on" href="overdue.html">Am I overdue?</a>
+      <a href="request.html">Request a pump-out</a>
+      <a href="rentals.html">Toilets &amp; dumpsters</a>
+      <a href="realtors.html">Realtors</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section class="blk">
+      <h2>Am I overdue?</h2>
+      <p class="lead">Nobody knows when their tank was last done. Four questions gets you close enough to act on.</p>
+
+      <form onsubmit="return calc(event)">
+        <label for="tank">Tank size <span class="hint">— on your septic record, or guess by house size</span></label>
+        <select id="tank">
+          <option value="750">750 gallons — small / older home</option>
+          <option value="1000" selected>1,000 gallons — most common</option>
+          <option value="1250">1,250 gallons</option>
+          <option value="1500">1,500 gallons — 4+ bedrooms</option>
+          <option value="2000">2,000 gallons</option>
+          <option value="0">I have no idea</option>
+        </select>
+
+        <label>People living in the house</label>
+        <div class="chips" id="people">
+          <button type="button" class="chip" data-v="1">1</button>
+          <button type="button" class="chip" data-v="2">2</button>
+          <button type="button" class="chip on" data-v="3">3</button>
+          <button type="button" class="chip" data-v="4">4</button>
+          <button type="button" class="chip" data-v="5">5</button>
+          <button type="button" class="chip" data-v="6">6+</button>
+        </div>
+
+        <label>Garbage disposal in the kitchen sink?</label>
+        <div class="chips" id="disposal">
+          <button type="button" class="chip" data-v="1">Yes</button>
+          <button type="button" class="chip on" data-v="0">No</button>
+        </div>
+
+        <label for="last">Roughly when was it last pumped?</label>
+        <select id="last">
+          <option value="0.5">Within the last year</option>
+          <option value="2">About 2 years ago</option>
+          <option value="3" selected>About 3 years ago</option>
+          <option value="5">About 5 years ago</option>
+          <option value="8">8 years or more</option>
+          <option value="-1">Never, or I don’t know</option>
+        </select>
+
+        <button class="btn" type="submit">Check my tank →</button>
+      </form>
+
+      <div class="result" id="out">
+        <p class="big" id="head"></p>
+        <p id="body" style="margin:0"></p>
+        <div id="cta" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <section class="blk" id="remind">
+      <h2>Want us to just tell you?</h2>
+      <p class="lead">We’ll text you once, in the month you’re due. Not a newsletter, not a drip campaign — one message, and you can stop it by replying STOP.</p>
+      <form onsubmit="return drumlinDemoSubmit(this,'We’d have saved your due month and texted you once, when it came around.')">
+        <div class="grid2">
+          <div><label for="rn">First name</label><input id="rn" placeholder="Dave" /></div>
+          <div><label for="rp">Mobile number</label><input id="rp" type="tel" placeholder="(315) 555-0142" /></div>
+        </div>
+        <button class="btn amber" type="submit">Text me when I’m due</button>
+        <div data-confirm></div>
+      </form>
+      <p class="muted" style="margin-top:12px">Your number is used for this reminder and nothing else. We don’t sell it and we don’t send offers.</p>
+    </section>
+
+    <section class="blk">
+      <h2>How we work this out</h2>
+      <p class="lead">It’s the standard capacity table the state extension services publish — tank size against how many people use it, adjusted down if you run a garbage disposal, because a disposal puts noticeably more solids into the tank.</p>
+      <div class="honest"><b>It’s an estimate, and we’ll say so.</b> Two houses with identical tanks can be years apart depending on what goes down the drain. If the number says you’re close, the honest answer is to have it looked at — not to assume the calculator is right.</div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div><strong>Drumlin Septic &amp; Site Services</strong>Serving Onondaga, Oswego &amp; Madison counties.<br />Family run since 1994.</div>
+    <div><strong>Reach us</strong><a href="tel:+13155550142">(315) 555-0142</a><br />Mon–Fri 7am–5pm · Emergency 24/7</div>
+    <div><strong>Demo notice</strong>Fictional company. Built as a Rent-a-Site template by <a href="https://ainovations.net/rent-a-site">AInovations</a>. <span data-ownertap style="cursor:default">© 2026</span></div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+/* Interval table in YEARS: tank gallons -> household size 1..6.
+   Source shape is the standard state-extension septic capacity table. */
+var TBL = {
+  750:  [9.1, 4.2, 2.6, 1.8, 1.3, 1.0],
+  1000: [12.4, 5.9, 3.7, 2.6, 2.0, 1.5],
+  1250: [15.6, 7.5, 4.8, 3.4, 2.6, 2.0],
+  1500: [18.9, 9.1, 5.9, 4.2, 3.3, 2.6],
+  2000: [25.4, 12.4, 8.0, 5.9, 4.5, 3.7]
+};
+var MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function chipVal(id){ var b=document.querySelector('#'+id+' .chip.on'); return b?+b.dataset.v:0; }
+['people','disposal'].forEach(function(id){
+  document.getElementById(id).addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(!b) return;
+    this.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');
+  });
+});
+
+function calc(e){
+  e.preventDefault();
+  var tank = +document.getElementById('tank').value;
+  var ppl  = Math.min(6, Math.max(1, chipVal('people')));
+  var disp = chipVal('disposal') === 1;
+  var since = +document.getElementById('last').value;
+
+  var unknownTank = tank === 0;
+  if (unknownTank) tank = 1000;                       // safest common assumption
+  var years = TBL[tank][ppl-1];
+  if (disp) years = years * 0.65;                     // a disposal puts more solids in the tank
+
+  var out=document.getElementById('out'), head=document.getElementById('head'),
+      body=document.getElementById('body'), cta=document.getElementById('cta');
+  out.className='result show';
+
+  var never = since === -1;
+  var remaining = never ? -1 : (years - since);
+
+  var d=new Date(); d.setMonth(d.getMonth()+Math.round(remaining*12));
+  var when = MON[d.getMonth()]+' '+d.getFullYear();
+
+  if (never){
+    out.classList.add('overdue');
+    head.textContent='Get it looked at.';
+    body.innerHTML='If it has genuinely never been pumped, or nobody knows, that’s the one case where guessing doesn’t help. On a '+
+      (unknownTank?'typical 1,000 gallon tank':tank.toLocaleString()+' gallon tank')+' with '+ppl+' '+(ppl===1?'person':'people')+
+      ', you’d normally be on about a <b>'+years.toFixed(1)+' year</b> cycle.';
+  } else if (remaining <= 0){
+    out.classList.add('overdue');
+    head.textContent='You’re likely overdue.';
+    body.innerHTML='At '+ppl+' '+(ppl===1?'person':'people')+' on a '+(unknownTank?'typical 1,000 gallon':tank.toLocaleString()+' gallon')+
+      ' tank'+(disp?' with a disposal':'')+', you’d normally go about <b>'+years.toFixed(1)+' years</b> between pump-outs — and it’s been around '+since+'.';
+  } else if (remaining <= 0.5){
+    out.classList.add('soon');
+    head.textContent='Due about '+when+'.';
+    body.innerHTML='That’s close enough to book now rather than wait. Your cycle works out to roughly <b>'+years.toFixed(1)+' years</b>.';
+  } else {
+    out.classList.add('ok');
+    head.textContent='Probably fine until '+when+'.';
+    body.innerHTML='Your cycle works out to roughly <b>'+years.toFixed(1)+' years</b>, so you’ve got about <b>'+
+      remaining.toFixed(1)+' years</b> left. Worth a reminder so it doesn’t sneak up.';
+  }
+
+  cta.innerHTML = (remaining<=0.5 || never)
+    ? '<a class="btn" href="request.html">Pick my route week →</a>'
+    : '<a class="btn ghost" href="#remind">Text me when I’m due →</a>';
+
+  out.scrollIntoView({behavior:'smooth',block:'center'});
+  return false;
+}
+</script>
+</body>
+</html>
