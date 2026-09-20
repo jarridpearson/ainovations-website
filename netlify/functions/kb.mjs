@@ -25,6 +25,34 @@ Contact: jp@ainovations.net (or support@ainovations.net). AInovations usually re
 - Honest note: AInovations does NOT promise Google rankings — nobody honestly can.
 - Best for: businesses with no website, or one they're embarrassed by. Learn more / claim a spot: /rent-a-site
 
+### RENT-A-SITE BY TRADE — four pages written for specific industries
+These are NOT separate products and NOT separate prices. Each one is Rent-a-Site, sold to a particular trade, on the SAME three plans (Presence / Growth / Commerce) at the SAME prices and terms described above. Never invent a trade-specific price, package, or feature tier. If a visitor works in one of these trades, point them at their page — it speaks their language and shows what their version would actually do.
+Common to all four: the build is included with NO setup fee; Growth is the plan most of these businesses want; AInovations does not promise Google rankings; and if they cancel, they get their content exported and their domain handed over.
+A rule that matters for every one of these trades: they are usually BOOKED SOLID and do not want more leads. Never pitch "more customers" to them. The pitch is that the website takes work OFF them — the repeated phone calls, the price quoting, the status questions — and captures the money they are already losing to whoever answered the phone first.
+
+• SEPTIC, EXCAVATION, DUMPSTERS, PORTA-POTTIES & FENCE → /site-services
+  The problem: the owner is quoting "roughly how much?" from the cab of his truck all day.
+  What their site does: their prices published right on the page; customers pick a WEEK rather than an appointment time (that is how these outfits actually schedule); automatic texts to past customers when they are due for a pump-out again; self-service booking for a porta-potty or dumpster rental; a page built just for real estate agents (a repeat referral source); and their certificate of insurance ready to download, which wins jobs.
+  Their objections: "I'm booked three weeks out, why do I want more calls?" — you don't, this cuts the calls you already take. "I don't want my prices where my competition can see them." "I already pay somebody for a website."
+
+• BODY SHOPS, COLLISION & TOWING → /auto-body
+  The problem: their website has a phone number on it and does essentially nothing else. Someone gets rear-ended and wants to send a photo of the bumper and get a rough number — they can't, so they call. So do the four customers whose cars are already in the shop asking if they're done.
+  What their site does: customers send photos of the damage for a rough estimate; a clear answer to the only question every collision customer has — that YOU CAN PICK YOUR OWN SHOP, the insurer cannot make you use theirs; customers check their car's status without calling; before-and-after photos the shop adds by text; their certifications displayed up top; and an impound page for shops that also tow.
+  Their objections: "I'm booked six weeks out." "Most of my work comes from the insurance company anyway." "Can you really give somebody a price off a photo?" (Honest answer: a rough range, not a binding estimate.)
+
+• WELL DRILLING, PUMP SERVICE & WATER TREATMENT → /well-water
+  The problem: half the calls they take aren't jobs — they're tripped breakers, towns they don't cover, and realtors chasing a water test before a closing.
+  What their site does: a self-check that sorts out "I've got no water" before the phone rings; the towns they cover and the ones they don't, stated plainly; a water-testing-for-closings page (steady, repeatable money from realtors); what is actually in the water town by town, which sells treatment systems; a well-record lookup that gets the customer to hand over their address; and a hiring page that works from a phone, because crew is their real bottleneck.
+  Their objections: "I'm booked into next spring." "My customers aren't on the internet." "I do treatment, not drilling" (the page fits any mix — treatment only, pump work only, or all of it).
+  NOTE: this is the one trade where Commerce is genuinely worth recommending, because salt and filter subscriptions are recurring revenue.
+
+• MARINAS, BOATYARDS, BOAT STORAGE & BOAT REPAIR → /marinas
+  The economics that close this sale: a winterization/haul-out job is worth $1,000-$3,000, and Presence costs less than that per YEAR. One lost winterization pays for two years of the website.
+  The problem: a boat owner wants a haul-out price and a date on a Saturday when nobody's in the office, can't get either off the website, and calls the next yard down the lake.
+  What their site does: a winterizing price calculator that ends in a haul-out date the customer books off the yard's real availability; a live slip map showing open/held/taken with a real waitlist that captures boat dimensions; a spring launch queue so owners can see "you're number 14, week of May 4" instead of calling to ask; a dock card built for a transient boater deciding from the water on one bar of signal (depth, max length, fuel, pumpout, power, showers, radio channel); service requests with photos sent from the dock; and a storage-lot lookup so an owner can find his own boat and see what's been done to it.
+  Their objections, and the honest answers: "I'm full, I've got a waitlist" — slips are not where the money is; winterizing, shrink wrap, storage and service are, and being full protects none of them. "My season is only five months, why pay all year?" — the site works hardest when they're CLOSED: September-November people shop winterizing, February-March they shop slips and storage for spring; those are the two buying windows. "My customers are older and won't book online" — some won't, but the transient on the water and the owner comparing yards at 9pm never call, they just go elsewhere.
+  IMPORTANT: campgrounds and RV parks are NOT part of this and AInovations does not target them — Campspot and RoverPass give campgrounds a free website funded by booking fees. If a campground asks, treat it as a normal Rent-a-Site lead, not a marina one.
+
 ## RENT-AN-APP — your business's own native app, no build cost (rent it monthly)
 - What it is: your own real native iPhone + Android app, published to the App Store and Google Play under your business's own developer accounts, for a flat monthly rate instead of a five-figure build. AInovations builds, hosts, updates, and supports it.
 - Three plans (1-year / 3-year monthly rate; 3-year is lower and waives the setup fee):
@@ -108,6 +136,11 @@ Custom automations, integrations, and AI-assisted internal tools built around th
 - Small business wants to sell or take paid bookings on their site → Rent-a-Site Commerce.
 - Business wants its own app without a big build bill (rent) → Rent-an-App (Founding Five seats left).
 - Wants to pay once and OWN a site or app → Build & own (Hire Us, quoted).
+- Septic pumping / excavation / digging / dumpster rental / porta-potty rental / fence installation → Rent-a-Site, and send them to /site-services.
+- Body shop / collision repair / auto painting / towing / impound & vehicle storage → Rent-a-Site, and send them to /auto-body.
+- Well drilling / well pump service / water testing / water treatment & filtration / water softeners → Rent-a-Site, and send them to /well-water. (Water treatment is the one trade where Commerce is worth recommending — salt and filter subscriptions.)
+- Marina / boatyard / boat storage / boat repair / winterizing / shrink wrap / slip rental → Rent-a-Site, and send them to /marinas. (A campground or RV park is NOT this — treat it as a normal Rent-a-Site lead and send them to /rent-a-site.)
+- Any of those four trades who says they're "booked solid" or "doesn't need more customers" → agree with them, and explain the site is there to take repeated phone calls off their plate and capture the jobs they already lose to whoever answered first — not to bring more leads.
 - Contractor / construction crew → Chalkline ($20/mo base).
 - Church / ministry → /churches.
 - Restaurant on Toast that wants its own app for loyalty, notifications, and memberships (ordering built in via its Toast online ordering) → /restaurants (Regulars from $399/mo; Members $699; Group $1,199).
