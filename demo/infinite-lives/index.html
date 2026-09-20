@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow,noarchive" />
+<title>App Mockup — Infinite Lives | Prepared by AInovations</title>
+<style>
+:root{
+  --ink:#0b1220; --panel:#131c2b; --panel2:#1a2537; --line:rgba(255,255,255,.10);
+  --txt:#eef4fb; --mut:#93a6bd; --grn:#8ed643; --grn-d:#5ea51c; --blu:#43b6f0;
+  --gold:#ffd166; --red:#ff6b6b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:#0a0f18;color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+ min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+/* ---- demo banner, always visible, never removed ---- */
+.mockbar{position:sticky;top:0;z-index:99;width:100%;background:#ffd166;color:#241c00;
+ font-size:12.5px;font-weight:800;text-align:center;padding:8px 12px;line-height:1.45}
+.mockbar b{font-weight:900}
+
+.wrap{width:100%;display:flex;flex-direction:column;align-items:center;padding:18px 12px 40px}
+.caption{max-width:420px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.6;margin:0 0 16px}
+
+/* ---- phone frame ---- */
+.phone{width:min(390px,100%);border:1px solid var(--line);border-radius:38px;background:var(--ink);
+ overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;height:760px;max-height:82vh}
+.status{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 6px;font-size:12px;color:var(--mut);font-weight:700}
+.appbar{display:flex;align-items:center;gap:10px;padding:6px 18px 12px;border-bottom:1px solid var(--line)}
+.logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--grn),var(--grn-d));
+ display:grid;place-items:center;font-size:17px}
+.appbar h1{margin:0;font-size:16.5px;letter-spacing:-.02em;font-weight:900}
+.appbar .sub{margin:1px 0 0;font-size:11px;color:var(--mut);font-weight:700}
+.screen{flex:1;overflow-y:auto;padding:16px 16px 22px;-webkit-overflow-scrolling:touch}
+.screen::-webkit-scrollbar{width:0}
+
+/* ---- tab bar ---- */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--panel)}
+.tab{border:0;background:none;color:var(--mut);font-family:inherit;font-size:10px;font-weight:800;
+ padding:9px 2px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab .ic{font-size:17px;line-height:1}
+.tab.on{color:var(--grn)}
+
+/* ---- shared ---- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px}
+.card h3{margin:0 0 4px;font-size:15px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--mut);font-size:13px;line-height:1.5}
+.k{font-size:10.5px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin:18px 0 9px}
+.k:first-child{margin-top:0}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:13px;font-family:inherit;font-size:14.5px;
+ font-weight:850;cursor:pointer;background:var(--grn);color:#10240a}
+.btn.sec{background:rgba(255,255,255,.07);color:var(--txt);border:1px solid var(--line)}
+.btn.warn{background:rgba(255,107,107,.14);color:#ffb0b0;border:1px solid rgba(255,107,107,.3)}
+.btn:active{transform:scale(.985)}
+.row{display:flex;gap:10px;align-items:center}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:900;letter-spacing:.04em}
+.pill.in{background:rgba(142,214,67,.17);color:var(--grn)}
+.pill.low{background:rgba(255,209,102,.17);color:var(--gold)}
+.pill.out{background:rgba(255,107,107,.15);color:var(--red)}
+.pill.wait{background:rgba(67,182,240,.15);color:var(--blu)}
+
+/* ---- loyalty card ---- */
+.loyal{border-radius:18px;padding:18px;background:linear-gradient(135deg,#8ed643,#3f8f12);color:#0d1f05;position:relative;overflow:hidden}
+.loyal::after{content:"";position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.13)}
+.loyal .lbl{font-size:11px;font-weight:900;letter-spacing:.1em;opacity:.75}
+.loyal .pts{font-size:46px;font-weight:900;letter-spacing:-.04em;line-height:1;margin:6px 0 2px}
+.loyal .nxt{font-size:12.5px;font-weight:800;opacity:.85}
+.bar{height:7px;border-radius:99px;background:rgba(0,0,0,.18);margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;width:68%;background:#0d1f05;border-radius:99px}
+.barcode{margin-top:14px;height:44px;border-radius:8px;background:repeating-linear-gradient(90deg,#0d1f05 0 3px,transparent 3px 6px,#0d1f05 6px 8px,transparent 8px 13px);opacity:.9}
+.memno{text-align:center;font-size:11px;font-weight:800;margin-top:7px;opacity:.75;letter-spacing:.15em}
+
+/* ---- chat ---- */
+.msg{max-width:84%;padding:11px 13px;border-radius:15px;font-size:13.5px;line-height:1.5;margin-bottom:9px}
+.msg.you{margin-left:auto;background:var(--grn);color:#10240a;border-bottom-right-radius:5px;font-weight:600}
+.msg.bot{background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:5px}
+.msg.bot b{color:var(--grn)}
+.typing{display:inline-flex;gap:3px}
+.typing i{width:5px;height:5px;border-radius:50%;background:var(--mut);animation:bob 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bob{0%,60%,100%{opacity:.3}30%{opacity:1}}
+.ask{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.ask button{border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-family:inherit;
+ font-size:12px;font-weight:700;padding:8px 11px;border-radius:99px;cursor:pointer}
+
+/* ---- game rows ---- */
+.game{display:flex;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.game:last-child{border-bottom:0}
+.box{width:44px;height:56px;border-radius:5px;flex:0 0 auto;display:grid;place-items:center;font-size:19px;
+ background:linear-gradient(160deg,#2b3purple,#1d2738);border:1px solid var(--line)}
+.game .nm{font-size:13.5px;font-weight:800;line-height:1.3}
+.game .mt{font-size:11.5px;color:var(--mut);margin-top:2px}
+.game .pr{margin-left:auto;text-align:right;font-size:14px;font-weight:900;color:var(--grn)}
+
+/* ---- events ---- */
+.ev{border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:11px;background:var(--panel)}
+.ev .when{font-size:10.5px;font-weight:900;letter-spacing:.07em;color:var(--blu);text-transform:uppercase}
+.ev h4{margin:5px 0 3px;font-size:15.5px;letter-spacing:-.01em}
+.ev .meta{font-size:12px;color:var(--mut);line-height:1.5}
+.seats{display:flex;align-items:center;gap:8px;margin:11px 0 10px}
+.seats .sb{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+.seats .sb i{display:block;height:100%;border-radius:99px;background:var(--grn)}
+.seats .sb i.full{background:var(--red)}
+.seats .txt{font-size:11.5px;font-weight:800;color:var(--mut);white-space:nowrap}
+.note{font-size:11.5px;color:var(--mut);line-height:1.5;margin-top:9px}
+
+/* ---- toast ---- */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:200;background:#eef4fb;color:#0b1220;
+ padding:12px 17px;border-radius:12px;font-size:13px;font-weight:800;box-shadow:0 14px 40px rgba(0,0,0,.5);
+ opacity:0;pointer-events:none;transition:opacity .22s, transform .22s;max-width:86vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+/* ---- push demo ---- */
+.push{border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:14px;padding:12px 13px;margin-bottom:10px;
+ backdrop-filter:blur(8px)}
+.push .hd{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:900;color:var(--mut);letter-spacing:.05em}
+.push .hd .d{width:15px;height:15px;border-radius:4px;background:linear-gradient(135deg,var(--grn),var(--grn-d))}
+.push .ti{font-size:13.5px;font-weight:850;margin:6px 0 2px}
+.push .bd{font-size:12.5px;color:var(--mut);line-height:1.45}
+
+.legend{max-width:420px;margin:18px auto 0;padding:15px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.035)}
+.legend h4{margin:0 0 8px;font-size:13px;color:var(--gold);letter-spacing:.03em}
+.legend p{margin:0 0 7px;font-size:12.5px;color:var(--mut);line-height:1.6}
+.legend p:last-child{margin-bottom:0}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <b>MOCKUP — this is not a real app.</b> Built by AInovations as a proposal for Infinite Lives. Nothing here is live and no data is saved.
+</div>
+
+<div class="wrap">
+  <p class="caption">Tap around. Everything below responds — the rewards card, the inventory assistant, event signup and the waitlist.</p>
+
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>Infinite Lives</span><span>100%</span></div>
+    <div class="appbar">
+      <div class="logo">🎮</div>
+      <div><h1>Infinite Lives</h1><p class="sub">40 Public Square · Open until 7</p></div>
+    </div>
+
+    <div class="screen" id="screen"></div>
+
+    <div class="tabs">
+      <button class="tab on" data-s="home"><span class="ic">🏠</span>Home</button>
+      <button class="tab" data-s="ask"><span class="ic">💬</span>Ask</button>
+      <button class="tab" data-s="events"><span class="ic">🎲</span>Events</button>
+      <button class="tab" data-s="shop"><span class="ic">🛒</span>Shop</button>
+      <button class="tab" data-s="me"><span class="ic">⭐</span>Rewards</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>What the owner touches</h4>
+    <p><b>Creating an event</b> takes about 40 seconds on his phone: name, date, seats, entry fee. That's it.</p>
+    <p><b>The waitlist runs itself.</b> Somebody taps "can't make it" and the next person is in automatically, with a notification. He never mediates it.</p>
+    <p><b>Inventory comes straight from Square</b> — the assistant reads what he already scans at the register. He keeps doing exactly what he does now.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var seat = { taken: 15, cap: 16, joined: false, waitlisted: false };
+var mtg  = { taken: 16, cap: 16, waitlisted: false, pos: 2 };
+var pts = 1840;
+
+function toast(m){
+  var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show')},2300);
+}
+
+var SCREENS = {
+  home: function(){ return `
+    <div class="loyal">
+      <div class="lbl">INFINITE LIVES REWARDS</div>
+      <div class="pts">${pts.toLocaleString()}</div>
+      <div class="nxt">660 points to your next $10 in store credit</div>
+      <div class="bar"><i></i></div>
+      <div class="barcode"></div>
+      <div class="memno">SCAN AT THE COUNTER</div>
+    </div>
+
+    <p class="k">Just in</p>
+    <div class="card">
+      <div class="row">
+        <div><h3>Metroid Prime 4</h3><p>Traded in this morning · complete, case + manual</p></div>
+        <div class="pr" style="margin-left:auto;font-weight:900;color:var(--grn)">$44</div>
+      </div>
+      <p class="note">You had this on your want list. We're holding it until Saturday.</p>
+      <button class="btn" style="margin-top:11px" onclick="toast('Hold confirmed — yours until Saturday 7pm')">Keep holding it for me</button>
+    </div>
+
+    <p class="k">This week at the store</p>
+    <div class="ev">
+      <div class="when">Thursday · 6:00 PM</div>
+      <h4>Smash Bros Ultimate Night</h4>
+      <div class="meta">$10 entry · winner takes store credit</div>
+      <div class="seats">
+        <div class="sb"><i style="width:${Math.round(seat.taken/seat.cap*100)}%"></i></div>
+        <div class="txt">${seat.taken}/${seat.cap} seats</div>
+      </div>
+      <button class="btn sec" onclick="go('events')">See all events</button>
+    </div>
+
+    <p class="k">What a notification looks like</p>
+    <div class="push">
+      <div class="hd"><span class="d"></span>INFINITE LIVES · now</div>
+      <div class="ti">That Zelda you asked about just came in</div>
+      <div class="bd">Ocarina of Time, N64, complete. We put your name on it — here until Friday.</div>
+    </div>
+    <div class="push">
+      <div class="hd"><span class="d"></span>INFINITE LIVES · 1h ago</div>
+      <div class="ti">A seat opened for Thursday</div>
+      <div class="bd">You were next on the waitlist. You're in — see you at 6.</div>
+    </div>
+  `},
+
+  ask: function(){ return `
+    <p class="k">Ask the store anything</p>
+    <div id="chat">
+      <div class="msg bot">Hey — I'm the Infinite Lives assistant. I can see what's actually on the shelf right now. What are you after?</div>
+    </div>
+    <div class="ask">
+      <button onclick="ask('Do you have Ocarina of Time?')">Do you have Ocarina of Time?</button>
+      <button onclick="ask('What are you paying for a Switch?')">What are you paying for a Switch?</button>
+      <button onclick="ask('Are you open Sunday?')">Are you open Sunday?</button>
+      <button onclick="ask('Got any Pokemon booster boxes?')">Got any Pokémon boxes?</button>
+    </div>
+    <p class="note" style="margin-top:14px">This reads his live Square inventory. It answers at 11pm when the store is shut, and it never invents stock it doesn't have.</p>
+  `},
+
+  events: function(){
+    var pct = Math.round(Math.min(seat.taken,seat.cap)/seat.cap*100);
+    var full = seat.taken >= seat.cap;
+    var btn;
+    if (seat.joined) {
+      btn = `<button class="btn warn" onclick="drop()">I can't make it — free my seat</button>
+             <p class="note">Reminders set: Wednesday 6pm, and again an hour before.</p>`;
+    } else if (seat.waitlisted) {
+      btn = `<span class="pill wait">YOU'RE #2 ON THE WAITLIST</span>
+             <p class="note">If anyone drops, the seat is yours automatically and your phone will tell you. You don't have to watch for it.</p>`;
+    } else if (full) {
+      btn = `<button class="btn sec" onclick="joinWait()">Join the waitlist</button>`;
+    } else {
+      btn = `<button class="btn" onclick="grab()">Grab a seat</button>`;
+    }
+    return `
+    <p class="k">This week</p>
+    <div class="ev">
+      <div class="when">Thursday · 6:00 PM</div>
+      <h4>Smash Bros Ultimate Night</h4>
+      <div class="meta">$10 entry, pay at the counter · winner takes store credit</div>
+      <div class="seats">
+        <div class="sb"><i class="${full?'full':''}" style="width:${pct}%"></i></div>
+        <div class="txt">${Math.min(seat.taken,seat.cap)}/${seat.cap} seats${full?' · FULL':''}</div>
+      </div>
+      ${btn}
+    </div>
+
+    <div class="ev">
+      <div class="when">Friday · 5:30 PM</div>
+      <h4>Magic: Friday Night Commander</h4>
+      <div class="meta">$5 entry · casual, bring a deck · all levels</div>
+      <div class="seats">
+        <div class="sb"><i class="full" style="width:100%"></i></div>
+        <div class="txt">16/16 · FULL</div>
+      </div>
+      ${mtg.waitlisted
+        ? `<span class="pill wait">YOU'RE #${mtg.pos} ON THE WAITLIST</span>
+           <p class="note">If anyone drops out, the seat is yours automatically and your phone will tell you. You don't have to sit refreshing this.</p>`
+        : `<button class="btn sec" onclick="waitMtg()">Join the waitlist</button>
+           <p class="note">This is the one that matters. Full doesn't mean lost — it means queued.</p>`}
+    </div>
+
+    <div class="ev">
+      <div class="when">Saturday · 12:00 PM</div>
+      <h4>Pokémon TCG — kids &amp; families</h4>
+      <div class="meta">Free · bring what you've got, we'll help you build</div>
+      <div class="seats">
+        <div class="sb"><i style="width:30%"></i></div>
+        <div class="txt">6/20 seats</div>
+      </div>
+      <button class="btn" onclick="toast('Seat saved — reminder set for Friday')">Grab a seat</button>
+    </div>
+
+    <p class="note">Every signup is a name and a phone number he owns. Not a Facebook "interested" that means nothing.</p>
+  `},
+
+  shop: function(){ return `
+    <p class="k">Buy now, pick up in store</p>
+    <div class="card">
+      <div class="game">
+        <div class="box">🕹️</div>
+        <div><div class="nm">Ocarina of Time</div><div class="mt">N64 · complete in box</div></div>
+        <div class="pr">$89</div>
+      </div>
+      <div class="game">
+        <div class="box">🎮</div>
+        <div><div class="nm">Metroid Prime 4</div><div class="mt">Switch · pre-owned</div></div>
+        <div class="pr">$44</div>
+      </div>
+      <div class="game">
+        <div class="box">🃏</div>
+        <div><div class="nm">Pokémon Booster Box</div><div class="mt">Sealed · 36 packs</div></div>
+        <div class="pr">$139</div>
+      </div>
+      <button class="btn" style="margin-top:13px" onclick="toast('Demo only — no payment taken')">Checkout · $272</button>
+      <p class="note">Runs on his own Square account. Apple takes 0%, Google takes 0%, AInovations takes 0% — physical goods are exempt from app-store commission. The only fee is Square's normal card rate, the same one he already pays at the counter.</p>
+    </div>
+
+    <p class="k">Shipping to a soldier who moved</p>
+    <div class="card">
+      <h3>Ship it to me instead</h3>
+      <p>Fort Drum moves people out constantly. They keep buying from the store they trusted — the app just lets them.</p>
+    </div>
+  `},
+
+  me: function(){ return `
+    <div class="loyal">
+      <div class="lbl">MEMBER SINCE MARCH</div>
+      <div class="pts">${pts.toLocaleString()}</div>
+      <div class="nxt">660 points to your next $10 in store credit</div>
+      <div class="bar"><i></i></div>
+    </div>
+    <p class="k">Your want list</p>
+    <div class="card">
+      <div class="game"><div class="box">🕹️</div><div><div class="nm">Ocarina of Time</div><div class="mt">N64 · complete</div></div><span class="pill in" style="margin-left:auto">IN STOCK</span></div>
+      <div class="game"><div class="box">👾</div><div><div class="nm">Chrono Trigger</div><div class="mt">SNES · cart only ok</div></div><span class="pill out" style="margin-left:auto">WE'LL TELL YOU</span></div>
+      <div class="game"><div class="box">🎮</div><div><div class="nm">Silent Hill 2</div><div class="mt">PS2 · any condition</div></div><span class="pill low" style="margin-left:auto">ONE LEFT</span></div>
+      <p class="note">He knows exactly what his regulars are hunting. When it walks in the door on a trade, he knows who to call before it hits the shelf.</p>
+    </div>
+    <p class="k">Trade-in estimate</p>
+    <div class="card">
+      <h3>Send a photo, get a number</h3>
+      <p>Snap what you're trading. You get a rough range before you drive down — and he gets a heads-up on what's coming in.</p>
+      <button class="btn sec" style="margin-top:11px" onclick="toast('Demo only — camera not connected')">Take a photo</button>
+    </div>
+  `}
+};
+
+var ANSWERS = {
+  'Do you have Ocarina of Time?': "Yes — one copy, N64, <b>complete in box</b> at <b>$89</b>. It's on the shelf right now. Want me to put your name on it until Friday?",
+  'What are you paying for a Switch?': "Depends on the model and condition. A V2 in good shape with dock and joy-cons is usually <b>$150–$185 in store credit</b>, a bit less in cash. Bring it in and he'll give you a firm number — that's not something I'd guess at for you.",
+  'Are you open Sunday?': "Yep — <b>Sunday 12 to 5</b>. Every other day is 11 to 7.",
+  'Got any Pokemon booster boxes?': "Two sealed boxes in at <b>$139</b> each, plus loose packs at the counter. Saturday noon is the kids' TCG session if you're around."
+};
+
+function ask(q){
+  var c=document.getElementById('chat');
+  c.insertAdjacentHTML('beforeend','<div class="msg you">'+q+'</div>');
+  c.insertAdjacentHTML('beforeend','<div class="msg bot" id="ty"><span class="typing"><i></i><i></i><i></i></span></div>');
+  document.getElementById('screen').scrollTop=99999;
+  setTimeout(function(){
+    var t=document.getElementById('ty'); if(!t) return;
+    t.removeAttribute('id'); t.innerHTML=ANSWERS[q]||"I'd have to check on that one.";
+    document.getElementById('screen').scrollTop=99999;
+  },900);
+}
+
+function grab(){ seat.taken++; seat.joined=true; go('events'); toast("You're in. Reminder set for Wednesday."); }
+function drop(){
+  seat.taken--; seat.joined=false; go('events');
+  toast('Seat freed — the next person on the waitlist was just let in');
+}
+function joinWait(){ seat.waitlisted=true; go('events'); toast("On the waitlist. We'll tell you the second a seat opens."); }
+function waitMtg(){
+  mtg.waitlisted=true; go('events');
+  toast("You're #2 on the waitlist — we'll text you the moment a seat frees up");
+  setTimeout(function(){
+    if(!mtg.waitlisted) return;
+    mtg.pos=1; go('events');
+    toast('Someone just dropped out. You moved up to #1.');
+  },3200);
+}
+
+function go(s){
+  document.getElementById('screen').innerHTML = SCREENS[s]();
+  document.getElementById('screen').scrollTop = 0;
+  [].forEach.call(document.querySelectorAll('.tab'), function(t){ t.classList.toggle('on', t.dataset.s===s); });
+}
+[].forEach.call(document.querySelectorAll('.tab'), function(t){ t.onclick=function(){ go(t.dataset.s); }; });
+go('home');
+</script>
+</body>
+</html>
