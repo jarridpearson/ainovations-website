@@ -8,10 +8,22 @@ _Internal. Not served publicly (`/contracts/*` and `/*.md` both 404 in `_redirec
 | Members | $699 | up to 2 | 2,000 | Every two weeks | $1,500 |
 | Group | $1,199 | up to 5 | 5,000 | Weekly | $2,500 |
 
-- Text overage: 2¢ per message over the plan cap. A message over 160 characters, or containing an emoji, counts as two. Caps do not roll over.
+- Text overage: 2¢ per message over the plan cap. A message over 160 characters counts as two segments; a single emoji switches the encoding and drops that limit to 70 characters. Caps do not roll over.
 - AInovations takes no percentage and no per-order fee on anything sold through the app. Sales run through the Client's own Stripe account at Stripe's published rates.
 - Apple Developer Program ($99/yr) and Google Play ($25 one-time) are the Client's accounts and the Client's cost.
 - Two (2) hours per month of AInovations time for Client-requested changes on every plan. Hard cap; **unused hours do not roll over**; larger projects quoted separately.
+
+## Delivery timeline
+- Estimated time from Effective Date to live in both app stores: **eight (8) to twelve (12) weeks**. This is an estimate, not a guarantee, and is not a condition of the Agreement.
+- The governing constraint is Apple's verification of the Client's business for an Apple Developer Program Organization account. Apple publishes no processing time for it, and neither party can escalate or expedite it. AInovations has no account relationship with Apple for the Client's legal entity; only the Client may contact Apple about its own enrollment.
+- The Client's own turnaround also moves the date: enrolling with Apple and Google in the business's legal name, completing two-factor authentication on the Client's device, accepting the developer agreements, paying the Apple and Google fees on a business card, inviting AInovations to the team with Certificates access, granting read-only Toast API access, and approving content.
+- A D-U-N-S number is required and is free. AInovations initiates it on day one. A Client that already holds one is at the short end of the range.
+- All other work — the build, the Toast connection, the loyalty program, carrier registration for texting, and Stripe setup — proceeds in parallel and is complete and waiting during Apple's verification.
+
+## Memberships and paid items (material term)
+- Memberships and any other paid item sold through the app entitle the guest ONLY to physical goods or in-person service handed over at the Client's restaurant (for example a coffee club, a wine club, a monthly pie, a held table). 
+- **No paid item may confer status, tier, or access to any content or feature inside the app.** VIP status, the secret menu, and every other in-app unlock are earned through the loyalty program only and are never sold. Apple's App Store Review Guideline 3.1.1 requires in-app purchase (and Apple's 15-30% commission) for anything purchased that unlocks content within an app; the no-commission structure of this Agreement depends on paid items remaining outside that rule.
+- AInovations configures the membership catalog with the Client and will decline to publish a paid item that confers in-app status or access.
 
 ## Term, renewal, notice
 - Term: one (1) year or three (3) years from the Effective Date.
@@ -31,7 +43,7 @@ _Internal. Not served publicly (`/contracts/*` and `/*.md` both 404 in `_redirec
 - AInovations keeps: the loyalty engine, notification and campaign systems, reporting, and hosting. These stop at termination. The app remains installed on guests' phones and its Order button continues to open the Client's own Toast Online Ordering; loyalty, texts, alerts, and reports cease.
 
 ## Dependencies stated to the Client
-- Toast POS on Restaurant Management Suite Essentials or higher, with Toast Online Ordering. Client grants read-only Toast API access; the app never writes to Toast. Ordering in the app is the Client's own Toast Online Ordering hosted inside the app — Toast processes payment and fulfills; AInovations never handles orders or payment.
+- Two separate Toast subscriptions: Toast's Restaurant Management Suite at the Essentials tier or higher, AND Toast Online Ordering (both appear on the Client's Toast Subscriptions page). Client grants read-only Toast API access; the app never writes to Toast. Ordering in the app is the Client's own Toast Online Ordering hosted inside the app — Toast processes payment and fulfills; AInovations never handles orders or payment.
 - Client adds AInovations-written promo codes in Toast Web (single-use per guest, tracked by phone).
 - Client prints insert cards from AInovations artwork.
 - Client must be an LLC or corporation with a D-U-N-S number (eligibility requirement, decided 2026-09-19). Client enrolls in the Apple Developer Program as an Organization and Google Play as an Organization account in its legal-entity name; no DBAs; sole proprietors are not eligible until they form an entity. Client's Account Holder invites AInovations as an App Manager (with Certificates access) and issues a team App Store Connect API key; AInovations is an authorized developer on the Client's team under this agreement, never a submitting service provider.

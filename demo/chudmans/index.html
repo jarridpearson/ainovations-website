@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow,noarchive" />
+<title>Mockup — Chudman's Audio Arsenal | Prepared by AInovations</title>
+<style>
+:root{
+  --bg:#0c0f14; --panel:#151a22; --panel2:#1d232d; --line:rgba(255,255,255,.10);
+  --txt:#eef2f7; --mut:#8e9bad; --amber:#ff9f1c; --amber-d:#c26f00;
+  --grn:#3ddc84; --red:#ff5d5d; --blu:#4aa8ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:#07090d;color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+ min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.mockbar{position:sticky;top:0;z-index:99;width:100%;background:#ff9f1c;color:#241600;
+ font-size:12.5px;font-weight:800;text-align:center;padding:8px 12px;line-height:1.45}
+.wrap{width:100%;display:flex;flex-direction:column;align-items:center;padding:18px 12px 40px}
+.caption{max-width:430px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.6;margin:0 0 16px}
+
+.phone{width:min(390px,100%);border:1px solid var(--line);border-radius:38px;background:var(--bg);
+ overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.65);display:flex;flex-direction:column;height:772px;max-height:84vh}
+.status{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 6px;font-size:12px;color:var(--mut);font-weight:700}
+.appbar{display:flex;align-items:center;gap:10px;padding:4px 18px 12px;border-bottom:1px solid var(--line)}
+.logo{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--amber),var(--amber-d));
+ display:grid;place-items:center;font-size:17px;flex:0 0 auto}
+.appbar h1{margin:0;font-size:16px;letter-spacing:-.02em;font-weight:900;line-height:1.15}
+.appbar .sub{margin:2px 0 0;font-size:10.5px;color:var(--mut);font-weight:700}
+.screen{flex:1;overflow-y:auto;padding:16px 16px 26px}
+.screen::-webkit-scrollbar{width:0}
+
+.k{font-size:10.5px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin:0 0 9px}
+h2.big{margin:0 0 6px;font-size:22px;line-height:1.15;letter-spacing:-.03em}
+h2.big .a{color:var(--amber)}
+p.lede{margin:0 0 16px;color:var(--mut);font-size:13.5px;line-height:1.55}
+
+label.fl{display:block;font-size:10.5px;font-weight:900;letter-spacing:.07em;color:var(--mut);margin:0 0 5px;text-transform:uppercase}
+select,.fake{width:100%;font-family:inherit;font-size:15px;font-weight:700;padding:13px 14px;border-radius:12px;
+ background:var(--panel);color:var(--txt);border:1px solid var(--line);margin-bottom:12px;appearance:none;
+ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%238e9bad' stroke-width='2' fill='none'/></svg>");
+ background-repeat:no-repeat;background-position:right 14px center}
+select:disabled{opacity:.4}
+select:focus{outline:2px solid var(--amber);border-color:var(--amber)}
+.btn{display:block;width:100%;border:0;border-radius:13px;padding:15px;font-family:inherit;font-size:15.5px;
+ font-weight:900;cursor:pointer;background:var(--amber);color:#241600;margin-top:4px}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.sec{background:rgba(255,255,255,.07);color:var(--txt);border:1px solid var(--line)}
+.btn:active:not(:disabled){transform:scale(.985)}
+
+.res{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:16px;margin-bottom:12px}
+.res .veh{font-size:16.5px;font-weight:900;letter-spacing:-.02em}
+.res .tag{display:inline-block;margin-top:7px;padding:4px 10px;border-radius:99px;font-size:10.5px;font-weight:900;letter-spacing:.05em}
+.tag.push{background:rgba(74,168,255,.16);color:var(--blu)}
+.tag.key{background:rgba(61,220,132,.15);color:var(--grn)}
+.tag.man{background:rgba(255,93,93,.15);color:var(--red)}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.row:last-child{border-bottom:0}
+.row .l{color:var(--mut)}
+.row .v{font-weight:800}
+.price{margin-top:12px;padding:15px;border-radius:14px;background:linear-gradient(135deg,rgba(255,159,28,.16),rgba(255,159,28,.05));
+ border:1.5px solid rgba(255,159,28,.45);text-align:center}
+.price .lbl{font-size:10.5px;font-weight:900;letter-spacing:.09em;color:#ffcd8a}
+.price .amt{font-size:34px;font-weight:900;letter-spacing:-.04em;color:var(--amber);line-height:1.1;margin:3px 0 2px}
+.price .note{font-size:11.5px;color:#d8c6a8;line-height:1.45}
+.why{margin-top:12px;font-size:12.5px;color:var(--mut);line-height:1.6}
+.why b{color:var(--txt)}
+
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
+.slot{border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:10px 4px;text-align:center;cursor:pointer}
+.slot .d{font-size:10px;font-weight:900;color:var(--mut);letter-spacing:.05em}
+.slot .t{font-size:13.5px;font-weight:850;margin-top:3px}
+.slot.on{border-color:var(--amber);background:rgba(255,159,28,.13)}
+.slot.gone{opacity:.32;cursor:default}
+.slot.gone .t{text-decoration:line-through}
+
+.exnote{margin-top:14px;padding:11px 13px;border-radius:11px;border:1px solid rgba(255,159,28,.4);
+ background:rgba(255,159,28,.08);font-size:11.5px;color:#e6cfa8;line-height:1.55}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:200;background:#eef2f7;color:#0c0f14;
+ padding:12px 17px;border-radius:12px;font-size:13px;font-weight:800;box-shadow:0 14px 40px rgba(0,0,0,.6);
+ opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:86vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.legend{max-width:430px;margin:18px auto 0;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.035)}
+.legend h4{margin:0 0 8px;font-size:13px;color:var(--amber);letter-spacing:.03em}
+.legend p{margin:0 0 8px;font-size:12.5px;color:var(--mut);line-height:1.6}
+.legend p:last-child{margin-bottom:0}
+.back{background:none;border:0;color:var(--mut);font-family:inherit;font-size:13px;font-weight:800;
+ padding:0 0 12px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <b>MOCKUP — not a real website.</b> Built by AInovations to show Paul what this could do. Prices and openings below are placeholders, not Chudman's real numbers.
+</div>
+
+<div class="wrap">
+  <p class="caption">Pick a vehicle. The tool works out what that car actually needs — and that's the part no shop around here has.</p>
+
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>Chudman's</span><span>100%</span></div>
+    <div class="appbar">
+      <div class="logo">🔊</div>
+      <div>
+        <h1>Chudman's Audio Arsenal</h1>
+        <p class="sub">25600 NY-342, Evans Mills · Open until 6</p>
+      </div>
+    </div>
+    <div class="screen" id="screen"></div>
+  </div>
+
+  <div class="legend">
+    <h4>Why this is the whole pitch</h4>
+    <p><b>Nobody else has it.</b> I checked nine car audio shops across Syracuse, Watertown and Oswego. Zero publish a remote-start price. Two let you pick your vehicle. One takes a booking.</p>
+    <p><b>Because a price list genuinely can't work here.</b> The job changes with the car — push-to-start versus key, manual versus automatic, whether it needs a bypass module. That's exactly why a tool beats a page of numbers.</p>
+    <p><b>It answers the call he's about to take 40 times a day.</b> "What do you drive?" is most of his October. This does it for free, and whoever books has already seen the price.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var VEH = {
+  "Chevrolet": {"Silverado 1500":{ps:2019},"Equinox":{ps:2018},"Malibu":{ps:2016},"Trax":{ps:2024},"Colorado":{ps:2023}},
+  "Ford":      {"F-150":{ps:2015},"Escape":{ps:2020},"Explorer":{ps:2020},"Ranger":{ps:2019},"Bronco Sport":{ps:2021}},
+  "GMC":       {"Sierra 1500":{ps:2019},"Terrain":{ps:2018},"Acadia":{ps:2017}},
+  "Ram":       {"1500":{ps:2019},"2500":{ps:2019}},
+  "Toyota":    {"Tacoma":{ps:2016},"Tundra":{ps:2022},"RAV4":{ps:2019},"Corolla":{ps:2020},"4Runner":{ps:2030}},
+  "Jeep":      {"Wrangler":{ps:2018,man:true},"Grand Cherokee":{ps:2014},"Gladiator":{ps:2020,man:true}},
+  "Subaru":    {"Outback":{ps:2020},"Forester":{ps:2019},"WRX":{ps:2099,man:true},"Crosstrek":{ps:2021}},
+  "Honda":     {"Civic":{ps:2016,man:true},"CR-V":{ps:2017},"Accord":{ps:2018}},
+  "Nissan":    {"Frontier":{ps:2022},"Rogue":{ps:2017},"Altima":{ps:2019}},
+  "Dodge":     {"Charger":{ps:2015},"Durango":{ps:2014}}
+};
+var YEARS=[]; for(var y=2025;y>=2012;y--) YEARS.push(y);
+var sel={year:"",make:"",model:"",trans:""};
+var slot=null;
+
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show')},2400);}
+
+function opt(list,cur,ph){
+  return '<option value="">'+ph+'</option>'+list.map(function(v){
+    return '<option'+(String(v)===String(cur)?' selected':'')+'>'+v+'</option>';}).join('');
+}
+
+function pickScreen(){
+  var makes=Object.keys(VEH);
+  var models=sel.make?Object.keys(VEH[sel.make]):[];
+  var ready=sel.year&&sel.make&&sel.model&&sel.trans;
+  return `
+    <p class="k">Remote start</p>
+    <h2 class="big">Will it work on <span class="a">your</span> vehicle?</h2>
+    <p class="lede">Tell us what you drive. We'll tell you exactly what your vehicle needs and what it costs installed — before you call.</p>
+
+    <label class="fl">Year</label>
+    <select id="s-year" onchange="setF('year',this.value)">${opt(YEARS,sel.year,'Select year')}</select>
+
+    <label class="fl">Make</label>
+    <select id="s-make" onchange="setF('make',this.value)" ${sel.year?'':'disabled'}>${opt(makes,sel.make,'Select make')}</select>
+
+    <label class="fl">Model</label>
+    <select id="s-model" onchange="setF('model',this.value)" ${sel.make?'':'disabled'}>${opt(models,sel.model,'Select model')}</select>
+
+    <label class="fl">Transmission</label>
+    <select id="s-trans" onchange="setF('trans',this.value)" ${sel.model?'':'disabled'}>${opt(['Automatic','Manual'],sel.trans,'Select transmission')}</select>
+
+    <button class="btn" ${ready?'':'disabled'} onclick="go('result')">See what mine needs →</button>
+    <div class="exnote">This is the part nobody else around here has. Every other shop's answer to "will it fit my truck" is "give us a call."</div>
+  `;
+}
+
+function evaluate(){
+  var m=VEH[sel.make][sel.model]||{};
+  var yr=parseInt(sel.year,10);
+  var push = yr >= (m.ps||9999);
+  var manual = sel.trans==="Manual";
+  var bypass = yr >= 2000;
+  var lo,hi;
+  if(manual){ lo=0;hi=0; }
+  else if(push){ lo=529; hi=679; }
+  else { lo=399; hi=529; }
+  return {push:push,manual:manual,bypass:bypass,lo:lo,hi:hi,m:m};
+}
+
+function resultScreen(){
+  var a=evaluate();
+  var veh=sel.year+" "+sel.make+" "+sel.model;
+  if(a.manual){
+    return `
+    <button class="back" onclick="go('pick')">← Change vehicle</button>
+    <div class="res">
+      <div class="veh">${veh}</div>
+      <span class="tag man">MANUAL TRANSMISSION</span>
+      <div class="why" style="margin-top:12px">
+        <b>This one we'd want to talk about in person.</b> Remote start on a manual is possible, but it takes a
+        reservation procedure and some extra safety hardware, and plenty of shops won't touch it at all.
+        We're not going to quote you a number online for a job that depends on how you park it.
+      </div>
+    </div>
+    <button class="btn" onclick="toast('Demo only — nothing sent')">Call the shop about this</button>
+    <div class="exnote">Being straight about the awkward ones builds more trust than a price would. It also stops a
+    bad install turning into a bad review.</div>`;
+  }
+  return `
+    <button class="back" onclick="go('pick')">← Change vehicle</button>
+    <div class="res">
+      <div class="veh">${veh}</div>
+      <span class="tag ${a.push?'push':'key'}">${a.push?'PUSH-TO-START':'KEY IGNITION'}</span>
+      <div style="margin-top:12px">
+        <div class="row"><span class="l">Remote start unit</span><span class="v">Included</span></div>
+        <div class="row"><span class="l">Bypass module</span><span class="v">${a.bypass?'Required':'Not needed'}</span></div>
+        <div class="row"><span class="l">Range</span><span class="v">Up to 1 mile</span></div>
+        <div class="row"><span class="l">Shop time</span><span class="v">${a.push?'3–4 hours':'2–3 hours'}</span></div>
+      </div>
+      <div class="price">
+        <div class="lbl">INSTALLED, OUT THE DOOR</div>
+        <div class="amt">$${a.lo}–$${a.hi}</div>
+        <div class="note">Parts, labor and programming. No surprises at pickup.</div>
+      </div>
+      <div class="why">
+        <b>Why the range?</b> ${a.push
+          ? 'Push-to-start vehicles need a bypass module programmed to your key, which is more parts and more bench time than a key-ignition truck.'
+          : 'Key-ignition vehicles are the simpler install. The spread is mostly which remote you pick — one-way versus a two-way that confirms it started.'}
+      </div>
+    </div>
+    <button class="btn" onclick="go('book')">Book my install →</button>
+    <div class="exnote">Prices shown are placeholders for this mockup. Paul sets the real numbers — the tool just does the math per vehicle.</div>
+  `;
+}
+
+var SLOTS=[
+  {d:"TUE",t:"9:00",gone:true},{d:"TUE",t:"1:00",gone:false},{d:"WED",t:"9:00",gone:false},
+  {d:"WED",t:"1:00",gone:true},{d:"THU",t:"9:00",gone:false},{d:"THU",t:"1:00",gone:false},
+  {d:"FRI",t:"9:00",gone:true},{d:"FRI",t:"1:00",gone:false},{d:"SAT",t:"10:00",gone:false}
+];
+function bookScreen(){
+  var a=evaluate();
+  return `
+    <button class="back" onclick="go('result')">← Back</button>
+    <p class="k">Pick a bay</p>
+    <h2 class="big">When can you leave it <span class="a">a few hours?</span></h2>
+    <p class="lede">${sel.year} ${sel.make} ${sel.model} · about ${a.push?'3–4':'2–3'} hours in the shop.</p>
+    <div class="slots">
+      ${SLOTS.map(function(s,i){
+        return '<div class="slot '+(s.gone?'gone':'')+(slot===i?' on':'')+'" '+
+          (s.gone?'':'onclick="pickSlot('+i+')"')+'><div class="d">'+s.d+'</div><div class="t">'+s.t+'</div></div>';
+      }).join('')}
+    </div>
+    <button class="btn" ${slot===null?'disabled':''} onclick="toast('Demo only — no booking made')">
+      ${slot===null?'Pick a time':'Request this time'}</button>
+    <div class="exnote">Crossed-out slots are already taken. In October that grid filling up in front of somebody
+    does more selling than any amount of copy — and it's honest, because it's his real calendar.</div>
+  `;
+}
+
+function setF(k,v){
+  sel[k]=v;
+  if(k==='year'){sel.make='';sel.model='';sel.trans='';}
+  if(k==='make'){sel.model='';sel.trans='';}
+  if(k==='model'){sel.trans='';}
+  go('pick');
+}
+function pickSlot(i){slot=i;go('book');}
+var S={pick:pickScreen,result:resultScreen,book:bookScreen};
+function go(s){document.getElementById('screen').innerHTML=S[s]();document.getElementById('screen').scrollTop=0;}
+go('pick');
+</script>
+</body>
+</html>
