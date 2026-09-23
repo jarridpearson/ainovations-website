@@ -283,15 +283,19 @@ function pickClientFields(input) {
 async function handleAction(action, payload, user) {
   switch (action) {
     case 'bootstrap': {
-      const [clients, openInvoices, prospectCount] = await Promise.all([
+      const [clients, openInvoices, allProspects] = await Promise.all([
         db('crm_clients?select=*&order=created_at.desc'),
         db('crm_invoices?select=stripe_invoice_id,client_id,number,status,amount_due_cents,due_date&status=in.(open,draft,uncollectible)&order=created_at.desc'),
-        db('prospects?select=id&status=not.in.(converted)&limit=1000'),
+        db('prospects?select=id&limit=2000'),
       ]);
+      // "Waiting" means not yet pulled into the CRM, so discount the converted ones.
+      const converted = new Set(
+        clients.map((c) => c.prospect_id).filter(Boolean),
+      );
       return {
         clients,
         openInvoices,
-        prospectCount: prospectCount.length,
+        prospectCount: allProspects.filter((p) => !converted.has(p.id)).length,
         stripeConfigured: !!STRIPE_KEY,
         user: user.email,
       };
