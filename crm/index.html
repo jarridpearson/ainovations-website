@@ -793,12 +793,14 @@ function renderMoneyStats() {
   const owed = exp.filter((e) => e.billable && !e.reimbursed)
     .reduce((s, e) => s + (e.amount_cents || 0), 0);
 
+  // Exact cents here — these are tax figures, and a rounded tile that disagrees
+  // with the table's own total is worse than useless.
   $('moneyStats').innerHTML = [
-    [`Expenses ${moneyYear}`, money0(spent), 'accent'],
+    [`Expenses ${moneyYear}`, money(spent), 'accent'],
     ['Miles driven', miles.toLocaleString('en-US', { maximumFractionDigits: 1 }), ''],
-    ['Mileage value', money0(mileageValue), 'accent'],
-    ['Deductible total', money0(spent + mileageValue), ''],
-    ['Billable, unreimbursed', money0(owed), owed ? 'accent' : ''],
+    ['Mileage value', money(mileageValue), 'accent'],
+    ['Deductible total', money(spent + mileageValue), ''],
+    ['Billable, unreimbursed', money(owed), owed ? 'accent' : ''],
     ['Missing receipts', exp.filter((e) => !e.receipt_path).length, ''],
   ].map(([label, value, cls]) =>
     `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
