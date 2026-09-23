@@ -329,8 +329,16 @@ const money = (cents) => cents == null ? '—'
   : '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money0 = (cents) => cents == null ? '—'
   : '$' + Math.round(cents / 100).toLocaleString('en-US');
-const date = (iso) => !iso ? '—'
-  : new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+// A bare YYYY-MM-DD parses as UTC midnight, which renders as the previous day
+// anywhere west of Greenwich. Build those as local dates instead.
+const date = (iso) => {
+  if (!iso) return '—';
+  const bare = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const d = bare
+    ? new Date(Number(bare[1]), Number(bare[2]) - 1, Number(bare[3]))
+    : new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 const datetime = (iso) => !iso ? '—'
   : new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -437,7 +445,7 @@ function renderStats() {
   const mrr = active.reduce((sum, c) => sum + (c.mrr_cents || 0), 0);
   const pipeline = cs.filter((c) => ['lead', 'contacted', 'proposal', 'won'].includes(c.status)).length;
   const outstanding = state.openInvoices.reduce((s, i) => s + (i.amount_due_cents || 0), 0);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const due = cs.filter((c) => c.next_action_due && c.next_action_due <= today).length;
 
   $('stats').innerHTML = [
@@ -703,7 +711,12 @@ let moneyTab = 'expenses';
 let moneyYear = new Date().getFullYear();
 let moneyData = null;
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// Local calendar date — toISOString() would roll over to tomorrow after 8pm EDT.
+const todayISO = () => {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 async function loadMoney() {
   $('moneyBody').innerHTML = '<div class="empty">Loading…</div>';
