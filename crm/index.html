@@ -53,6 +53,7 @@ a{color:var(--teal-soft)}
 .stat b{display:block;font-size:24px;line-height:1.15;letter-spacing:-.01em}
 .stat small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.07em}
 .stat.accent b{color:var(--teal)}
+.stat .basis{display:block;margin-top:5px;font-style:normal;font-size:10.5px;color:var(--muted);line-height:1.35}
 
 /* ---------- layout ---------- */
 .cols{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
@@ -462,12 +463,15 @@ function renderStats() {
 
   const collected = state.collectedCents || 0;
 
-  // Projected end-of-year = what is already banked, plus current MRR for each
-  // whole month left in the year. It deliberately assumes no new clients and
-  // no churn — it is a run-rate, not a forecast.
+  // Projected end-of-year, counted so nothing is dropped or double-counted:
+  //   already banked  +  invoiced but not yet paid  +  months still to bill.
+  // The current month is NOT in the multiplier because it has already been
+  // invoiced — it is sitting in `outstanding` until it clears.
   const now = new Date();
-  const monthsLeft = 11 - now.getMonth();
-  const projectedEoy = collected + mrr * monthsLeft;
+  const monthsToBill = 11 - now.getMonth();          // Oct, Nov, Dec = 3
+  const projectedEoy = collected + outstanding + mrr * monthsToBill;
+  const eoyBasis = `$${(collected / 100).toFixed(0)} collected + $${(outstanding / 100).toFixed(0)} `
+    + `outstanding + ${monthsToBill} mo x $${(mrr / 100).toFixed(0)}`;
 
   // Pipeline value is the MRR already attached to clients that have not closed.
   const pipelineValue = cs
@@ -475,17 +479,20 @@ function renderStats() {
     .reduce((s, c) => s + (c.mrr_cents || 0), 0);
 
   $('stats').innerHTML = [
-    ['Collected to date', money0(collected), 'accent'],
-    [`Projected EOY (${monthsLeft} mo left)`, money0(projectedEoy), 'accent'],
-    ['Monthly recurring', money0(mrr), ''],
-    ['Pipeline value', money0(pipelineValue), pipelineValue ? 'accent' : ''],
-    ['Active clients', active.length, ''],
-    ['In pipeline', pipeline, ''],
-    ['Outstanding', money0(outstanding), outstanding > 0 ? 'accent' : ''],
-    ['Actions due', due, ''],
-    ['Prospects waiting', state.prospectCount, ''],
-  ].map(([label, value, cls]) =>
-    `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
+    ['Collected to date', money0(collected), 'accent', ''],
+    ['Projected EOY', money0(projectedEoy), 'accent', eoyBasis],
+    ['Monthly recurring', money0(mrr), '', ''],
+    ['Pipeline value', money0(pipelineValue), pipelineValue ? 'accent' : '', ''],
+    ['Active clients', active.length, '', ''],
+    ['In pipeline', pipeline, '', ''],
+    ['Outstanding', money0(outstanding), outstanding > 0 ? 'accent' : '', ''],
+    ['Actions due', due, '', ''],
+    ['Prospects waiting', state.prospectCount, '', ''],
+  ].map(([label, value, cls, hint]) =>
+    `<div class="stat ${cls}"${hint ? ` title="${esc(hint)}"` : ''}>
+       <b>${esc(value)}</b><small>${esc(label)}</small>
+       ${hint ? `<em class="basis">${esc(hint)}</em>` : ''}
+     </div>`).join('');
 }
 
 function visibleClients() {
