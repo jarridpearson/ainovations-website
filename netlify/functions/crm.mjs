@@ -343,9 +343,10 @@ const money = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 async function handleAction(action, payload, user) {
   switch (action) {
     case 'bootstrap': {
-      const [clients, openInvoices, allProspects] = await Promise.all([
+      const [clients, openInvoices, paidInvoices, allProspects] = await Promise.all([
         db('crm_clients?select=*&order=created_at.desc'),
         db('crm_invoices?select=stripe_invoice_id,client_id,number,status,amount_due_cents,due_date&status=in.(open,draft,uncollectible)&order=created_at.desc'),
+        db('crm_invoices?select=client_id,amount_paid_cents,paid_at&amount_paid_cents=gt.0&order=paid_at.asc'),
         db('prospects?select=id&limit=2000'),
       ]);
       // "Waiting" means not yet pulled into the CRM, so discount the converted ones.
@@ -355,6 +356,9 @@ async function handleAction(action, payload, user) {
       return {
         clients,
         openInvoices,
+        // Every dollar Stripe has actually collected, all time.
+        collectedCents: paidInvoices.reduce((s, i) => s + (i.amount_paid_cents || 0), 0),
+        firstPaymentAt: paidInvoices[0]?.paid_at || null,
         prospectCount: allProspects.filter((p) => !converted.has(p.id)).length,
         stripeConfigured: !!STRIPE_KEY,
         user: user.email,

@@ -460,9 +460,26 @@ function renderStats() {
   const today = todayISO();
   const due = cs.filter((c) => c.next_action_due && c.next_action_due <= today).length;
 
+  const collected = state.collectedCents || 0;
+
+  // Projected end-of-year = what is already banked, plus current MRR for each
+  // whole month left in the year. It deliberately assumes no new clients and
+  // no churn — it is a run-rate, not a forecast.
+  const now = new Date();
+  const monthsLeft = 11 - now.getMonth();
+  const projectedEoy = collected + mrr * monthsLeft;
+
+  // Pipeline value is the MRR already attached to clients that have not closed.
+  const pipelineValue = cs
+    .filter((c) => ['lead', 'contacted', 'proposal', 'won'].includes(c.status))
+    .reduce((s, c) => s + (c.mrr_cents || 0), 0);
+
   $('stats').innerHTML = [
+    ['Collected to date', money0(collected), 'accent'],
+    [`Projected EOY (${monthsLeft} mo left)`, money0(projectedEoy), 'accent'],
+    ['Monthly recurring', money0(mrr), ''],
+    ['Pipeline value', money0(pipelineValue), pipelineValue ? 'accent' : ''],
     ['Active clients', active.length, ''],
-    ['Monthly recurring', money0(mrr), 'accent'],
     ['In pipeline', pipeline, ''],
     ['Outstanding', money0(outstanding), outstanding > 0 ? 'accent' : ''],
     ['Actions due', due, ''],
