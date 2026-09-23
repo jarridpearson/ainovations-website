@@ -208,6 +208,12 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
 .entry .check label{text-transform:none;letter-spacing:0;font-size:13px;color:var(--text)}
 .entry .go{align-self:end}
 .entry .go .btn{width:100%;padding:9px}
+.entry input[type=file]{padding:6px 8px;font-size:12px}
+.entry input[type=file]::file-selector-button{
+  background:var(--panel-2);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:3px 8px;margin-right:8px;font-size:12px;cursor:pointer;
+}
+.btn.rcpt{border-color:rgba(29,200,198,.45);color:var(--teal-soft)}
 
 .rate-note{color:var(--muted);font-size:12px;margin:-8px 0 16px}
 .rate-note b{color:var(--amber)}
@@ -715,6 +721,15 @@ let moneyTab = 'expenses';
 let moneyYear = new Date().getFullYear();
 let moneyData = null;
 
+function readBase64(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1]);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
 // Local calendar date — toISOString() would roll over to tomorrow after 8pm EDT.
 const todayISO = () => {
   const d = new Date();
@@ -796,6 +811,8 @@ function renderExpenses() {
         PAY_METHODS.map((p) => `<option value="${esc(p)}">${esc(p || '—')}</option>`).join('')}</select></div>
       <div class="f"><label>Client</label><select id="eClient">${clientOptions('')}</select></div>
       <div class="f"><label>Description</label><input id="eDesc" placeholder="What it was for"></div>
+      <div class="f"><label for="eFile">Receipt</label>
+        <input id="eFile" type="file" accept="image/png,image/jpeg,image/webp,application/pdf"></div>
       <div class="f check"><input id="eBill" type="checkbox"><label for="eBill">Bill to client</label></div>
       <div class="f go"><button class="btn primary" id="eAdd">Add expense</button></div>
     </div>
@@ -811,9 +828,9 @@ function renderExpenses() {
         <td>${esc(e.payment_method || '—')}</td>
         <td class="num">${esc(money(e.amount_cents))}</td>
         <td>${e.receipt_path
-          ? `<button class="btn sm" data-rcpt="${esc(e.receipt_path)}">View</button>`
-          : `<label class="btn sm ghost upl">Attach<input type="file" hidden data-upl="${e.id}"
-               accept="image/png,image/jpeg,image/webp,application/pdf"></label>`}</td>
+          ? `<button class="btn sm rcpt" data-rcpt="${esc(e.receipt_path)}">View receipt</button>`
+          : `<label class="btn sm ghost upl" title="No receipt on this one yet">Attach<input type="file" hidden
+               data-upl="${e.id}" accept="image/png,image/jpeg,image/webp,application/pdf"></label>`}</td>
         <td>${e.billable ? (e.reimbursed
           ? '<span class="pill paid">reimbursed</span>'
           : `<button class="btn sm" data-reimb="${e.id}">Mark reimbursed</button>`) : '—'}</td>
@@ -825,21 +842,49 @@ function renderExpenses() {
     </table>` : '<div class="empty">No expenses logged for this year yet.</div>'}</div>`;
 
   $('eAdd').addEventListener('click', async () => {
+    const btn = $('eAdd');
     const dollars = Number($('eAmt').value);
     if (!$('eVendor').value.trim()) return toast('Vendor is required.', true);
     if (!Number.isFinite(dollars) || dollars <= 0) return toast('Enter an amount.', true);
-    await api('add_expense', {
-      spent_on: $('eDate').value,
-      vendor: $('eVendor').value,
-      category: $('eCat').value,
-      amount_cents: Math.round(dollars * 100),
-      payment_method: $('ePay').value,
-      client_id: $('eClient').value || null,
-      description: $('eDesc').value,
-      billable: $('eBill').checked,
-    });
-    toast('Expense logged.');
-    await loadMoney();
+    const file = $('eFile').files?.[0] || null;
+    if (file && file.size > 25 * 1024 * 1024) return toast('That receipt is over 25MB.', true);
+
+    btn.disabled = true;
+    btn.textContent = file ? 'Saving + uploading…' : 'Saving…';
+    try {
+      const { expense } = await api('add_expense', {
+        spent_on: $('eDate').value,
+        vendor: $('eVendor').value,
+        category: $('eCat').value,
+        amount_cents: Math.round(dollars * 100),
+        payment_method: $('ePay').value,
+        client_id: $('eClient').value || null,
+        description: $('eDesc').value,
+        billable: $('eBill').checked,
+      });
+
+      if (file) {
+        // The row exists now, so a failed upload leaves the expense intact
+        // rather than losing what was typed.
+        try {
+          await api('upload_receipt', {
+            expense_id: expense.id,
+            filename: file.name,
+            content_type: file.type,
+            data_base64: await readBase64(file),
+          });
+          toast(`Expense logged with ${file.name}.`);
+        } catch (err) {
+          toast(`Expense saved, but the receipt did not upload: ${err.message}`, true);
+        }
+      } else {
+        toast('Expense logged — no receipt attached.');
+      }
+      await loadMoney();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Add expense';
+    }
   });
 
   $('moneyBody').querySelectorAll('[data-delx]').forEach((el) =>
@@ -869,17 +914,11 @@ function renderExpenses() {
       if (!file) return;
       if (file.size > 25 * 1024 * 1024) return toast('That file is over 25MB.', true);
       toast(`Uploading ${file.name}…`);
-      const data_base64 = await new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(String(fr.result).split(',')[1]);
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
       await api('upload_receipt', {
         expense_id: el.dataset.upl,
         filename: file.name,
         content_type: file.type,
-        data_base64,
+        data_base64: await readBase64(file),
       });
       toast('Receipt attached.');
       await loadMoney();
