@@ -302,6 +302,9 @@ const CLIENT_FIELDS = [
   'business_name', 'contact_name', 'email', 'phone', 'website', 'town', 'state',
   'status', 'product', 'plan', 'term', 'stripe_customer_id',
   'source', 'next_action', 'next_action_due',
+  // Settable by hand for clients that have not started billing yet — a
+  // proposal priced from a quote is what gives the pipeline a value.
+  'mrr_cents',
 ];
 
 const EXPENSE_FIELDS = [
@@ -317,7 +320,7 @@ const MILEAGE_FIELDS = [
   'rate_cents', 'round_trip', 'client_id', 'notes',
 ];
 
-const NUMERIC_FIELDS = new Set(['amount_cents', 'miles', 'rate_cents']);
+const NUMERIC_FIELDS = new Set(['amount_cents', 'miles', 'rate_cents', 'mrr_cents']);
 const BOOLEAN_FIELDS = new Set(['billable', 'reimbursed', 'round_trip']);
 
 function pickFields(input, allowed) {
@@ -330,7 +333,8 @@ function pickFields(input, allowed) {
     if (NUMERIC_FIELDS.has(f)) {
       const n = Number(v);
       if (!Number.isFinite(n)) continue;
-      out[f] = f === 'amount_cents' ? Math.round(n) : n;
+      // Cent columns are integers; miles and rate keep their decimals.
+      out[f] = (f === 'amount_cents' || f === 'mrr_cents') ? Math.round(n) : n;
       continue;
     }
     if (BOOLEAN_FIELDS.has(f)) { out[f] = !!v; continue; }
