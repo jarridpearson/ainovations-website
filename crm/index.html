@@ -444,7 +444,11 @@ function renderStats() {
   const active = cs.filter((c) => c.status === 'active');
   const mrr = active.reduce((sum, c) => sum + (c.mrr_cents || 0), 0);
   const pipeline = cs.filter((c) => ['lead', 'contacted', 'proposal', 'won'].includes(c.status)).length;
-  const outstanding = state.openInvoices.reduce((s, i) => s + (i.amount_due_cents || 0), 0);
+  // Only count what a real client owes. Invoices whose customer was removed
+  // from the CRM are not receivable and would inflate this badly.
+  const outstanding = state.openInvoices
+    .filter((i) => i.client_id)
+    .reduce((s, i) => s + (i.amount_due_cents || 0), 0);
   const today = todayISO();
   const due = cs.filter((c) => c.next_action_due && c.next_action_due <= today).length;
 
@@ -754,7 +758,7 @@ function renderMoneyStats() {
     ['Mileage value', money0(mileageValue), 'accent'],
     ['Deductible total', money0(spent + mileageValue), ''],
     ['Billable, unreimbursed', money0(owed), owed ? 'accent' : ''],
-    ['Entries', exp.length + trips.length, ''],
+    ['Missing receipts', exp.filter((e) => !e.receipt_path).length, ''],
   ].map(([label, value, cls]) =>
     `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
 }
@@ -798,7 +802,7 @@ function renderExpenses() {
 
     <div class="scroll-x">${rows.length ? `<table class="tbl">
       <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Client</th><th>Paid by</th>
-        <th class="num">Amount</th><th>Billable</th><th></th></tr></thead>
+        <th class="num">Amount</th><th>Receipt</th><th>Billable</th><th></th></tr></thead>
       <tbody>${rows.map((e) => `<tr>
         <td>${esc(date(e.spent_on))}</td>
         <td>${esc(e.vendor)}${e.description ? `<br><small style="color:var(--muted)">${esc(e.description)}</small>` : ''}</td>
@@ -806,13 +810,18 @@ function renderExpenses() {
         <td>${esc(clientName(e.client_id))}</td>
         <td>${esc(e.payment_method || '—')}</td>
         <td class="num">${esc(money(e.amount_cents))}</td>
+        <td>${e.receipt_path
+          ? `<button class="btn sm" data-rcpt="${esc(e.receipt_path)}">View</button>`
+          : `<label class="btn sm ghost upl">Attach<input type="file" hidden data-upl="${e.id}"
+               accept="image/png,image/jpeg,image/webp,application/pdf"></label>`}</td>
         <td>${e.billable ? (e.reimbursed
           ? '<span class="pill paid">reimbursed</span>'
           : `<button class="btn sm" data-reimb="${e.id}">Mark reimbursed</button>`) : '—'}</td>
         <td><button class="btn sm ghost danger" data-delx="${e.id}">Delete</button></td>
       </tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="5">${rows.length} expense${rows.length === 1 ? '' : 's'} in ${moneyYear}</td>
-        <td class="num tot">${esc(money(total))}</td><td colspan="2"></td></tr></tfoot>
+      <tfoot><tr><td colspan="5">${rows.length} expense${rows.length === 1 ? '' : 's'} in ${moneyYear}
+        · ${rows.filter((e) => e.receipt_path).length} of ${rows.length} with a receipt</td>
+        <td class="num tot">${esc(money(total))}</td><td colspan="3"></td></tr></tfoot>
     </table>` : '<div class="empty">No expenses logged for this year yet.</div>'}</div>`;
 
   $('eAdd').addEventListener('click', async () => {
@@ -844,6 +853,35 @@ function renderExpenses() {
     el.addEventListener('click', async () => {
       await api('save_expense', { id: el.dataset.reimb, reimbursed: true });
       toast('Marked reimbursed.');
+      await loadMoney();
+    }));
+
+  // Receipts are private; ask the server for a short-lived signed link.
+  $('moneyBody').querySelectorAll('[data-rcpt]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      const { url } = await api('receipt_url', { path: el.dataset.rcpt });
+      window.open(url, '_blank', 'noopener');
+    }));
+
+  $('moneyBody').querySelectorAll('[data-upl]').forEach((el) =>
+    el.addEventListener('change', async () => {
+      const file = el.files?.[0];
+      if (!file) return;
+      if (file.size > 25 * 1024 * 1024) return toast('That file is over 25MB.', true);
+      toast(`Uploading ${file.name}…`);
+      const data_base64 = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result).split(',')[1]);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+      await api('upload_receipt', {
+        expense_id: el.dataset.upl,
+        filename: file.name,
+        content_type: file.type,
+        data_base64,
+      });
+      toast('Receipt attached.');
       await loadMoney();
     }));
 }
