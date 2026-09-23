@@ -214,6 +214,8 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
   border-radius:6px;padding:3px 8px;margin-right:8px;font-size:12px;cursor:pointer;
 }
 .btn.rcpt{border-color:rgba(29,200,198,.45);color:var(--teal-soft)}
+.rcell{white-space:nowrap}
+.rcell .btn,.rcell label{margin-right:4px}
 
 .rate-note{color:var(--muted);font-size:12px;margin:-8px 0 16px}
 .rate-note b{color:var(--amber)}
@@ -827,8 +829,11 @@ function renderExpenses() {
         <td>${esc(clientName(e.client_id))}</td>
         <td>${esc(e.payment_method || '—')}</td>
         <td class="num">${esc(money(e.amount_cents))}</td>
-        <td>${e.receipt_path
-          ? `<button class="btn sm rcpt" data-rcpt="${esc(e.receipt_path)}">View receipt</button>`
+        <td class="rcell">${e.receipt_path
+          ? `<button class="btn sm rcpt" data-rcpt="${esc(e.receipt_path)}">View receipt</button>
+             <label class="btn sm ghost" title="Swap in a different file">Replace<input type="file" hidden
+               data-upl="${e.id}" accept="image/png,image/jpeg,image/webp,application/pdf"></label>
+             <button class="btn sm ghost danger" data-rmrcpt="${e.id}" title="Remove this receipt">Remove</button>`
           : `<label class="btn sm ghost upl" title="No receipt on this one yet">Attach<input type="file" hidden
                data-upl="${e.id}" accept="image/png,image/jpeg,image/webp,application/pdf"></label>`}</td>
         <td>${e.billable ? (e.reimbursed
@@ -906,6 +911,14 @@ function renderExpenses() {
     el.addEventListener('click', async () => {
       const { url } = await api('receipt_url', { path: el.dataset.rcpt });
       window.open(url, '_blank', 'noopener');
+    }));
+
+  $('moneyBody').querySelectorAll('[data-rmrcpt]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      if (!confirm('Remove this receipt? The file is deleted permanently.')) return;
+      await api('delete_receipt', { expense_id: el.dataset.rmrcpt });
+      toast('Receipt removed.');
+      await loadMoney();
     }));
 
   $('moneyBody').querySelectorAll('[data-upl]').forEach((el) =>

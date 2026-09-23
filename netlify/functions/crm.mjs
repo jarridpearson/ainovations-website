@@ -547,12 +547,43 @@ async function handleAction(action, payload, user) {
       });
       if (!res.ok) return { error: `receipt upload failed: ${(await res.text()).slice(0, 200)}` };
 
+      // Replacing a receipt with a differently-named file would otherwise leave
+      // the old object stranded in the bucket.
+      const [prev] = await db(`crm_expenses?id=eq.${expense_id}&select=receipt_path`);
+      if (prev?.receipt_path && prev.receipt_path !== path) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/receipts/${prev.receipt_path}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${SERVICE_KEY}` },
+        }).catch(() => {});
+      }
+
       const [row] = await db(`crm_expenses?id=eq.${expense_id}`, {
         method: 'PATCH',
         body: { receipt_path: path, receipt_kind: content_type || null },
         prefer: 'return=representation',
       });
       return { expense: row, path, bytes: bytes.length };
+    }
+
+    case 'delete_receipt': {
+      const { expense_id } = payload;
+      if (!expense_id) return { error: 'missing expense_id' };
+      const [e] = await db(`crm_expenses?id=eq.${expense_id}&select=receipt_path`);
+      if (!e) return { error: 'expense not found' };
+      if (e.receipt_path) {
+        // Remove the object too, or replacing a receipt would orphan files in
+        // the bucket forever.
+        await fetch(`${SUPABASE_URL}/storage/v1/object/receipts/${e.receipt_path}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${SERVICE_KEY}` },
+        }).catch(() => {});
+      }
+      const [row] = await db(`crm_expenses?id=eq.${expense_id}`, {
+        method: 'PATCH',
+        body: { receipt_path: null, receipt_kind: null },
+        prefer: 'return=representation',
+      });
+      return { expense: row, removed: e.receipt_path || null };
     }
 
     case 'receipt_url': {
