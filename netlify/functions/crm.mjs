@@ -1,0 +1,451 @@
+// AInovations CRM back end.
+//
+// One endpoint, action-dispatched. Every request must carry a Supabase access
+// token belonging to an allow-listed email; only then does this function touch
+// the database, and it does so with the service-role key (the CRM tables have
+// RLS on with no policies, so nothing else can read them).
+//
+// Stripe is PULL-ONLY. Nothing here writes to Stripe, creates webhooks, or
+// changes account settings — it reads customers/subscriptions/invoices and
+// mirrors them into crm_* tables.
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
+
+const ALLOWED = (process.env.CRM_ALLOWED_EMAILS || 'jp@ainovations.net')
+  .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+const JSON_HEADERS = {
+  'content-type': 'application/json',
+  'cache-control': 'no-store',
+};
+
+function ok(body) {
+  return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify(body) };
+}
+function fail(statusCode, message) {
+  return { statusCode, headers: JSON_HEADERS, body: JSON.stringify({ error: message }) };
+}
+
+// --- Supabase REST helpers -------------------------------------------------
+
+async function db(path, { method = 'GET', body, prefer } = {}) {
+  const headers = {
+    apikey: SERVICE_KEY,
+    authorization: `Bearer ${SERVICE_KEY}`,
+    'content-type': 'application/json',
+  };
+  if (prefer) headers.prefer = prefer;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`supabase ${res.status}: ${text.slice(0, 400)}`);
+  return text ? JSON.parse(text) : null;
+}
+
+async function whoami(token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  const user = await res.json();
+  if (!user?.email) return null;
+  if (!ALLOWED.includes(user.email.toLowerCase())) return null;
+  return user;
+}
+
+async function logActivity(clientId, kind, summary, extra = {}) {
+  try {
+    await db('crm_activity', {
+      method: 'POST',
+      body: [{ client_id: clientId, kind, summary, ...extra }],
+      prefer: 'return=minimal',
+    });
+  } catch (err) {
+    console.error('activity log failed', err.message);
+  }
+}
+
+// --- Stripe ---------------------------------------------------------------
+
+async function stripe(path, params = {}) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (Array.isArray(v)) v.forEach((item) => qs.append(k, item));
+    else qs.append(k, v);
+  }
+  const url = `https://api.stripe.com/v1/${path}${qs.toString() ? `?${qs}` : ''}`;
+  const res = await fetch(url, { headers: { authorization: `Bearer ${STRIPE_KEY}` } });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error?.message || `stripe ${res.status}`);
+  return json;
+}
+
+// Walk every page of a Stripe list endpoint.
+async function stripeAll(path, params = {}) {
+  const out = [];
+  let starting_after;
+  for (let page = 0; page < 40; page++) {
+    const query = { limit: 100, ...params };
+    if (starting_after) query.starting_after = starting_after;
+    const res = await stripe(path, query);
+    out.push(...(res.data || []));
+    if (!res.has_more || !res.data?.length) break;
+    starting_after = res.data[res.data.length - 1].id;
+  }
+  return out;
+}
+
+const ts = (seconds) => (seconds ? new Date(seconds * 1000).toISOString() : null);
+
+// Normalize any billing interval to a monthly figure, in cents.
+function monthlyCents(amountCents, interval, intervalCount = 1) {
+  if (!amountCents) return 0;
+  const per = amountCents / (intervalCount || 1);
+  if (interval === 'year') return Math.round(per / 12);
+  if (interval === 'week') return Math.round((per * 52) / 12);
+  if (interval === 'day') return Math.round((per * 365) / 12);
+  return Math.round(per);
+}
+
+async function syncStripe() {
+  if (!STRIPE_KEY) {
+    return { ok: false, message: 'STRIPE_SECRET_KEY is not set in Netlify — nothing to sync yet.' };
+  }
+
+  const [customers, subs, invoices, products] = await Promise.all([
+    stripeAll('customers'),
+    stripeAll('subscriptions', { status: 'all', 'expand[]': 'data.items.data.price' }),
+    stripeAll('invoices'),
+    stripeAll('products'),
+  ]);
+
+  const productName = new Map(products.map((p) => [p.id, p.name]));
+
+  // Existing clients, keyed by stripe id and by email, so we attach rather than duplicate.
+  const clients = await db('crm_clients?select=id,client_no,business_name,email,stripe_customer_id,status');
+  const byStripe = new Map();
+  const byEmail = new Map();
+  for (const c of clients) {
+    if (c.stripe_customer_id) byStripe.set(c.stripe_customer_id, c);
+    if (c.email) byEmail.set(c.email.toLowerCase(), c);
+  }
+
+  let created = 0;
+  let linked = 0;
+
+  for (const cust of customers) {
+    if (byStripe.has(cust.id)) continue;
+
+    const email = (cust.email || '').toLowerCase();
+    const existing = email ? byEmail.get(email) : null;
+
+    if (existing && !existing.stripe_customer_id) {
+      const [row] = await db(`crm_clients?id=eq.${existing.id}`, {
+        method: 'PATCH',
+        body: { stripe_customer_id: cust.id },
+        prefer: 'return=representation',
+      });
+      byStripe.set(cust.id, row);
+      linked++;
+      await logActivity(existing.id, 'stripe.linked', `Linked to Stripe customer ${cust.id}`);
+      continue;
+    }
+
+    if (existing) continue; // already linked to a different Stripe customer — leave it alone
+
+    const [row] = await db('crm_clients', {
+      method: 'POST',
+      body: [{
+        business_name: cust.name || cust.email || cust.id,
+        email: cust.email || null,
+        phone: cust.phone || null,
+        status: 'active',
+        source: 'stripe',
+        stripe_customer_id: cust.id,
+      }],
+      prefer: 'return=representation',
+    });
+    byStripe.set(cust.id, row);
+    if (row.email) byEmail.set(row.email.toLowerCase(), row);
+    created++;
+    await logActivity(row.id, 'stripe.imported', `Imported from Stripe as ${row.client_no}`);
+  }
+
+  // Subscriptions
+  const subRows = subs.map((s) => {
+    const item = s.items?.data?.[0];
+    const price = item?.price;
+    return {
+      stripe_subscription_id: s.id,
+      client_id: byStripe.get(s.customer)?.id || null,
+      stripe_customer_id: s.customer,
+      status: s.status,
+      product_name: productName.get(price?.product) || null,
+      price_id: price?.id || null,
+      amount_cents: price?.unit_amount ?? null,
+      interval: price?.recurring?.interval || null,
+      quantity: item?.quantity || 1,
+      current_period_end: ts(s.current_period_end),
+      cancel_at_period_end: !!s.cancel_at_period_end,
+      canceled_at: ts(s.canceled_at),
+      started_at: ts(s.start_date || s.created),
+      synced_at: new Date().toISOString(),
+    };
+  });
+  if (subRows.length) {
+    await db('crm_subscriptions?on_conflict=stripe_subscription_id', {
+      method: 'POST',
+      body: subRows,
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    });
+  }
+
+  // Invoices
+  const invRows = invoices.map((i) => ({
+    stripe_invoice_id: i.id,
+    client_id: byStripe.get(i.customer)?.id || null,
+    stripe_customer_id: i.customer,
+    number: i.number || null,
+    status: i.status,
+    amount_due_cents: i.amount_due ?? null,
+    amount_paid_cents: i.amount_paid ?? null,
+    currency: i.currency || 'usd',
+    due_date: ts(i.due_date),
+    paid_at: ts(i.status_transitions?.paid_at),
+    created_at: ts(i.created),
+    hosted_invoice_url: i.hosted_invoice_url || null,
+    pdf_url: i.invoice_pdf || null,
+    synced_at: new Date().toISOString(),
+  }));
+  if (invRows.length) {
+    await db('crm_invoices?on_conflict=stripe_invoice_id', {
+      method: 'POST',
+      body: invRows,
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    });
+  }
+
+  // Recompute MRR per client from its live subscriptions. Re-read the client
+  // list so clients created above in this same run are included.
+  const mrr = new Map();
+  for (const s of subRows) {
+    if (!s.client_id) continue;
+    if (!['active', 'trialing', 'past_due'].includes(s.status)) continue;
+    const m = monthlyCents(s.amount_cents, s.interval) * (s.quantity || 1);
+    mrr.set(s.client_id, (mrr.get(s.client_id) || 0) + m);
+  }
+  const allClients = await db('crm_clients?select=id,mrr_cents');
+  for (const c of allClients) {
+    const next = mrr.get(c.id) || 0;
+    if (next === (c.mrr_cents || 0)) continue;
+    await db(`crm_clients?id=eq.${c.id}`, {
+      method: 'PATCH',
+      body: { mrr_cents: next },
+      prefer: 'return=minimal',
+    }).catch(() => {});
+  }
+
+  return {
+    ok: true,
+    customers: customers.length,
+    subscriptions: subRows.length,
+    invoices: invRows.length,
+    created,
+    linked,
+  };
+}
+
+// --- Actions --------------------------------------------------------------
+
+const CLIENT_FIELDS = [
+  'business_name', 'contact_name', 'email', 'phone', 'website', 'town', 'state',
+  'status', 'product', 'plan', 'term', 'stripe_customer_id',
+  'source', 'next_action', 'next_action_due',
+];
+
+function pickClientFields(input) {
+  const out = {};
+  for (const f of CLIENT_FIELDS) {
+    if (!(f in input)) continue;
+    let v = input[f];
+    if (typeof v === 'string') v = v.trim();
+    out[f] = v === '' ? null : v;
+  }
+  return out;
+}
+
+async function handleAction(action, payload, user) {
+  switch (action) {
+    case 'bootstrap': {
+      const [clients, openInvoices, prospectCount] = await Promise.all([
+        db('crm_clients?select=*&order=created_at.desc'),
+        db('crm_invoices?select=stripe_invoice_id,client_id,number,status,amount_due_cents,due_date&status=in.(open,draft,uncollectible)&order=created_at.desc'),
+        db('prospects?select=id&status=not.in.(converted)&limit=1000'),
+      ]);
+      return {
+        clients,
+        openInvoices,
+        prospectCount: prospectCount.length,
+        stripeConfigured: !!STRIPE_KEY,
+        user: user.email,
+      };
+    }
+
+    case 'client': {
+      const id = payload.id;
+      if (!id) return { error: 'missing id' };
+      const [client, notes, activity, subs, invoices] = await Promise.all([
+        db(`crm_clients?id=eq.${id}&select=*`),
+        db(`crm_notes?client_id=eq.${id}&select=*&order=pinned.desc,created_at.desc`),
+        db(`crm_activity?client_id=eq.${id}&select=*&order=occurred_at.desc&limit=100`),
+        db(`crm_subscriptions?client_id=eq.${id}&select=*&order=started_at.desc`),
+        db(`crm_invoices?client_id=eq.${id}&select=*&order=created_at.desc&limit=100`),
+      ]);
+      return { client: client[0] || null, notes, activity, subs, invoices };
+    }
+
+    case 'create_client': {
+      const fields = pickClientFields(payload);
+      if (!fields.business_name) return { error: 'business_name is required' };
+      const [row] = await db('crm_clients', {
+        method: 'POST', body: [fields], prefer: 'return=representation',
+      });
+      await logActivity(row.id, 'client.created', `Created ${row.client_no} — ${row.business_name}`);
+      return { client: row };
+    }
+
+    case 'save_client': {
+      const id = payload.id;
+      if (!id) return { error: 'missing id' };
+      const fields = pickClientFields(payload);
+      const [before] = await db(`crm_clients?id=eq.${id}&select=status`);
+      const [row] = await db(`crm_clients?id=eq.${id}`, {
+        method: 'PATCH', body: fields, prefer: 'return=representation',
+      });
+      if (before && fields.status && fields.status !== before.status) {
+        await logActivity(id, 'status.change', `Status ${before.status} → ${fields.status}`);
+      }
+      return { client: row };
+    }
+
+    case 'add_note': {
+      const { client_id, body } = payload;
+      if (!client_id || !body?.trim()) return { error: 'missing client_id or body' };
+      const [row] = await db('crm_notes', {
+        method: 'POST',
+        body: [{ client_id, body: body.trim() }],
+        prefer: 'return=representation',
+      });
+      return { note: row };
+    }
+
+    case 'pin_note': {
+      const { id, pinned } = payload;
+      const [row] = await db(`crm_notes?id=eq.${id}`, {
+        method: 'PATCH', body: { pinned: !!pinned }, prefer: 'return=representation',
+      });
+      return { note: row };
+    }
+
+    case 'delete_note': {
+      await db(`crm_notes?id=eq.${payload.id}`, { method: 'DELETE', prefer: 'return=minimal' });
+      return { deleted: true };
+    }
+
+    case 'prospects': {
+      const rows = await db(
+        'prospects?select=id,business_name,trade,town,state,contact_name,email,phone,website_url,website_gap,fit,status'
+        + '&order=fit.asc,business_name.asc&limit=500',
+      );
+      const claimed = await db('crm_clients?select=prospect_id&prospect_id=not.is.null');
+      const taken = new Set(claimed.map((c) => c.prospect_id));
+      return { prospects: rows.filter((p) => !taken.has(p.id)) };
+    }
+
+    case 'convert_prospect': {
+      const [p] = await db(`prospects?id=eq.${payload.id}&select=*`);
+      if (!p) return { error: 'prospect not found' };
+      const [row] = await db('crm_clients', {
+        method: 'POST',
+        body: [{
+          business_name: p.business_name,
+          contact_name: p.contact_name,
+          email: p.email,
+          phone: p.phone,
+          website: p.website_url,
+          town: p.town,
+          state: p.state || 'NY',
+          status: p.sent_at ? 'contacted' : 'lead',
+          source: 'outbound',
+          prospect_id: p.id,
+        }],
+        prefer: 'return=representation',
+      });
+      if (p.evidence) {
+        await db('crm_notes', {
+          method: 'POST',
+          body: [{ client_id: row.id, body: `Prospecting evidence: ${p.evidence}`, pinned: true }],
+          prefer: 'return=minimal',
+        });
+      }
+      await logActivity(row.id, 'client.created', `Converted from prospect queue — ${p.business_name}`);
+      return { client: row };
+    }
+
+    case 'sync_stripe':
+      return await syncStripe();
+
+    case 'stripe_customers': {
+      if (!STRIPE_KEY) return { error: 'STRIPE_SECRET_KEY is not set in Netlify.' };
+      const customers = await stripeAll('customers');
+      return {
+        customers: customers.map((c) => ({
+          id: c.id, name: c.name, email: c.email, created: ts(c.created),
+        })),
+      };
+    }
+
+    default:
+      return { error: `unknown action: ${action}` };
+  }
+}
+
+export async function handler(event) {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: JSON_HEADERS, body: '' };
+  if (event.httpMethod !== 'POST') return fail(405, 'POST only');
+  if (!SUPABASE_URL || !SERVICE_KEY || !PUBLISHABLE_KEY) {
+    return fail(500, 'Supabase environment variables are missing.');
+  }
+
+  const auth = event.headers.authorization || event.headers.Authorization || '';
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return fail(401, 'Not signed in.');
+
+  const user = await whoami(token);
+  if (!user) return fail(403, 'Not authorized.');
+
+  let payload;
+  try {
+    payload = JSON.parse(event.body || '{}');
+  } catch {
+    return fail(400, 'Bad JSON.');
+  }
+
+  const action = payload.action;
+  if (!action) return fail(400, 'Missing action.');
+
+  try {
+    const result = await handleAction(action, payload, user);
+    if (result?.error) return fail(400, result.error);
+    return ok(result);
+  } catch (err) {
+    console.error(`crm action ${action} failed:`, err);
+    return fail(500, err.message || 'Server error.');
+  }
+}

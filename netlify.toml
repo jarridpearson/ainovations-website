@@ -11,3 +11,16 @@
   from = "/api/chat"
   to = "/.netlify/functions/chat"
   status = 200
+
+# Internal CRM back office.
+[[redirects]]
+  from = "/api/crm"
+  to = "/.netlify/functions/crm"
+  status = 200
+
+# Keep the back office out of every index, even if a URL leaks.
+[[headers]]
+  for = "/crm/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Referrer-Policy = "no-referrer"

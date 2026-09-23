@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>AInovations CRM</title>
+<style>
+:root{
+  --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.09);
+  --text:#f7fbff; --muted:#b8cad7; --teal:#1dc8c6; --teal-dark:#078c92; --teal-soft:#72e6df;
+  --blue:#46a6ff; --border:rgba(255,255,255,.13);
+  --green:#3ddc97; --amber:#ffc14d; --red:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg-deep); color:var(--text); min-height:100vh;
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--text)}
+a{color:var(--teal-soft)}
+
+/* ---------- shell ---------- */
+.topbar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:30;
+}
+.brand{font-weight:800;letter-spacing:.02em;font-size:15px}
+.brand span{color:var(--teal)}
+.topbar .spacer{flex:1 1 auto}
+.who{color:var(--muted);font-size:13px}
+
+.btn{
+  border:1px solid var(--border);background:var(--panel);color:var(--text);
+  border-radius:9px;padding:8px 13px;font-size:13.5px;font-weight:600;
+}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--teal-dark);border-color:var(--teal-dark)}
+.btn.primary:hover{background:var(--teal);color:#032027}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--red)}
+.btn.sm{padding:5px 9px;font-size:12.5px}
+
+.wrap{padding:18px;max-width:1500px;margin:0 auto}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 15px;min-width:0}
+.stat b{display:block;font-size:24px;line-height:1.15;letter-spacing:-.01em}
+.stat small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.07em}
+.stat.accent b{color:var(--teal)}
+
+/* ---------- layout ---------- */
+.cols{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:980px){.cols{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.card>h2{
+  margin:0;padding:12px 15px;font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;
+}
+.card>h2 .spacer{flex:1 1 auto}
+.card-body{padding:15px}
+
+/* ---------- list ---------- */
+.filters{display:flex;gap:8px;padding:11px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.filters input,.filters select{
+  background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;padding:7px 9px;
+  font-size:13px;min-width:0;
+}
+.filters input{flex:1 1 120px}
+.filters select{flex:0 1 auto;max-width:100%}
+
+.rows{max-height:64vh;overflow-y:auto}
+.row{
+  display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.row:hover{background:var(--panel-2)}
+.row.on{background:rgba(29,200,198,.13);box-shadow:inset 3px 0 0 var(--teal)}
+.row .name{font-weight:650;display:flex;gap:8px;align-items:baseline}
+.row .no{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.row .sub{color:var(--muted);font-size:12.5px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.empty{padding:26px 16px;color:var(--muted);text-align:center;font-size:13.5px}
+
+.pill{
+  display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:2px 7px;border-radius:999px;border:1px solid var(--border);white-space:nowrap;
+}
+.pill.lead{color:var(--muted)}
+.pill.contacted{color:var(--blue);border-color:rgba(70,166,255,.45)}
+.pill.proposal{color:var(--amber);border-color:rgba(255,193,77,.45)}
+.pill.won,.pill.active{color:var(--green);border-color:rgba(61,220,151,.45)}
+.pill.paused{color:var(--amber);border-color:rgba(255,193,77,.4)}
+.pill.churned,.pill.lost{color:var(--red);border-color:rgba(255,107,107,.4)}
+.pill.paid{color:var(--green);border-color:rgba(61,220,151,.45)}
+.pill.open{color:var(--amber);border-color:rgba(255,193,77,.45)}
+.pill.draft,.pill.void{color:var(--muted)}
+.pill.uncollectible,.pill.past_due{color:var(--red);border-color:rgba(255,107,107,.4)}
+
+/* ---------- detail ---------- */
+.detail-head{padding:15px;border-bottom:1px solid var(--border)}
+.detail-head h1{margin:0 0 4px;font-size:21px;letter-spacing:-.01em}
+.detail-head .meta{color:var(--muted);font-size:13px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.money{font-variant-numeric:tabular-nums}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:11px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.f input,.f select,.f textarea{
+  background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;padding:8px 10px;
+  font-size:13.5px;width:100%;min-width:0;
+}
+.f textarea{resize:vertical;min-height:70px}
+.f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--teal-dark);outline-offset:-1px}
+
+.tabs{display:flex;gap:2px;padding:0 15px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{
+  border:0;background:transparent;color:var(--muted);padding:11px 12px;font-size:13px;font-weight:650;
+  border-bottom:2px solid transparent;white-space:nowrap;
+}
+.tab.on{color:var(--text);border-bottom-color:var(--teal)}
+
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{
+  text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700;
+}
+.tbl td{padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scroll-x{overflow-x:auto}
+
+.note{background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:9px}
+.note.pin{border-color:rgba(29,200,198,.4)}
+.note .when{color:var(--muted);font-size:11.5px;display:flex;gap:8px;align-items:center;margin-bottom:5px}
+.note .when .spacer{flex:1 1 auto}
+.note p{margin:0;white-space:pre-wrap}
+
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{padding:9px 0 9px 14px;border-left:2px solid var(--border);position:relative}
+.timeline li:before{
+  content:"";position:absolute;left:-5px;top:14px;width:8px;height:8px;border-radius:50%;
+  background:var(--teal-dark);
+}
+.timeline .when{color:var(--muted);font-size:11.5px}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login form{
+  width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);
+  border-radius:16px;padding:26px;
+}
+.login h1{margin:0 0 6px;font-size:22px}
+.login h1 span{color:var(--teal)}
+.login p.hint{margin:0 0 20px;color:var(--muted);font-size:13px}
+.login .f{margin-bottom:13px}
+.login .btn{width:100%;padding:11px}
+
+.msg{border-radius:9px;padding:9px 11px;font-size:13px;margin-bottom:13px;display:none}
+.msg.show{display:block}
+.msg.err{background:rgba(255,107,107,.14);border:1px solid rgba(255,107,107,.4);color:#ffc9c9}
+.msg.ok{background:rgba(61,220,151,.14);border:1px solid rgba(61,220,151,.4);color:#c4f5df}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:100;
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 16px;
+  font-size:13.5px;box-shadow:0 18px 44px rgba(0,0,0,.5);display:none;max-width:92vw;
+}
+.toast.show{display:block}
+.toast.err{border-color:rgba(255,107,107,.5);color:#ffc9c9}
+
+dialog{
+  border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:14px;
+  padding:0;max-width:min(92vw,760px);width:100%;
+}
+dialog::backdrop{background:rgba(3,11,20,.72)}
+dialog h2{margin:0;padding:14px 16px;font-size:15px;border-bottom:1px solid var(--border)}
+dialog .dlg-body{padding:16px;max-height:66vh;overflow-y:auto}
+dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:9px;justify-content:flex-end}
+.hidden{display:none !important}
+.spin{color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login" id="loginView">
+  <form id="loginForm">
+    <h1>AI<span>novations</span> CRM</h1>
+    <p class="hint">Internal back office. Authorized accounts only.</p>
+    <div class="msg err" id="loginMsg"></div>
+    <div class="f">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+    </div>
+    <div class="f">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn primary" type="submit" id="loginBtn">Sign in</button>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appView" class="hidden">
+  <div class="topbar">
+    <div class="brand">AI<span>novations</span> CRM</div>
+    <div class="spacer"></div>
+    <button class="btn sm" id="btnProspects">Prospects</button>
+    <button class="btn sm" id="btnSync">Sync Stripe</button>
+    <button class="btn sm primary" id="btnNew">+ Client</button>
+    <span class="who" id="whoami"></span>
+    <button class="btn sm ghost" id="btnOut">Sign out</button>
+  </div>
+
+  <div class="wrap">
+    <div class="stats" id="stats"></div>
+
+    <div class="cols">
+      <div class="card">
+        <div class="filters">
+          <input id="q" type="search" placeholder="Search name, town, email…">
+          <select id="fStatus">
+            <option value="">All statuses</option>
+            <option value="open">Open pipeline</option>
+            <option value="lead">Lead</option>
+            <option value="contacted">Contacted</option>
+            <option value="proposal">Proposal</option>
+            <option value="won">Won</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="churned">Churned</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+        <div class="rows" id="rows"></div>
+      </div>
+
+      <div class="card" id="detail">
+        <div class="empty">Pick a client on the left, or add one.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<dialog id="prospectDlg">
+  <h2>Prospect queue — convert to client</h2>
+  <div class="dlg-body" id="prospectBody"><p class="spin">Loading…</p></div>
+  <div class="dlg-foot"><button class="btn" id="prospectClose">Close</button></div>
+</dialog>
+
+<script>
+/* ========================================================================
+   AInovations CRM — front end.
+   Auth goes straight to Supabase's REST auth endpoint; every data request
+   goes to /api/crm, which re-verifies the token server-side before it
+   touches the database. The publishable key below grants no data access
+   (RLS denies all) — it only permits sign-in.
+   ===================================================================== */
+const SUPABASE_URL = 'https://ptipedxvsekwoehfalux.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9vGY3VFuLporcFm3zovVEw_9mPYjVWQ';
+const API = '/api/crm';
+const STORE = 'ain_crm_session';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const money = (cents) => cents == null ? '—'
+  : '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money0 = (cents) => cents == null ? '—'
+  : '$' + Math.round(cents / 100).toLocaleString('en-US');
+const date = (iso) => !iso ? '—'
+  : new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const datetime = (iso) => !iso ? '—'
+  : new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+let session = null;
+let state = { clients: [], openInvoices: [], prospectCount: 0, stripeConfigured: false };
+let selectedId = null;
+let detailTab = 'notes';
+let detailData = null;
+
+function toast(text, isErr) {
+  const t = $('toast');
+  t.textContent = text;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = 'toast'; }, isErr ? 6000 : 3000);
+}
+
+/* ---------------- auth ---------------- */
+
+function saveSession(s) {
+  session = s;
+  try { localStorage.setItem(STORE, JSON.stringify(s)); } catch {}
+}
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { return null; }
+}
+function clearSession() {
+  session = null;
+  try { localStorage.removeItem(STORE); } catch {}
+}
+
+async function authFetch(grant, body) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error_description || json.msg || json.error || 'Sign-in failed.');
+  return json;
+}
+
+async function refreshSession() {
+  if (!session?.refresh_token) return false;
+  try {
+    const next = await authFetch('refresh_token', { refresh_token: session.refresh_token });
+    saveSession(next);
+    return true;
+  } catch {
+    clearSession();
+    return false;
+  }
+}
+
+/* ---------------- api ---------------- */
+
+async function api(action, payload = {}, isRetry) {
+  if (!session?.access_token) { showLogin(); throw new Error('Not signed in.'); }
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  if ((res.status === 401 || res.status === 403) && !isRetry) {
+    if (await refreshSession()) return api(action, payload, true);
+    showLogin('Session expired. Sign in again.');
+    throw new Error('Session expired.');
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Request failed (${res.status}).`);
+  return json;
+}
+
+/* ---------------- views ---------------- */
+
+function showLogin(message) {
+  clearSession();
+  $('appView').classList.add('hidden');
+  $('loginView').classList.remove('hidden');
+  const m = $('loginMsg');
+  if (message) { m.textContent = message; m.classList.add('show'); }
+  else { m.classList.remove('show'); }
+}
+
+async function showApp() {
+  $('loginView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  await reload();
+}
+
+async function reload() {
+  const data = await api('bootstrap');
+  state = data;
+  $('whoami').textContent = data.user;
+  if (!data.stripeConfigured) $('btnSync').title = 'STRIPE_SECRET_KEY is not set in Netlify yet.';
+  renderStats();
+  renderList();
+  if (selectedId) await openClient(selectedId);
+}
+
+function renderStats() {
+  const cs = state.clients;
+  const active = cs.filter((c) => c.status === 'active');
+  const mrr = active.reduce((sum, c) => sum + (c.mrr_cents || 0), 0);
+  const pipeline = cs.filter((c) => ['lead', 'contacted', 'proposal', 'won'].includes(c.status)).length;
+  const outstanding = state.openInvoices.reduce((s, i) => s + (i.amount_due_cents || 0), 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const due = cs.filter((c) => c.next_action_due && c.next_action_due <= today).length;
+
+  $('stats').innerHTML = [
+    ['Active clients', active.length, ''],
+    ['Monthly recurring', money0(mrr), 'accent'],
+    ['In pipeline', pipeline, ''],
+    ['Outstanding', money0(outstanding), outstanding > 0 ? 'accent' : ''],
+    ['Actions due', due, ''],
+    ['Prospects waiting', state.prospectCount, ''],
+  ].map(([label, value, cls]) =>
+    `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
+}
+
+function visibleClients() {
+  const q = $('q').value.trim().toLowerCase();
+  const f = $('fStatus').value;
+  return state.clients.filter((c) => {
+    if (f === 'open') {
+      if (!['lead', 'contacted', 'proposal', 'won'].includes(c.status)) return false;
+    } else if (f && c.status !== f) return false;
+    if (!q) return true;
+    return [c.business_name, c.contact_name, c.town, c.email, c.client_no, c.plan, c.product]
+      .some((v) => v && String(v).toLowerCase().includes(q));
+  });
+}
+
+function renderList() {
+  const list = visibleClients();
+  if (!list.length) {
+    $('rows').innerHTML = '<div class="empty">No clients match.</div>';
+    return;
+  }
+  $('rows').innerHTML = list.map((c) => `
+    <button class="row ${c.id === selectedId ? 'on' : ''}" data-id="${c.id}">
+      <div class="name">${esc(c.business_name)}<span class="no">${esc(c.client_no)}</span></div>
+      <div class="sub">
+        <span class="pill ${esc(c.status)}">${esc(c.status)}</span>
+        ${c.town ? `<span>${esc(c.town)}${c.state ? ', ' + esc(c.state) : ''}</span>` : ''}
+        ${c.mrr_cents ? `<span class="money">${esc(money0(c.mrr_cents))}/mo</span>` : ''}
+        ${c.plan ? `<span>${esc(c.plan)}</span>` : ''}
+      </div>
+    </button>`).join('');
+  $('rows').querySelectorAll('.row').forEach((b) =>
+    b.addEventListener('click', () => openClient(b.dataset.id)));
+}
+
+/* ---------------- client detail ---------------- */
+
+const STATUSES = ['lead', 'contacted', 'proposal', 'won', 'active', 'paused', 'churned', 'lost'];
+const PRODUCTS = ['', 'rent-a-site', 'rent-an-app', 'church', 'game-store', 'creator', 'custom'];
+const TERMS = ['', '1-year', '3-year', 'hero', 'one-time'];
+
+async function openClient(id) {
+  selectedId = id;
+  renderList();
+  $('detail').innerHTML = '<div class="empty">Loading…</div>';
+  detailData = await api('client', { id });
+  if (!detailData.client) { $('detail').innerHTML = '<div class="empty">Client not found.</div>'; return; }
+  renderDetail();
+}
+
+function opts(list, current) {
+  return list.map((v) =>
+    `<option value="${esc(v)}" ${v === (current || '') ? 'selected' : ''}>${esc(v || '—')}</option>`).join('');
+}
+
+function renderDetail() {
+  const c = detailData.client;
+  const liveSub = detailData.subs.find((s) => ['active', 'trialing', 'past_due'].includes(s.status));
+
+  $('detail').innerHTML = `
+    <div class="detail-head">
+      <h1>${esc(c.business_name)}</h1>
+      <div class="meta">
+        <span class="no">${esc(c.client_no)}</span>
+        <span class="pill ${esc(c.status)}">${esc(c.status)}</span>
+        ${c.mrr_cents ? `<span class="money">${esc(money(c.mrr_cents))}/mo</span>` : ''}
+        ${liveSub ? `<span>Renews ${esc(date(liveSub.current_period_end))}</span>` : ''}
+        ${c.stripe_customer_id
+          ? `<span>Stripe <code>${esc(c.stripe_customer_id)}</code></span>`
+          : '<span style="color:var(--amber)">Not linked to Stripe</span>'}
+      </div>
+    </div>
+
+    <div class="tabs">
+      ${['notes', 'billing', 'details', 'activity'].map((t) =>
+        `<button class="tab ${detailTab === t ? 'on' : ''}" data-tab="${t}">${t[0].toUpperCase() + t.slice(1)}${
+          t === 'notes' ? ` (${detailData.notes.length})` : ''}</button>`).join('')}
+    </div>
+    <div class="card-body" id="tabBody"></div>`;
+
+  $('detail').querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+    detailTab = b.dataset.tab; renderDetail();
+  }));
+  renderTab();
+}
+
+function renderTab() {
+  const c = detailData.client;
+  const b = $('tabBody');
+
+  if (detailTab === 'notes') {
+    b.innerHTML = `
+      <div class="f" style="margin-bottom:11px">
+        <label for="noteBody">Add a note</label>
+        <textarea id="noteBody" placeholder="What happened, what he said, what to do next…"></textarea>
+      </div>
+      <div style="margin-bottom:16px"><button class="btn primary sm" id="noteSave">Save note</button></div>
+      ${detailData.notes.length ? detailData.notes.map((n) => `
+        <div class="note ${n.pinned ? 'pin' : ''}">
+          <div class="when">
+            <span>${esc(datetime(n.created_at))}</span>${n.pinned ? '<span>· pinned</span>' : ''}
+            <span class="spacer"></span>
+            <button class="btn sm ghost" data-pin="${n.id}" data-on="${n.pinned ? '1' : ''}">${n.pinned ? 'Unpin' : 'Pin'}</button>
+            <button class="btn sm ghost danger" data-del="${n.id}">Delete</button>
+          </div>
+          <p>${esc(n.body)}</p>
+        </div>`).join('') : '<div class="empty">No notes yet.</div>'}`;
+
+    $('noteSave').addEventListener('click', async () => {
+      const body = $('noteBody').value.trim();
+      if (!body) return;
+      await api('add_note', { client_id: c.id, body });
+      toast('Note saved.');
+      await openClient(c.id);
+    });
+    b.querySelectorAll('[data-pin]').forEach((el) => el.addEventListener('click', async () => {
+      await api('pin_note', { id: el.dataset.pin, pinned: !el.dataset.on });
+      await openClient(c.id);
+    }));
+    b.querySelectorAll('[data-del]').forEach((el) => el.addEventListener('click', async () => {
+      if (!confirm('Delete this note?')) return;
+      await api('delete_note', { id: el.dataset.del });
+      await openClient(c.id);
+    }));
+    return;
+  }
+
+  if (detailTab === 'billing') {
+    const subs = detailData.subs;
+    const invs = detailData.invoices;
+    const paid = invs.filter((i) => i.status === 'paid')
+      .reduce((s, i) => s + (i.amount_paid_cents || 0), 0);
+    const owed = invs.filter((i) => ['open', 'draft', 'uncollectible'].includes(i.status))
+      .reduce((s, i) => s + (i.amount_due_cents || 0), 0);
+
+    b.innerHTML = `
+      <div class="stats" style="margin-bottom:16px">
+        <div class="stat accent"><b>${esc(money0(c.mrr_cents))}</b><small>Monthly recurring</small></div>
+        <div class="stat"><b>${esc(money0(paid))}</b><small>Collected all time</small></div>
+        <div class="stat ${owed ? 'accent' : ''}"><b>${esc(money0(owed))}</b><small>Outstanding</small></div>
+      </div>
+
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px">Subscriptions</h3>
+      <div class="scroll-x">${subs.length ? `<table class="tbl">
+        <thead><tr><th>Product</th><th>Status</th><th class="num">Amount</th><th>Renews</th></tr></thead>
+        <tbody>${subs.map((s) => `<tr>
+          <td>${esc(s.product_name || s.price_id || '—')}</td>
+          <td><span class="pill ${esc(s.status)}">${esc(s.status)}</span>${
+            s.cancel_at_period_end ? ' <small style="color:var(--amber)">cancels at period end</small>' : ''}</td>
+          <td class="num">${esc(money(s.amount_cents))}${s.interval ? '/' + esc(s.interval) : ''}</td>
+          <td>${esc(date(s.current_period_end))}</td></tr>`).join('')}</tbody></table>`
+        : '<div class="empty">No subscriptions synced.</div>'}</div>
+
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:20px 0 8px">Invoices</h3>
+      <div class="scroll-x">${invs.length ? `<table class="tbl">
+        <thead><tr><th>Invoice</th><th>Status</th><th class="num">Due</th><th class="num">Paid</th><th>Date</th><th></th></tr></thead>
+        <tbody>${invs.map((i) => `<tr>
+          <td>${esc(i.number || i.stripe_invoice_id)}</td>
+          <td><span class="pill ${esc(i.status)}">${esc(i.status)}</span></td>
+          <td class="num">${esc(money(i.amount_due_cents))}</td>
+          <td class="num">${esc(money(i.amount_paid_cents))}</td>
+          <td>${esc(date(i.created_at))}</td>
+          <td>${i.hosted_invoice_url ? `<a href="${esc(i.hosted_invoice_url)}" target="_blank" rel="noopener">View</a>` : ''}</td>
+        </tr>`).join('')}</tbody></table>`
+        : '<div class="empty">No invoices synced.</div>'}</div>`;
+    return;
+  }
+
+  if (detailTab === 'details') {
+    b.innerHTML = `
+      <div class="grid2">
+        <div class="f"><label>Business name</label><input data-f="business_name" value="${esc(c.business_name)}"></div>
+        <div class="f"><label>Contact name</label><input data-f="contact_name" value="${esc(c.contact_name)}"></div>
+        <div class="f"><label>Email</label><input data-f="email" type="email" value="${esc(c.email)}"></div>
+        <div class="f"><label>Phone</label><input data-f="phone" value="${esc(c.phone)}"></div>
+        <div class="f"><label>Website</label><input data-f="website" value="${esc(c.website)}"></div>
+        <div class="f"><label>Town</label><input data-f="town" value="${esc(c.town)}"></div>
+        <div class="f"><label>State</label><input data-f="state" value="${esc(c.state)}"></div>
+        <div class="f"><label>Status</label><select data-f="status">${opts(STATUSES, c.status)}</select></div>
+        <div class="f"><label>Product</label><select data-f="product">${opts(PRODUCTS, c.product)}</select></div>
+        <div class="f"><label>Plan</label><input data-f="plan" value="${esc(c.plan)}" placeholder="Presence / Growth / …"></div>
+        <div class="f"><label>Term</label><select data-f="term">${opts(TERMS, c.term)}</select></div>
+        <div class="f"><label>Stripe customer ID</label><input data-f="stripe_customer_id" value="${esc(c.stripe_customer_id)}" placeholder="cus_…"></div>
+        <div class="f"><label>Next action</label><input data-f="next_action" value="${esc(c.next_action)}"></div>
+        <div class="f"><label>Next action due</label><input data-f="next_action_due" type="date" value="${esc(c.next_action_due)}"></div>
+      </div>
+      <div style="margin-top:15px;display:flex;gap:9px;align-items:center">
+        <button class="btn primary" id="saveClient">Save changes</button>
+        <span class="spin">Added ${esc(date(c.created_at))} · source ${esc(c.source || 'manual')}</span>
+      </div>`;
+
+    $('saveClient').addEventListener('click', async () => {
+      const payload = { id: c.id };
+      b.querySelectorAll('[data-f]').forEach((el) => { payload[el.dataset.f] = el.value; });
+      await api('save_client', payload);
+      toast('Saved.');
+      await reload();
+    });
+    return;
+  }
+
+  // activity
+  b.innerHTML = detailData.activity.length
+    ? `<ul class="timeline">${detailData.activity.map((a) => `<li>
+        <div>${esc(a.summary)}</div>
+        <div class="when">${esc(datetime(a.occurred_at))} · ${esc(a.kind)}</div></li>`).join('')}</ul>`
+    : '<div class="empty">Nothing logged yet.</div>';
+}
+
+/* ---------------- prospects ---------------- */
+
+async function openProspects() {
+  const dlg = $('prospectDlg');
+  $('prospectBody').innerHTML = '<p class="spin">Loading…</p>';
+  dlg.showModal();
+  const { prospects } = await api('prospects');
+  if (!prospects.length) {
+    $('prospectBody').innerHTML = '<div class="empty">Every prospect is already in the CRM.</div>';
+    return;
+  }
+  $('prospectBody').innerHTML = `<div class="scroll-x"><table class="tbl">
+    <thead><tr><th>Business</th><th>Trade</th><th>Town</th><th>Gap</th><th>Fit</th><th></th></tr></thead>
+    <tbody>${prospects.map((p) => `<tr>
+      <td>${esc(p.business_name)}</td>
+      <td>${esc(p.trade)}</td>
+      <td>${esc(p.town)}</td>
+      <td>${esc(p.website_gap || '—')}</td>
+      <td>${esc(p.fit || '—')}</td>
+      <td><button class="btn sm primary" data-conv="${p.id}">Add</button></td>
+    </tr>`).join('')}</tbody></table></div>`;
+
+  $('prospectBody').querySelectorAll('[data-conv]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const { client } = await api('convert_prospect', { id: btn.dataset.conv });
+      toast(`${client.business_name} added as ${client.client_no}.`);
+      btn.closest('tr').remove();
+      await reload();
+    }));
+}
+
+/* ---------------- new client ---------------- */
+
+async function newClient() {
+  const name = prompt('Business name');
+  if (!name?.trim()) return;
+  const { client } = await api('create_client', { business_name: name.trim(), source: 'manual' });
+  toast(`Created ${client.client_no}.`);
+  await reload();
+  detailTab = 'details';
+  await openClient(client.id);
+}
+
+/* ---------------- wiring ---------------- */
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('loginBtn');
+  const msg = $('loginMsg');
+  msg.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const s = await authFetch('password', {
+      email: $('email').value.trim(),
+      password: $('password').value,
+    });
+    saveSession(s);
+    $('password').value = '';
+    await showApp();
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.classList.add('show');
+    clearSession();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+});
+
+$('btnOut').addEventListener('click', () => { selectedId = null; showLogin(); });
+$('btnNew').addEventListener('click', () => newClient().catch((e) => toast(e.message, true)));
+$('btnProspects').addEventListener('click', () => openProspects().catch((e) => toast(e.message, true)));
+$('prospectClose').addEventListener('click', () => $('prospectDlg').close());
+
+$('btnSync').addEventListener('click', async () => {
+  const btn = $('btnSync');
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  try {
+    const r = await api('sync_stripe');
+    if (r.ok === false) toast(r.message, true);
+    else {
+      toast(`Stripe synced — ${r.customers} customers, ${r.subscriptions} subscriptions, ${r.invoices} invoices`
+        + `${r.created ? `, ${r.created} new client${r.created === 1 ? '' : 's'}` : ''}`
+        + `${r.linked ? `, ${r.linked} linked` : ''}.`);
+      await reload();
+    }
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sync Stripe';
+  }
+});
+
+$('q').addEventListener('input', renderList);
+$('fStatus').addEventListener('change', renderList);
+
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason?.message) toast(e.reason.message, true);
+});
+
+(async function boot() {
+  session = loadSession();
+  if (!session?.access_token) { showLogin(); return; }
+  try {
+    await showApp();
+  } catch {
+    if (await refreshSession()) {
+      try { await showApp(); return; } catch {}
+    }
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>
