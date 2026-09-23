@@ -263,8 +263,13 @@ async function syncStripe() {
   const allClients = await db('crm_clients?select=id,mrr_cents,status,stripe_customer_id');
   for (const c of allClients) {
     const patch = {};
-    const next = mrr.get(c.id) || 0;
-    if (next !== (c.mrr_cents || 0)) patch.mrr_cents = next;
+    // Only Stripe-linked clients get their MRR recomputed. A prospect priced by
+    // hand from a proposal has no subscription yet, and zeroing it would quietly
+    // empty the pipeline value every time this runs.
+    if (c.stripe_customer_id) {
+      const next = mrr.get(c.id) || 0;
+      if (next !== (c.mrr_cents || 0)) patch.mrr_cents = next;
+    }
 
     if (c.stripe_customer_id && STRIPE_OWNED.has(c.status)) {
       const fromStripe = statusByCustomer.get(c.stripe_customer_id) || 'lead';
