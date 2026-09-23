@@ -127,6 +127,16 @@ async function syncStripe() {
 
   const productName = new Map(products.map((p) => [p.id, p.name]));
 
+  // A Stripe customer is only "active" if something is actually billing. One
+  // that used to bill is churned; one that never did is just a lead.
+  const LIVE = ['active', 'trialing', 'past_due'];
+  const statusByCustomer = new Map();
+  for (const s of subs) {
+    const prev = statusByCustomer.get(s.customer);
+    if (LIVE.includes(s.status)) statusByCustomer.set(s.customer, 'active');
+    else if (prev !== 'active') statusByCustomer.set(s.customer, 'churned');
+  }
+
   // Existing clients, keyed by stripe id and by email, so we attach rather than duplicate.
   const clients = await db('crm_clients?select=id,client_no,business_name,email,stripe_customer_id,status');
   const byStripe = new Map();
@@ -165,7 +175,7 @@ async function syncStripe() {
         business_name: cust.name || cust.email || cust.id,
         email: cust.email || null,
         phone: cust.phone || null,
-        status: 'active',
+        status: statusByCustomer.get(cust.id) || 'lead',
         source: 'stripe',
         stripe_customer_id: cust.id,
       }],
@@ -269,16 +279,43 @@ const CLIENT_FIELDS = [
   'source', 'next_action', 'next_action_due',
 ];
 
-function pickClientFields(input) {
+const EXPENSE_FIELDS = [
+  'spent_on', 'vendor', 'description', 'category', 'amount_cents',
+  'payment_method', 'client_id', 'billable', 'reimbursed', 'receipt_url', 'notes',
+];
+
+const MILEAGE_FIELDS = [
+  'drove_on', 'purpose', 'from_place', 'to_place', 'miles',
+  'rate_cents', 'round_trip', 'client_id', 'notes',
+];
+
+const NUMERIC_FIELDS = new Set(['amount_cents', 'miles', 'rate_cents']);
+const BOOLEAN_FIELDS = new Set(['billable', 'reimbursed', 'round_trip']);
+
+function pickFields(input, allowed) {
   const out = {};
-  for (const f of CLIENT_FIELDS) {
+  for (const f of allowed) {
     if (!(f in input)) continue;
     let v = input[f];
     if (typeof v === 'string') v = v.trim();
-    out[f] = v === '' ? null : v;
+    if (v === '' || v === null || v === undefined) { out[f] = null; continue; }
+    if (NUMERIC_FIELDS.has(f)) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) continue;
+      out[f] = f === 'amount_cents' ? Math.round(n) : n;
+      continue;
+    }
+    if (BOOLEAN_FIELDS.has(f)) { out[f] = !!v; continue; }
+    out[f] = v;
   }
   return out;
 }
+
+function pickClientFields(input) {
+  return pickFields(input, CLIENT_FIELDS);
+}
+
+const money = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 
 async function handleAction(action, payload, user) {
   switch (action) {
@@ -400,6 +437,95 @@ async function handleAction(action, payload, user) {
       }
       await logActivity(row.id, 'client.created', `Converted from prospect queue — ${p.business_name}`);
       return { client: row };
+    }
+
+    // --- expenses & mileage -------------------------------------------------
+
+    case 'money': {
+      const year = String(payload.year || new Date().getFullYear());
+      const from = `${year}-01-01`;
+      const to = `${year}-12-31`;
+      const [expenses, mileage, settings, clients] = await Promise.all([
+        db(`crm_expenses?select=*&spent_on=gte.${from}&spent_on=lte.${to}&order=spent_on.desc`),
+        db(`crm_mileage?select=*&drove_on=gte.${from}&drove_on=lte.${to}&order=drove_on.desc`),
+        db('crm_settings?select=*'),
+        db('crm_clients?select=id,client_no,business_name&order=business_name.asc'),
+      ]);
+      const years = await db('crm_expenses?select=spent_on&order=spent_on.asc&limit=1');
+      return {
+        year: Number(year),
+        expenses,
+        mileage,
+        clients,
+        settings: Object.fromEntries(settings.map((s) => [s.key, s.value])),
+        earliestExpense: years[0]?.spent_on || null,
+      };
+    }
+
+    case 'add_expense':
+    case 'save_expense': {
+      const fields = pickFields(payload, EXPENSE_FIELDS);
+      if (!fields.vendor) return { error: 'vendor is required' };
+      if (!fields.spent_on) return { error: 'date is required' };
+      if (fields.amount_cents == null) return { error: 'amount is required' };
+      if (action === 'add_expense') {
+        const [row] = await db('crm_expenses', {
+          method: 'POST', body: [fields], prefer: 'return=representation',
+        });
+        if (row.client_id) {
+          await logActivity(row.client_id, 'expense.added',
+            `Expense ${money(row.amount_cents)} — ${row.vendor}`, { amount_cents: row.amount_cents });
+        }
+        return { expense: row };
+      }
+      if (!payload.id) return { error: 'missing id' };
+      const [row] = await db(`crm_expenses?id=eq.${payload.id}`, {
+        method: 'PATCH', body: fields, prefer: 'return=representation',
+      });
+      return { expense: row };
+    }
+
+    case 'delete_expense': {
+      if (!payload.id) return { error: 'missing id' };
+      await db(`crm_expenses?id=eq.${payload.id}`, { method: 'DELETE', prefer: 'return=minimal' });
+      return { deleted: true };
+    }
+
+    case 'add_mileage':
+    case 'save_mileage': {
+      const fields = pickFields(payload, MILEAGE_FIELDS);
+      if (!fields.purpose) return { error: 'purpose is required' };
+      if (!fields.drove_on) return { error: 'date is required' };
+      if (!fields.miles) return { error: 'miles is required' };
+      if (fields.rate_cents == null) return { error: 'rate is required' };
+      if (action === 'add_mileage') {
+        const [row] = await db('crm_mileage', {
+          method: 'POST', body: [fields], prefer: 'return=representation',
+        });
+        return { trip: row };
+      }
+      if (!payload.id) return { error: 'missing id' };
+      const [row] = await db(`crm_mileage?id=eq.${payload.id}`, {
+        method: 'PATCH', body: fields, prefer: 'return=representation',
+      });
+      return { trip: row };
+    }
+
+    case 'delete_mileage': {
+      if (!payload.id) return { error: 'missing id' };
+      await db(`crm_mileage?id=eq.${payload.id}`, { method: 'DELETE', prefer: 'return=minimal' });
+      return { deleted: true };
+    }
+
+    case 'set_setting': {
+      const { key, value } = payload;
+      if (!key) return { error: 'missing key' };
+      await db('crm_settings?on_conflict=key', {
+        method: 'POST',
+        body: [{ key, value: String(value), updated_at: new Date().toISOString() }],
+        prefer: 'resolution=merge-duplicates,return=minimal',
+      });
+      return { saved: true };
     }
 
     case 'sync_stripe':

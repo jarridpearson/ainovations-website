@@ -183,6 +183,36 @@ dialog .dlg-body{padding:16px;max-height:66vh;overflow-y:auto}
 dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:9px;justify-content:flex-end}
 .hidden{display:none !important}
 .spin{color:var(--muted);font-size:13px}
+
+/* ---------- view switcher + money view ---------- */
+.viewnav{display:flex;gap:2px;background:var(--bg-deep);border:1px solid var(--border);border-radius:9px;padding:2px}
+.vbtn{
+  border:0;background:transparent;color:var(--muted);border-radius:7px;
+  padding:6px 13px;font-size:13px;font-weight:650;
+}
+.vbtn.on{background:var(--panel-2);color:var(--text)}
+
+.yearpick{
+  background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;
+  padding:5px 8px;font-size:12.5px;
+}
+
+.entry{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:11px;
+  background:var(--bg-deep);border:1px solid var(--border);border-radius:11px;
+  padding:14px;margin-bottom:18px;align-items:end;
+}
+.entry .f label{white-space:nowrap}
+.entry .check{flex-direction:row;align-items:center;gap:7px;padding-bottom:9px}
+.entry .check input{width:auto;min-width:0}
+.entry .check label{text-transform:none;letter-spacing:0;font-size:13px;color:var(--text)}
+.entry .go{align-self:end}
+.entry .go .btn{width:100%;padding:9px}
+
+.rate-note{color:var(--muted);font-size:12px;margin:-8px 0 16px}
+.rate-note b{color:var(--amber)}
+.tot{font-variant-numeric:tabular-nums;font-weight:700}
+.tbl tfoot td{border-top:1px solid var(--border);border-bottom:0;font-weight:700;padding-top:10px}
 </style>
 </head>
 <body>
@@ -209,15 +239,21 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
 <div id="appView" class="hidden">
   <div class="topbar">
     <div class="brand">AI<span>novations</span> CRM</div>
+    <div class="viewnav">
+      <button class="vbtn on" data-view="clients">Clients</button>
+      <button class="vbtn" data-view="money">Expenses</button>
+    </div>
     <div class="spacer"></div>
-    <button class="btn sm" id="btnProspects">Prospects</button>
-    <button class="btn sm" id="btnSync">Sync Stripe</button>
-    <button class="btn sm primary" id="btnNew">+ Client</button>
+    <span id="clientTools">
+      <button class="btn sm" id="btnProspects">Prospects</button>
+      <button class="btn sm" id="btnSync">Sync Stripe</button>
+      <button class="btn sm primary" id="btnNew">+ Client</button>
+    </span>
     <span class="who" id="whoami"></span>
     <button class="btn sm ghost" id="btnOut">Sign out</button>
   </div>
 
-  <div class="wrap">
+  <div class="wrap" id="clientsView">
     <div class="stats" id="stats"></div>
 
     <div class="cols">
@@ -243,6 +279,23 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
       <div class="card" id="detail">
         <div class="empty">Pick a client on the left, or add one.</div>
       </div>
+    </div>
+  </div>
+
+  <div class="wrap hidden" id="moneyView">
+    <div class="stats" id="moneyStats"></div>
+
+    <div class="card">
+      <h2>
+        <span id="moneyTitle">Expenses</span>
+        <span class="spacer"></span>
+        <select id="yearPick" class="yearpick"></select>
+      </h2>
+      <div class="tabs">
+        <button class="tab on" data-mtab="expenses">Expenses</button>
+        <button class="tab" data-mtab="mileage">Mileage</button>
+      </div>
+      <div class="card-body" id="moneyBody"></div>
     </div>
   </div>
 </div>
@@ -637,6 +690,228 @@ async function openProspects() {
     }));
 }
 
+/* ---------------- expenses & mileage ---------------- */
+
+const CATEGORIES = [
+  'Software / SaaS', 'Hosting / Domains', 'Advertising', 'Equipment',
+  'Office supplies', 'Travel', 'Meals', 'Phone / Internet',
+  'Professional services', 'Fees / Bank', 'Education', 'Other',
+];
+const PAY_METHODS = ['', 'Card', 'ACH', 'Check', 'Cash'];
+
+let moneyTab = 'expenses';
+let moneyYear = new Date().getFullYear();
+let moneyData = null;
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+async function loadMoney() {
+  $('moneyBody').innerHTML = '<div class="empty">Loading…</div>';
+  moneyData = await api('money', { year: moneyYear });
+  renderYearPicker();
+  renderMoneyStats();
+  renderMoney();
+}
+
+function renderYearPicker() {
+  const now = new Date().getFullYear();
+  const earliest = moneyData.earliestExpense
+    ? Number(moneyData.earliestExpense.slice(0, 4)) : now;
+  const years = [];
+  for (let y = now; y >= Math.min(earliest, now); y--) years.push(y);
+  if (!years.includes(moneyYear)) years.push(moneyYear);
+  $('yearPick').innerHTML = years.sort((a, b) => b - a)
+    .map((y) => `<option value="${y}" ${y === moneyYear ? 'selected' : ''}>${y}</option>`).join('');
+}
+
+const mileageAmount = (t) => Math.round(Number(t.miles) * Number(t.rate_cents));
+
+function renderMoneyStats() {
+  const exp = moneyData.expenses;
+  const trips = moneyData.mileage;
+  const spent = exp.reduce((s, e) => s + (e.amount_cents || 0), 0);
+  const miles = trips.reduce((s, t) => s + Number(t.miles || 0), 0);
+  const mileageValue = trips.reduce((s, t) => s + mileageAmount(t), 0);
+  const owed = exp.filter((e) => e.billable && !e.reimbursed)
+    .reduce((s, e) => s + (e.amount_cents || 0), 0);
+
+  $('moneyStats').innerHTML = [
+    [`Expenses ${moneyYear}`, money0(spent), 'accent'],
+    ['Miles driven', miles.toLocaleString('en-US', { maximumFractionDigits: 1 }), ''],
+    ['Mileage value', money0(mileageValue), 'accent'],
+    ['Deductible total', money0(spent + mileageValue), ''],
+    ['Billable, unreimbursed', money0(owed), owed ? 'accent' : ''],
+    ['Entries', exp.length + trips.length, ''],
+  ].map(([label, value, cls]) =>
+    `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
+}
+
+function clientOptions(selected) {
+  return ['<option value="">— no client —</option>'].concat(
+    moneyData.clients.map((c) =>
+      `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${esc(c.business_name)}</option>`),
+  ).join('');
+}
+
+const clientName = (id) =>
+  moneyData.clients.find((c) => c.id === id)?.business_name || '—';
+
+function renderMoney() {
+  $('moneyTitle').textContent = moneyTab === 'expenses' ? 'Expenses' : 'Mileage';
+  document.querySelectorAll('[data-mtab]').forEach((b) =>
+    b.classList.toggle('on', b.dataset.mtab === moneyTab));
+  if (moneyTab === 'expenses') renderExpenses();
+  else renderMileage();
+}
+
+function renderExpenses() {
+  const rows = moneyData.expenses;
+  const total = rows.reduce((s, e) => s + (e.amount_cents || 0), 0);
+
+  $('moneyBody').innerHTML = `
+    <div class="entry">
+      <div class="f"><label>Date</label><input id="eDate" type="date" value="${todayISO()}"></div>
+      <div class="f"><label>Vendor</label><input id="eVendor" placeholder="Netlify, Home Depot…"></div>
+      <div class="f"><label>Category</label><select id="eCat">${
+        CATEGORIES.map((c) => `<option ${c === 'Software / SaaS' ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+      <div class="f"><label>Amount ($)</label><input id="eAmt" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="f"><label>Paid by</label><select id="ePay">${
+        PAY_METHODS.map((p) => `<option value="${esc(p)}">${esc(p || '—')}</option>`).join('')}</select></div>
+      <div class="f"><label>Client</label><select id="eClient">${clientOptions('')}</select></div>
+      <div class="f"><label>Description</label><input id="eDesc" placeholder="What it was for"></div>
+      <div class="f check"><input id="eBill" type="checkbox"><label for="eBill">Bill to client</label></div>
+      <div class="f go"><button class="btn primary" id="eAdd">Add expense</button></div>
+    </div>
+
+    <div class="scroll-x">${rows.length ? `<table class="tbl">
+      <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Client</th><th>Paid by</th>
+        <th class="num">Amount</th><th>Billable</th><th></th></tr></thead>
+      <tbody>${rows.map((e) => `<tr>
+        <td>${esc(date(e.spent_on))}</td>
+        <td>${esc(e.vendor)}${e.description ? `<br><small style="color:var(--muted)">${esc(e.description)}</small>` : ''}</td>
+        <td>${esc(e.category)}</td>
+        <td>${esc(clientName(e.client_id))}</td>
+        <td>${esc(e.payment_method || '—')}</td>
+        <td class="num">${esc(money(e.amount_cents))}</td>
+        <td>${e.billable ? (e.reimbursed
+          ? '<span class="pill paid">reimbursed</span>'
+          : `<button class="btn sm" data-reimb="${e.id}">Mark reimbursed</button>`) : '—'}</td>
+        <td><button class="btn sm ghost danger" data-delx="${e.id}">Delete</button></td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="5">${rows.length} expense${rows.length === 1 ? '' : 's'} in ${moneyYear}</td>
+        <td class="num tot">${esc(money(total))}</td><td colspan="2"></td></tr></tfoot>
+    </table>` : '<div class="empty">No expenses logged for this year yet.</div>'}</div>`;
+
+  $('eAdd').addEventListener('click', async () => {
+    const dollars = Number($('eAmt').value);
+    if (!$('eVendor').value.trim()) return toast('Vendor is required.', true);
+    if (!Number.isFinite(dollars) || dollars <= 0) return toast('Enter an amount.', true);
+    await api('add_expense', {
+      spent_on: $('eDate').value,
+      vendor: $('eVendor').value,
+      category: $('eCat').value,
+      amount_cents: Math.round(dollars * 100),
+      payment_method: $('ePay').value,
+      client_id: $('eClient').value || null,
+      description: $('eDesc').value,
+      billable: $('eBill').checked,
+    });
+    toast('Expense logged.');
+    await loadMoney();
+  });
+
+  $('moneyBody').querySelectorAll('[data-delx]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      if (!confirm('Delete this expense?')) return;
+      await api('delete_expense', { id: el.dataset.delx });
+      await loadMoney();
+    }));
+
+  $('moneyBody').querySelectorAll('[data-reimb]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      await api('save_expense', { id: el.dataset.reimb, reimbursed: true });
+      toast('Marked reimbursed.');
+      await loadMoney();
+    }));
+}
+
+function renderMileage() {
+  const rows = moneyData.mileage;
+  const rate = Number(moneyData.settings.mileage_rate_cents || 70);
+  const totalMiles = rows.reduce((s, t) => s + Number(t.miles || 0), 0);
+  const totalValue = rows.reduce((s, t) => s + mileageAmount(t), 0);
+
+  $('moneyBody').innerHTML = `
+    <div class="entry">
+      <div class="f"><label>Date</label><input id="mDate" type="date" value="${todayISO()}"></div>
+      <div class="f"><label>Purpose</label><input id="mPurpose" placeholder="Site visit, client meeting…"></div>
+      <div class="f"><label>From</label><input id="mFrom" placeholder="Office"></div>
+      <div class="f"><label>To</label><input id="mTo" placeholder="Chippewa Bay"></div>
+      <div class="f"><label>Miles</label><input id="mMiles" type="number" step="0.1" min="0" placeholder="0.0"></div>
+      <div class="f"><label>Rate (¢/mile)</label><input id="mRate" type="number" step="0.1" min="0" value="${rate}"></div>
+      <div class="f"><label>Client</label><select id="mClient">${clientOptions('')}</select></div>
+      <div class="f check"><input id="mRound" type="checkbox"><label for="mRound">Round trip (double the miles)</label></div>
+      <div class="f go"><button class="btn primary" id="mAdd">Add trip</button></div>
+    </div>
+    <p class="rate-note">
+      Rate is stamped on each trip, so changing it later never rewrites past entries.
+      <b>Confirm the current IRS standard mileage rate before you file</b> — this default is
+      just the last value you saved, not tax advice.
+      <button class="btn sm" id="mSaveRate">Save ${rate}¢ as the default</button>
+    </p>
+
+    <div class="scroll-x">${rows.length ? `<table class="tbl">
+      <thead><tr><th>Date</th><th>Purpose</th><th>Route</th><th>Client</th>
+        <th class="num">Miles</th><th class="num">Rate</th><th class="num">Value</th><th></th></tr></thead>
+      <tbody>${rows.map((t) => `<tr>
+        <td>${esc(date(t.drove_on))}</td>
+        <td>${esc(t.purpose)}${t.round_trip ? '<br><small style="color:var(--muted)">round trip</small>' : ''}</td>
+        <td>${esc(t.from_place || '—')} → ${esc(t.to_place || '—')}</td>
+        <td>${esc(clientName(t.client_id))}</td>
+        <td class="num">${Number(t.miles).toFixed(1)}</td>
+        <td class="num">${Number(t.rate_cents).toFixed(1)}¢</td>
+        <td class="num">${esc(money(mileageAmount(t)))}</td>
+        <td><button class="btn sm ghost danger" data-delm="${t.id}">Delete</button></td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">${rows.length} trip${rows.length === 1 ? '' : 's'} in ${moneyYear}</td>
+        <td class="num tot">${totalMiles.toFixed(1)}</td><td></td>
+        <td class="num tot">${esc(money(totalValue))}</td><td></td></tr></tfoot>
+    </table>` : '<div class="empty">No trips logged for this year yet.</div>'}</div>`;
+
+  $('mAdd').addEventListener('click', async () => {
+    let miles = Number($('mMiles').value);
+    if (!$('mPurpose').value.trim()) return toast('Purpose is required.', true);
+    if (!Number.isFinite(miles) || miles <= 0) return toast('Enter the miles driven.', true);
+    const roundTrip = $('mRound').checked;
+    if (roundTrip) miles *= 2;
+    await api('add_mileage', {
+      drove_on: $('mDate').value,
+      purpose: $('mPurpose').value,
+      from_place: $('mFrom').value,
+      to_place: $('mTo').value,
+      miles,
+      rate_cents: Number($('mRate').value),
+      round_trip: roundTrip,
+      client_id: $('mClient').value || null,
+    });
+    toast(`Trip logged — ${miles.toFixed(1)} miles.`);
+    await loadMoney();
+  });
+
+  $('mSaveRate').addEventListener('click', async () => {
+    await api('set_setting', { key: 'mileage_rate_cents', value: $('mRate').value });
+    toast(`Default rate saved as ${$('mRate').value}¢ per mile.`);
+    await loadMoney();
+  });
+
+  $('moneyBody').querySelectorAll('[data-delm]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      if (!confirm('Delete this trip?')) return;
+      await api('delete_mileage', { id: el.dataset.delm });
+      await loadMoney();
+    }));
+}
+
 /* ---------------- new client ---------------- */
 
 async function newClient() {
@@ -704,6 +979,25 @@ $('btnSync').addEventListener('click', async () => {
 
 $('q').addEventListener('input', renderList);
 $('fStatus').addEventListener('change', renderList);
+
+document.querySelectorAll('.vbtn').forEach((b) => b.addEventListener('click', async () => {
+  const view = b.dataset.view;
+  document.querySelectorAll('.vbtn').forEach((x) => x.classList.toggle('on', x === b));
+  $('clientsView').classList.toggle('hidden', view !== 'clients');
+  $('moneyView').classList.toggle('hidden', view !== 'money');
+  $('clientTools').classList.toggle('hidden', view !== 'clients');
+  if (view === 'money') await loadMoney().catch((e) => toast(e.message, true));
+}));
+
+document.querySelectorAll('[data-mtab]').forEach((b) => b.addEventListener('click', () => {
+  moneyTab = b.dataset.mtab;
+  renderMoney();
+}));
+
+$('yearPick').addEventListener('change', async () => {
+  moneyYear = Number($('yearPick').value);
+  await loadMoney().catch((e) => toast(e.message, true));
+});
 
 window.addEventListener('unhandledrejection', (e) => {
   if (e.reason?.message) toast(e.reason.message, true);
