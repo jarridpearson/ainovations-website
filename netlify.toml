@@ -20,6 +20,12 @@
 
 # Keep the back office out of every index, even if a URL leaks.
 [[headers]]
+  for = "/personal/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
   for = "/crm/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"

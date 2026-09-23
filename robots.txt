@@ -3,6 +3,7 @@ Allow: /
 
 Disallow: /node_modules/
 Disallow: /crm/
+Disallow: /personal/
 Disallow: /everward-portal/
 Disallow: /seo-backups-*/
 

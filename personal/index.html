@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Personal Records</title>
+<style>
+:root{
+  --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.09);
+  --text:#f7fbff; --muted:#b8cad7; --gold:#e0b25c; --gold-soft:#f3d79a; --gold-dark:#8a6a26;
+  --teal:#1dc8c6; --border:rgba(255,255,255,.13);
+  --green:#3ddc97; --amber:#ffc14d; --red:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg-deep); color:var(--text); min-height:100vh;
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--text)}
+a{color:var(--gold-soft)}
+
+.topbar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:30;
+}
+.brand{font-weight:800;letter-spacing:.02em;font-size:15px}
+.brand span{color:var(--gold)}
+.topbar .spacer{flex:1 1 auto}
+.who{color:var(--muted);font-size:13px}
+.xlink{color:var(--muted);font-size:13px;text-decoration:none;border:1px solid var(--border);
+  padding:6px 11px;border-radius:9px}
+.xlink:hover{background:var(--panel-2);color:var(--text)}
+
+.btn{border:1px solid var(--border);background:var(--panel);color:var(--text);
+  border-radius:9px;padding:8px 13px;font-size:13.5px;font-weight:600}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--gold-dark);border-color:var(--gold-dark)}
+.btn.primary:hover{background:var(--gold);color:#2a1f08}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--red)}
+.btn.sm{padding:5px 9px;font-size:12.5px}
+.btn.rcpt{border-color:rgba(224,178,92,.45);color:var(--gold-soft)}
+
+.wrap{padding:18px;max-width:1500px;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 15px;min-width:0}
+.stat b{display:block;font-size:23px;line-height:1.15;letter-spacing:-.01em}
+.stat small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.07em}
+.stat.accent b{color:var(--gold)}
+.stat .basis{display:block;margin-top:5px;font-style:normal;font-size:10.5px;color:var(--muted);line-height:1.35}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.card>h2{margin:0;padding:12px 15px;font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.card>h2 .spacer{flex:1 1 auto}
+.card-body{padding:15px}
+.yearpick{background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;
+  padding:5px 8px;font-size:12.5px}
+
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.f input,.f select,.f textarea{background:var(--bg-deep);border:1px solid var(--border);
+  border-radius:8px;padding:8px 10px;font-size:13.5px;width:100%;min-width:0}
+.f input:focus,.f select:focus{outline:2px solid var(--gold-dark);outline-offset:-1px}
+
+.entry{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:11px;
+  background:var(--bg-deep);border:1px solid var(--border);border-radius:11px;
+  padding:14px;margin-bottom:18px;align-items:end}
+.entry .check{flex-direction:row;align-items:center;gap:7px;padding-bottom:9px}
+.entry .check input{width:auto;min-width:0}
+.entry .check label{text-transform:none;letter-spacing:0;font-size:13px;color:var(--text)}
+.entry .go .btn{width:100%;padding:9px}
+.entry input[type=file]{padding:6px 8px;font-size:12px}
+.entry input[type=file]::file-selector-button{background:var(--panel-2);color:var(--text);
+  border:1px solid var(--border);border-radius:6px;padding:3px 8px;margin-right:8px;
+  font-size:12px;cursor:pointer}
+
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.07em;padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700}
+.tbl td{padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl tfoot td{border-top:1px solid var(--border);border-bottom:0;font-weight:700;padding-top:10px}
+.scroll-x{overflow-x:auto}
+.rcell{white-space:nowrap}
+.rcell .btn,.rcell label{margin-right:4px}
+.empty{padding:26px 16px;color:var(--muted);text-align:center;font-size:13.5px}
+
+.pill{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;padding:2px 7px;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
+.pill.cap{color:var(--gold);border-color:rgba(224,178,92,.5)}
+
+.bycat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:9px;margin-bottom:18px}
+.catrow{background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:9px 12px;
+  display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.catrow span{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.catrow b{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login form{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);
+  border-radius:16px;padding:26px}
+.login h1{margin:0 0 6px;font-size:22px}
+.login h1 span{color:var(--gold)}
+.login p.hint{margin:0 0 20px;color:var(--muted);font-size:13px}
+.login .f{margin-bottom:13px}
+.login .btn{width:100%;padding:11px}
+.msg{border-radius:9px;padding:9px 11px;font-size:13px;margin-bottom:13px;display:none}
+.msg.show{display:block}
+.msg.err{background:rgba(255,107,107,.14);border:1px solid rgba(255,107,107,.4);color:#ffc9c9}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:100;
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 16px;
+  font-size:13.5px;box-shadow:0 18px 44px rgba(0,0,0,.5);display:none;max-width:92vw}
+.toast.show{display:block}
+.toast.err{border-color:rgba(255,107,107,.5);color:#ffc9c9}
+.hidden{display:none !important}
+.note{color:var(--muted);font-size:12px;margin:-8px 0 16px}
+.note b{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="login" id="loginView">
+  <form id="loginForm">
+    <h1>Personal <span>Records</span></h1>
+    <p class="hint">Private. Authorized account only.</p>
+    <div class="msg err" id="loginMsg"></div>
+    <div class="f"><label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required></div>
+    <div class="f"><label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required></div>
+    <button class="btn primary" type="submit" id="loginBtn">Sign in</button>
+  </form>
+</div>
+
+<div id="appView" class="hidden">
+  <div class="topbar">
+    <div class="brand">Personal <span>Records</span></div>
+    <div class="spacer"></div>
+    <a class="xlink" href="/crm/">← Business CRM</a>
+    <span class="who" id="whoami"></span>
+    <button class="btn sm ghost" id="btnOut">Sign out</button>
+  </div>
+
+  <div class="wrap">
+    <div class="stats" id="stats"></div>
+
+    <div class="card">
+      <h2><span>Records</span><span class="spacer"></span>
+        <select id="yearPick" class="yearpick"></select></h2>
+      <div class="card-body">
+        <div class="entry">
+          <div class="f"><label>Date</label><input id="pDate" type="date"></div>
+          <div class="f"><label>Payee</label><input id="pPayee" placeholder="Who you paid"></div>
+          <div class="f"><label>Category</label><select id="pCat"></select></div>
+          <div class="f"><label>Amount ($)</label><input id="pAmt" type="number" step="0.01" min="0" placeholder="0.00"></div>
+          <div class="f"><label>Paid by</label><select id="pPay"></select></div>
+          <div class="f"><label>Property</label><input id="pProp" placeholder="e.g. 6127 N Main St"></div>
+          <div class="f"><label>Description</label><input id="pDesc" placeholder="What it was for"></div>
+          <div class="f"><label for="pFile">Evidence</label>
+            <input id="pFile" type="file" accept="image/png,image/jpeg,image/webp,application/pdf"></div>
+          <div class="f check"><input id="pCap" type="checkbox">
+            <label for="pCap">Capital improvement</label></div>
+          <div class="f go"><button class="btn primary" id="pAdd">Add record</button></div>
+        </div>
+        <p class="note">
+          <b>Capital improvement</b> means it adds to what the house cost you — a new roof, a
+          furnace, a deck. Those raise your cost basis and cut the taxable gain when you sell.
+          Ordinary repairs do not. Tick it at entry; nobody reconstructs this two decades later.
+        </p>
+        <div class="bycat" id="byCat"></div>
+        <div class="scroll-x" id="rows"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Personal records portal. Same login as the business CRM, entirely separate
+   tables — personal and business records never mix. */
+const SUPABASE_URL = 'https://ptipedxvsekwoehfalux.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9vGY3VFuLporcFm3zovVEw_9mPYjVWQ';
+const API = '/api/crm';
+const STORE = 'ain_crm_session';   // shared with /crm/ so one sign-in covers both
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (c) => c == null ? '—'
+  : '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const date = (iso) => {
+  if (!iso) return '—';
+  const b = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const d = b ? new Date(+b[1], +b[2] - 1, +b[3]) : new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+const todayISO = () => {
+  const d = new Date(); const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+const CATEGORIES = [
+  'Mortgage interest', 'Property tax', 'Homeowners insurance',
+  'Home improvement', 'Home repair & maintenance', 'Utilities',
+  'Charitable donation', 'Medical & dental', 'Childcare', 'Education',
+  'Vehicle & DMV', 'Other',
+];
+const PAY_METHODS = ['', 'Card', 'ACH', 'Check', 'Cash', 'Escrow'];
+
+let session = null, data = null;
+let year = new Date().getFullYear();
+
+function toast(t, err) {
+  const el = $('toast'); el.textContent = t;
+  el.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.className = 'toast'; }, err ? 6000 : 3000);
+}
+
+function saveSession(s) { session = s; try { localStorage.setItem(STORE, JSON.stringify(s)); } catch {} }
+function loadSession() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { return null; } }
+function clearSession() { session = null; try { localStorage.removeItem(STORE); } catch {} }
+
+async function authFetch(grant, body) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error_description || j.msg || j.error || 'Sign-in failed.');
+  return j;
+}
+async function refreshSession() {
+  if (!session?.refresh_token) return false;
+  try { saveSession(await authFetch('refresh_token', { refresh_token: session.refresh_token })); return true; }
+  catch { clearSession(); return false; }
+}
+async function api(action, payload = {}, retry) {
+  if (!session?.access_token) { showLogin(); throw new Error('Not signed in.'); }
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  if ((res.status === 401 || res.status === 403) && !retry) {
+    if (await refreshSession()) return api(action, payload, true);
+    showLogin('Session expired. Sign in again.');
+    throw new Error('Session expired.');
+  }
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || `Request failed (${res.status}).`);
+  return j;
+}
+function readBase64(file) {
+  return new Promise((ok, no) => {
+    const fr = new FileReader();
+    fr.onload = () => ok(String(fr.result).split(',')[1]);
+    fr.onerror = no; fr.readAsDataURL(file);
+  });
+}
+
+function showLogin(m) {
+  clearSession();
+  $('appView').classList.add('hidden');
+  $('loginView').classList.remove('hidden');
+  const el = $('loginMsg');
+  if (m) { el.textContent = m; el.classList.add('show'); } else el.classList.remove('show');
+}
+async function showApp() {
+  $('loginView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('pCat').innerHTML = CATEGORIES.map((c) => `<option>${esc(c)}</option>`).join('');
+  $('pPay').innerHTML = PAY_METHODS.map((p) => `<option value="${esc(p)}">${esc(p || '—')}</option>`).join('');
+  $('pDate').value = todayISO();
+  await load();
+}
+
+async function load() {
+  data = await api('personal', { year });
+  $('whoami').textContent = session ? (data.user || '') : '';
+  renderYears(); renderStats(); renderCats(); renderRows();
+}
+
+function renderYears() {
+  const now = new Date().getFullYear();
+  const first = data.earliestYear || now;
+  const years = [];
+  for (let y = now; y >= Math.min(first, now); y--) years.push(y);
+  if (!years.includes(year)) years.push(year);
+  $('yearPick').innerHTML = years.sort((a, b) => b - a)
+    .map((y) => `<option ${y === year ? 'selected' : ''}>${y}</option>`).join('');
+}
+
+function renderStats() {
+  const rows = data.expenses;
+  const total = rows.reduce((s, r) => s + r.amount_cents, 0);
+  const cap = rows.filter((r) => r.capital_improvement).reduce((s, r) => s + r.amount_cents, 0);
+  const home = rows.filter((r) => ['Mortgage interest', 'Property tax', 'Homeowners insurance',
+    'Home improvement', 'Home repair & maintenance', 'Utilities'].includes(r.category))
+    .reduce((s, r) => s + r.amount_cents, 0);
+  const give = rows.filter((r) => r.category === 'Charitable donation')
+    .reduce((s, r) => s + r.amount_cents, 0);
+  const noEvidence = rows.filter((r) => !r.receipt_path).length;
+
+  $('stats').innerHTML = [
+    [`Total ${year}`, money(total), 'accent', ''],
+    ['Home & property', money(home), '', ''],
+    ['Capital improvements', money(cap), cap ? 'accent' : '',
+      'Adds to cost basis — reduces the gain when you sell'],
+    ['Charitable giving', money(give), '', ''],
+    ['Records', rows.length, '', ''],
+    ['Missing evidence', noEvidence, noEvidence ? 'accent' : '', ''],
+  ].map(([l, v, cls, hint]) =>
+    `<div class="stat ${cls}"${hint ? ` title="${esc(hint)}"` : ''}><b>${esc(v)}</b>
+      <small>${esc(l)}</small>${hint ? `<em class="basis">${esc(hint)}</em>` : ''}</div>`).join('');
+}
+
+function renderCats() {
+  const by = {};
+  data.expenses.forEach((r) => { by[r.category] = (by[r.category] || 0) + r.amount_cents; });
+  const entries = Object.entries(by).sort((a, b) => b[1] - a[1]);
+  $('byCat').innerHTML = entries.length
+    ? entries.map(([c, v]) => `<div class="catrow"><span>${esc(c)}</span><b>${esc(money(v))}</b></div>`).join('')
+    : '';
+}
+
+function renderRows() {
+  const rows = data.expenses;
+  const total = rows.reduce((s, r) => s + r.amount_cents, 0);
+  $('rows').innerHTML = rows.length ? `<table class="tbl">
+    <thead><tr><th>Date</th><th>Payee</th><th>Category</th><th>Property</th><th>Paid by</th>
+      <th class="num">Amount</th><th>Evidence</th><th></th></tr></thead>
+    <tbody>${rows.map((r) => `<tr>
+      <td>${esc(date(r.spent_on))}</td>
+      <td>${esc(r.payee)}${r.description ? `<br><small style="color:var(--muted)">${esc(r.description)}</small>` : ''}</td>
+      <td>${esc(r.category)}${r.capital_improvement ? ' <span class="pill cap">capital</span>' : ''}</td>
+      <td>${esc(r.property || '—')}</td>
+      <td>${esc(r.payment_method || '—')}</td>
+      <td class="num">${esc(money(r.amount_cents))}</td>
+      <td class="rcell">${r.receipt_path
+        ? `<button class="btn sm rcpt" data-view="${esc(r.receipt_path)}">View</button>
+           <label class="btn sm ghost">Replace<input type="file" hidden data-upl="${r.id}"
+             accept="image/png,image/jpeg,image/webp,application/pdf"></label>
+           <button class="btn sm ghost danger" data-rm="${r.id}">Remove</button>`
+        : `<label class="btn sm ghost">Attach<input type="file" hidden data-upl="${r.id}"
+             accept="image/png,image/jpeg,image/webp,application/pdf"></label>`}</td>
+      <td><button class="btn sm ghost danger" data-del="${r.id}">Delete</button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="5">${rows.length} record${rows.length === 1 ? '' : 's'} in ${year}
+      · ${rows.filter((r) => r.receipt_path).length} of ${rows.length} with evidence</td>
+      <td class="num">${esc(money(total))}</td><td colspan="2"></td></tr></tfoot>
+  </table>` : '<div class="empty">Nothing recorded for this year yet.</div>';
+
+  $('rows').querySelectorAll('[data-view]').forEach((el) => el.addEventListener('click', async () => {
+    const { url } = await api('receipt_url', { path: el.dataset.view });
+    window.open(url, '_blank', 'noopener');
+  }));
+  $('rows').querySelectorAll('[data-rm]').forEach((el) => el.addEventListener('click', async () => {
+    if (!confirm('Remove this evidence? The file is deleted permanently.')) return;
+    await api('delete_receipt', { expense_id: el.dataset.rm, scope: 'personal' });
+    toast('Evidence removed.'); await load();
+  }));
+  $('rows').querySelectorAll('[data-upl]').forEach((el) => el.addEventListener('change', async () => {
+    const f = el.files?.[0]; if (!f) return;
+    if (f.size > 25 * 1024 * 1024) return toast('That file is over 25MB.', true);
+    toast(`Uploading ${f.name}…`);
+    await api('upload_receipt', { expense_id: el.dataset.upl, filename: f.name,
+      content_type: f.type, data_base64: await readBase64(f), scope: 'personal' });
+    toast('Evidence attached.'); await load();
+  }));
+  $('rows').querySelectorAll('[data-del]').forEach((el) => el.addEventListener('click', async () => {
+    if (!confirm('Delete this record?')) return;
+    await api('delete_personal', { id: el.dataset.del });
+    await load();
+  }));
+}
+
+$('pAdd').addEventListener('click', async () => {
+  const btn = $('pAdd');
+  const dollars = Number($('pAmt').value);
+  if (!$('pPayee').value.trim()) return toast('Payee is required.', true);
+  if (!Number.isFinite(dollars) || dollars <= 0) return toast('Enter an amount.', true);
+  const file = $('pFile').files?.[0] || null;
+  if (file && file.size > 25 * 1024 * 1024) return toast('That file is over 25MB.', true);
+
+  btn.disabled = true; btn.textContent = file ? 'Saving + uploading…' : 'Saving…';
+  try {
+    const { expense } = await api('add_personal', {
+      spent_on: $('pDate').value, payee: $('pPayee').value, category: $('pCat').value,
+      amount_cents: Math.round(dollars * 100), payment_method: $('pPay').value,
+      property: $('pProp').value, description: $('pDesc').value,
+      capital_improvement: $('pCap').checked,
+    });
+    if (file) {
+      try {
+        await api('upload_receipt', { expense_id: expense.id, filename: file.name,
+          content_type: file.type, data_base64: await readBase64(file), scope: 'personal' });
+        toast(`Recorded with ${file.name}.`);
+      } catch (e) { toast(`Saved, but the evidence did not upload: ${e.message}`, true); }
+    } else toast('Recorded — no evidence attached.');
+    ['pPayee', 'pAmt', 'pDesc'].forEach((i) => { $(i).value = ''; });
+    $('pFile').value = ''; $('pCap').checked = false;
+    await load();
+  } finally { btn.disabled = false; btn.textContent = 'Add record'; }
+});
+
+$('yearPick').addEventListener('change', async () => {
+  year = Number($('yearPick').value);
+  await load().catch((e) => toast(e.message, true));
+});
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('loginBtn'), msg = $('loginMsg');
+  msg.classList.remove('show'); btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    saveSession(await authFetch('password', {
+      email: $('email').value.trim(), password: $('password').value }));
+    $('password').value = '';
+    await showApp();
+  } catch (err) {
+    msg.textContent = err.message; msg.classList.add('show'); clearSession();
+  } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+});
+$('btnOut').addEventListener('click', () => showLogin());
+window.addEventListener('unhandledrejection', (e) => { if (e.reason?.message) toast(e.reason.message, true); });
+
+(async function boot() {
+  session = loadSession();
+  if (!session?.access_token) { showLogin(); return; }
+  try { await showApp(); }
+  catch {
+    if (await refreshSession()) { try { await showApp(); return; } catch {} }
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>

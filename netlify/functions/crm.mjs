@@ -320,8 +320,18 @@ const MILEAGE_FIELDS = [
   'rate_cents', 'round_trip', 'client_id', 'notes',
 ];
 
+const PERSONAL_FIELDS = [
+  'spent_on', 'payee', 'description', 'category', 'amount_cents',
+  'payment_method', 'property', 'capital_improvement', 'notes', 'source_ref',
+];
+
 const NUMERIC_FIELDS = new Set(['amount_cents', 'miles', 'rate_cents', 'mrr_cents']);
-const BOOLEAN_FIELDS = new Set(['billable', 'reimbursed', 'round_trip']);
+const BOOLEAN_FIELDS = new Set([
+  'billable', 'reimbursed', 'round_trip', 'capital_improvement',
+]);
+
+// Receipts can hang off either ledger; the caller says which.
+const receiptTable = (scope) => (scope === 'personal' ? 'personal_expenses' : 'crm_expenses');
 
 function pickFields(input, allowed) {
   const out = {};
@@ -565,7 +575,8 @@ async function handleAction(action, payload, user) {
 
       // Replacing a receipt with a differently-named file would otherwise leave
       // the old object stranded in the bucket.
-      const [prev] = await db(`crm_expenses?id=eq.${expense_id}&select=receipt_path`);
+      const tbl = receiptTable(payload.scope);
+      const [prev] = await db(`${tbl}?id=eq.${expense_id}&select=receipt_path`);
       if (prev?.receipt_path && prev.receipt_path !== path) {
         await fetch(`${SUPABASE_URL}/storage/v1/object/receipts/${prev.receipt_path}`, {
           method: 'DELETE',
@@ -573,7 +584,7 @@ async function handleAction(action, payload, user) {
         }).catch(() => {});
       }
 
-      const [row] = await db(`crm_expenses?id=eq.${expense_id}`, {
+      const [row] = await db(`${tbl}?id=eq.${expense_id}`, {
         method: 'PATCH',
         body: { receipt_path: path, receipt_kind: content_type || null },
         prefer: 'return=representation',
@@ -584,7 +595,8 @@ async function handleAction(action, payload, user) {
     case 'delete_receipt': {
       const { expense_id } = payload;
       if (!expense_id) return { error: 'missing expense_id' };
-      const [e] = await db(`crm_expenses?id=eq.${expense_id}&select=receipt_path`);
+      const dtbl = receiptTable(payload.scope);
+      const [e] = await db(`${dtbl}?id=eq.${expense_id}&select=receipt_path`);
       if (!e) return { error: 'expense not found' };
       if (e.receipt_path) {
         // Remove the object too, or replacing a receipt would orphan files in
@@ -594,7 +606,7 @@ async function handleAction(action, payload, user) {
           headers: { authorization: `Bearer ${SERVICE_KEY}` },
         }).catch(() => {});
       }
-      const [row] = await db(`crm_expenses?id=eq.${expense_id}`, {
+      const [row] = await db(`${dtbl}?id=eq.${expense_id}`, {
         method: 'PATCH',
         body: { receipt_path: null, receipt_kind: null },
         prefer: 'return=representation',
@@ -658,6 +670,45 @@ async function handleAction(action, payload, user) {
         prefer: 'resolution=merge-duplicates,return=minimal',
       });
       return { saved: true };
+    }
+
+    // --- personal portal ----------------------------------------------------
+    // Separate table, separate page. Personal records never touch crm_expenses.
+
+    case 'personal': {
+      const year = String(payload.year || new Date().getFullYear());
+      const rows = await db(
+        `personal_expenses?select=*&tax_year=eq.${year}&order=spent_on.desc`,
+      );
+      const years = await db('personal_expenses?select=tax_year&order=tax_year.asc&limit=1');
+      return { year: Number(year), expenses: rows, earliestYear: years[0]?.tax_year || null };
+    }
+
+    case 'add_personal':
+    case 'save_personal': {
+      const fields = pickFields(payload, PERSONAL_FIELDS);
+      if (action === 'add_personal') {
+        if (!fields.payee) return { error: 'payee is required' };
+        if (!fields.spent_on) return { error: 'date is required' };
+        if (fields.amount_cents == null) return { error: 'amount is required' };
+        const [row] = await db('personal_expenses', {
+          method: 'POST', body: [fields], prefer: 'return=representation',
+        });
+        return { expense: row };
+      }
+      if (!payload.id) return { error: 'missing id' };
+      const [row] = await db(`personal_expenses?id=eq.${payload.id}`, {
+        method: 'PATCH', body: fields, prefer: 'return=representation',
+      });
+      return { expense: row };
+    }
+
+    case 'delete_personal': {
+      if (!payload.id) return { error: 'missing id' };
+      await db(`personal_expenses?id=eq.${payload.id}`, {
+        method: 'DELETE', prefer: 'return=minimal',
+      });
+      return { deleted: true };
     }
 
     case 'sync_stripe':
