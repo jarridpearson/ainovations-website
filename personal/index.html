@@ -164,14 +164,13 @@ a{color:var(--gold-soft)}
           <div class="f"><label>Description</label><input id="pDesc" placeholder="What it was for"></div>
           <div class="f"><label for="pFile">Evidence</label>
             <input id="pFile" type="file" accept="image/png,image/jpeg,image/webp,application/pdf"></div>
-          <div class="f check"><input id="pCap" type="checkbox">
-            <label for="pCap">Capital improvement</label></div>
           <div class="f go"><button class="btn primary" id="pAdd">Add record</button></div>
         </div>
         <p class="note">
-          <b>Capital improvement</b> means it adds to what the house cost you — a new roof, a
-          furnace, a deck. Those raise your cost basis and cut the taxable gain when you sell.
-          Ordinary repairs do not. Tick it at entry; nobody reconstructs this two decades later.
+          Every category here is something that actually reduces what you owe. <b>Credits</b>
+          (childcare, tuition, energy) come straight off the tax bill. <b>Above-the-line</b>
+          items (student loan interest, HSA, IRA) count whether or not you itemize. Everything
+          else only helps if your itemized total beats the standard deduction.
         </p>
         <div class="bycat" id="byCat"></div>
         <div class="scroll-x" id="rows"></div>
@@ -206,12 +205,26 @@ const todayISO = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
+// Only categories that actually reduce a personal tax bill. Homeowners
+// insurance, repairs, improvements and utilities are deliberately absent:
+// none are deductible on a primary residence, and with the sale-gain
+// exclusion covering Jarrid there is no basis reason to keep them either.
 const CATEGORIES = [
-  'Mortgage interest', 'Property tax', 'Homeowners insurance',
-  'Home improvement', 'Home repair & maintenance', 'Utilities',
-  'Charitable donation', 'Medical & dental', 'Childcare', 'Education',
-  'Vehicle & DMV', 'Other',
+  'Mortgage interest', 'Property & school tax', 'State / local income tax',
+  'Charitable donation', 'Medical & dental', 'Health insurance premium',
+  'Student loan interest', 'HSA contribution', 'IRA contribution',
+  'Childcare', 'Education / tuition', 'Energy-efficiency improvement',
+  'Vehicle registration (value-based part)', 'Other',
 ];
+
+// Deductions reduce taxable income; credits come straight off the tax owed.
+const CREDIT_CATEGORIES = new Set([
+  'Childcare', 'Education / tuition', 'Energy-efficiency improvement',
+]);
+// These work whether or not he itemizes.
+const ABOVE_LINE = new Set([
+  'Student loan interest', 'HSA contribution', 'IRA contribution',
+]);
 const PAY_METHODS = ['', 'Card', 'ACH', 'Check', 'Cash', 'Escrow'];
 
 let session = null, data = null;
@@ -302,19 +315,22 @@ function renderYears() {
 function renderStats() {
   const rows = data.expenses;
   const total = rows.reduce((s, r) => s + r.amount_cents, 0);
-  const cap = rows.filter((r) => r.capital_improvement).reduce((s, r) => s + r.amount_cents, 0);
-  const home = rows.filter((r) => ['Mortgage interest', 'Property tax', 'Homeowners insurance',
-    'Home improvement', 'Home repair & maintenance', 'Utilities'].includes(r.category))
+  const credits = rows.filter((r) => CREDIT_CATEGORIES.has(r.category))
     .reduce((s, r) => s + r.amount_cents, 0);
+  const above = rows.filter((r) => ABOVE_LINE.has(r.category))
+    .reduce((s, r) => s + r.amount_cents, 0);
+  const itemized = total - credits - above;
   const give = rows.filter((r) => r.category === 'Charitable donation')
     .reduce((s, r) => s + r.amount_cents, 0);
   const noEvidence = rows.filter((r) => !r.receipt_path).length;
 
   $('stats').innerHTML = [
     [`Total ${year}`, money(total), 'accent', ''],
-    ['Home & property', money(home), '', ''],
-    ['Capital improvements', money(cap), cap ? 'accent' : '',
-      'Adds to cost basis — reduces the gain when you sell'],
+    ['Itemized deductions', money(itemized), '',
+      'Only helps if this beats the standard deduction'],
+    ['Credits', money(credits), credits ? 'accent' : '',
+      'Comes straight off the tax owed, not off income'],
+    ['Above the line', money(above), '', 'Counts whether or not you itemize'],
     ['Charitable giving', money(give), '', ''],
     ['Records', rows.length, '', ''],
     ['Missing evidence', noEvidence, noEvidence ? 'accent' : '', ''],
@@ -341,7 +357,8 @@ function renderRows() {
     <tbody>${rows.map((r) => `<tr>
       <td>${esc(date(r.spent_on))}</td>
       <td>${esc(r.payee)}${r.description ? `<br><small style="color:var(--muted)">${esc(r.description)}</small>` : ''}</td>
-      <td>${esc(r.category)}${r.capital_improvement ? ' <span class="pill cap">capital</span>' : ''}</td>
+      <td>${esc(r.category)}${CREDIT_CATEGORIES.has(r.category)
+        ? ' <span class="pill cap">credit</span>' : ''}</td>
       <td>${esc(r.property || '—')}</td>
       <td>${esc(r.payment_method || '—')}</td>
       <td class="num">${esc(money(r.amount_cents))}</td>
@@ -397,7 +414,6 @@ $('pAdd').addEventListener('click', async () => {
       spent_on: $('pDate').value, payee: $('pPayee').value, category: $('pCat').value,
       amount_cents: Math.round(dollars * 100), payment_method: $('pPay').value,
       property: $('pProp').value, description: $('pDesc').value,
-      capital_improvement: $('pCap').checked,
     });
     if (file) {
       try {
@@ -407,7 +423,7 @@ $('pAdd').addEventListener('click', async () => {
       } catch (e) { toast(`Saved, but the evidence did not upload: ${e.message}`, true); }
     } else toast('Recorded — no evidence attached.');
     ['pPayee', 'pAmt', 'pDesc'].forEach((i) => { $(i).value = ''; });
-    $('pFile').value = ''; $('pCap').checked = false;
+    $('pFile').value = '';
     await load();
   } finally { btn.disabled = false; btn.textContent = 'Add record'; }
 });

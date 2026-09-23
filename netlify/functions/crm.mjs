@@ -322,13 +322,11 @@ const MILEAGE_FIELDS = [
 
 const PERSONAL_FIELDS = [
   'spent_on', 'payee', 'description', 'category', 'amount_cents',
-  'payment_method', 'property', 'capital_improvement', 'notes', 'source_ref',
+  'payment_method', 'property', 'notes', 'source_ref',
 ];
 
 const NUMERIC_FIELDS = new Set(['amount_cents', 'miles', 'rate_cents', 'mrr_cents']);
-const BOOLEAN_FIELDS = new Set([
-  'billable', 'reimbursed', 'round_trip', 'capital_improvement',
-]);
+const BOOLEAN_FIELDS = new Set(['billable', 'reimbursed', 'round_trip']);
 
 // Receipts can hang off either ledger; the caller says which.
 const receiptTable = (scope) => (scope === 'personal' ? 'personal_expenses' : 'crm_expenses');
