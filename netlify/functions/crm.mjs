@@ -346,7 +346,10 @@ async function handleAction(action, payload, user) {
       const [clients, openInvoices, paidInvoices, allProspects] = await Promise.all([
         db('crm_clients?select=*&order=created_at.desc'),
         db('crm_invoices?select=stripe_invoice_id,client_id,number,status,amount_due_cents,due_date&status=in.(open,draft,uncollectible)&order=created_at.desc'),
-        db('crm_invoices?select=client_id,amount_paid_cents,paid_at&amount_paid_cents=gt.0&order=paid_at.asc'),
+        // Revenue counts ONLY from clients still in the CRM. Everything Stripe
+        // collected before Go 4 Words was test billing, and those customers are
+        // gone, so their invoices are unlinked and must not read as revenue.
+        db('crm_invoices?select=client_id,amount_paid_cents,paid_at&amount_paid_cents=gt.0&client_id=not.is.null&order=paid_at.asc'),
         db('prospects?select=id&limit=2000'),
       ]);
       // "Waiting" means not yet pulled into the CRM, so discount the converted ones.
