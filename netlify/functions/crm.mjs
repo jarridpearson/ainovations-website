@@ -137,6 +137,12 @@ async function syncStripe() {
     else if (prev !== 'active') statusByCustomer.set(s.customer, 'churned');
   }
 
+  // Customers deliberately removed from the CRM must never come back on a sync.
+  const ignored = new Set(
+    (await db('crm_stripe_ignored?select=stripe_customer_id'))
+      .map((r) => r.stripe_customer_id),
+  );
+
   // Existing clients, keyed by stripe id and by email, so we attach rather than duplicate.
   const clients = await db('crm_clients?select=id,client_no,business_name,email,stripe_customer_id,status');
   const byStripe = new Map();
@@ -150,7 +156,7 @@ async function syncStripe() {
   let linked = 0;
 
   for (const cust of customers) {
-    if (byStripe.has(cust.id)) continue;
+    if (byStripe.has(cust.id) || ignored.has(cust.id)) continue;
 
     const email = (cust.email || '').toLowerCase();
     const existing = email ? byEmail.get(email) : null;
@@ -389,6 +395,23 @@ async function handleAction(action, payload, user) {
       return { client: row };
     }
 
+    case 'delete_client': {
+      const id = payload.id;
+      if (!id) return { error: 'missing id' };
+      const [c] = await db(`crm_clients?id=eq.${id}&select=stripe_customer_id,business_name`);
+      if (!c) return { error: 'client not found' };
+      // Remember it, or the next Stripe sync would simply re-create the row.
+      if (c.stripe_customer_id) {
+        await db('crm_stripe_ignored?on_conflict=stripe_customer_id', {
+          method: 'POST',
+          body: [{ stripe_customer_id: c.stripe_customer_id, business_name: c.business_name }],
+          prefer: 'resolution=merge-duplicates,return=minimal',
+        });
+      }
+      await db(`crm_clients?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+      return { deleted: true, suppressed: !!c.stripe_customer_id };
+    }
+
     case 'add_note': {
       const { client_id, body } = payload;
       if (!client_id || !body?.trim()) return { error: 'missing client_id or body' };
@@ -497,6 +520,50 @@ async function handleAction(action, payload, user) {
         method: 'PATCH', body: fields, prefer: 'return=representation',
       });
       return { expense: row };
+    }
+
+    // Receipts live in the private "receipts" bucket. The browser never gets a
+    // bucket key — it asks for a short-lived signed URL when it wants to look.
+    case 'upload_receipt': {
+      const { expense_id, filename, content_type, data_base64 } = payload;
+      if (!expense_id || !data_base64) return { error: 'missing expense_id or data' };
+      const safe = String(filename || 'receipt')
+        .replace(/[^A-Za-z0-9._-]/g, '_').slice(-80);
+      const path = `${expense_id}/${safe}`;
+      const bytes = Buffer.from(data_base64, 'base64');
+
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/receipts/${path}`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${SERVICE_KEY}`,
+          'content-type': content_type || 'application/octet-stream',
+          'x-upsert': 'true',
+        },
+        body: bytes,
+      });
+      if (!res.ok) return { error: `receipt upload failed: ${(await res.text()).slice(0, 200)}` };
+
+      const [row] = await db(`crm_expenses?id=eq.${expense_id}`, {
+        method: 'PATCH',
+        body: { receipt_path: path, receipt_kind: content_type || null },
+        prefer: 'return=representation',
+      });
+      return { expense: row, path, bytes: bytes.length };
+    }
+
+    case 'receipt_url': {
+      if (!payload.path) return { error: 'missing path' };
+      const res = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/sign/receipts/${payload.path}`,
+        {
+          method: 'POST',
+          headers: { authorization: `Bearer ${SERVICE_KEY}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ expiresIn: 3600 }),
+        },
+      );
+      if (!res.ok) return { error: `could not sign receipt: ${(await res.text()).slice(0, 200)}` };
+      const { signedURL } = await res.json();
+      return { url: `${SUPABASE_URL}/storage/v1${signedURL}` };
     }
 
     case 'delete_expense': {
