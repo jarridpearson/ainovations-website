@@ -302,6 +302,9 @@ const CLIENT_FIELDS = [
 const EXPENSE_FIELDS = [
   'spent_on', 'vendor', 'description', 'category', 'amount_cents',
   'payment_method', 'client_id', 'billable', 'reimbursed', 'receipt_url', 'notes',
+  // Provenance: which email or vendor portal this row came from. Carries a
+  // unique index, so re-running an import cannot double up.
+  'source_ref',
 ];
 
 const MILEAGE_FIELDS = [
