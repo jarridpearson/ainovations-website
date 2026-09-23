@@ -505,10 +505,11 @@ async function handleAction(action, payload, user) {
     case 'add_expense':
     case 'save_expense': {
       const fields = pickFields(payload, EXPENSE_FIELDS);
-      if (!fields.vendor) return { error: 'vendor is required' };
-      if (!fields.spent_on) return { error: 'date is required' };
-      if (fields.amount_cents == null) return { error: 'amount is required' };
       if (action === 'add_expense') {
+        // Only a new row needs the full set; an edit may touch one field.
+        if (!fields.vendor) return { error: 'vendor is required' };
+        if (!fields.spent_on) return { error: 'date is required' };
+        if (fields.amount_cents == null) return { error: 'amount is required' };
         const [row] = await db('crm_expenses', {
           method: 'POST', body: [fields], prefer: 'return=representation',
         });
@@ -578,11 +579,11 @@ async function handleAction(action, payload, user) {
     case 'add_mileage':
     case 'save_mileage': {
       const fields = pickFields(payload, MILEAGE_FIELDS);
-      if (!fields.purpose) return { error: 'purpose is required' };
-      if (!fields.drove_on) return { error: 'date is required' };
-      if (!fields.miles) return { error: 'miles is required' };
-      if (fields.rate_cents == null) return { error: 'rate is required' };
       if (action === 'add_mileage') {
+        if (!fields.purpose) return { error: 'purpose is required' };
+        if (!fields.drove_on) return { error: 'date is required' };
+        if (!fields.miles) return { error: 'miles is required' };
+        if (fields.rate_cents == null) return { error: 'rate is required' };
         const [row] = await db('crm_mileage', {
           method: 'POST', body: [fields], prefer: 'return=representation',
         });
