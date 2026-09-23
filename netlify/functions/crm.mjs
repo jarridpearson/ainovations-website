@@ -250,14 +250,28 @@ async function syncStripe() {
     const m = monthlyCents(s.amount_cents, s.interval) * (s.quantity || 1);
     mrr.set(s.client_id, (mrr.get(s.client_id) || 0) + m);
   }
-  const allClients = await db('crm_clients?select=id,mrr_cents');
+  // Statuses Stripe is allowed to drive. Anything Jarrid set by hand
+  // (proposal, paused, won, lost, contacted) is his and stays put.
+  const STRIPE_OWNED = new Set(['lead', 'active', 'churned']);
+
+  const allClients = await db('crm_clients?select=id,mrr_cents,status,stripe_customer_id');
   for (const c of allClients) {
+    const patch = {};
     const next = mrr.get(c.id) || 0;
-    if (next === (c.mrr_cents || 0)) continue;
+    if (next !== (c.mrr_cents || 0)) patch.mrr_cents = next;
+
+    if (c.stripe_customer_id && STRIPE_OWNED.has(c.status)) {
+      const fromStripe = statusByCustomer.get(c.stripe_customer_id) || 'lead';
+      if (fromStripe !== c.status) {
+        patch.status = fromStripe;
+        await logActivity(c.id, 'status.change',
+          `Stripe says ${fromStripe} — status updated from ${c.status}`);
+      }
+    }
+
+    if (!Object.keys(patch).length) continue;
     await db(`crm_clients?id=eq.${c.id}`, {
-      method: 'PATCH',
-      body: { mrr_cents: next },
-      prefer: 'return=minimal',
+      method: 'PATCH', body: patch, prefer: 'return=minimal',
     }).catch(() => {});
   }
 
