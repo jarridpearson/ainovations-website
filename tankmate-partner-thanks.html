@@ -35,5 +35,39 @@
   </main>
 </div>
   <script src="/chatbot.js" defer></script>
+<script>
+/* GA4 conversion. Netlify only redirects here after a successful form POST,
+   so reaching this page is a real lead, not a button click. */
+(function () {
+  var MAP = {
+    '/churches-thanks': 'churches',
+    '/hire-thanks': 'hire',
+    '/marquee-thanks': 'marquee',
+    '/referral-partner-thanks': 'referral-partners',
+    '/restaurants-thanks': 'restaurants',
+    '/partner-thanks': 'tankmate-partners',
+    '/tankmate-partner-thanks': 'tankmate-partners'
+  };
+  var path = location.pathname.replace(/\.html$/, '').replace(/(.)\/$/, '$1') || '/';
+  var form = MAP[path];
+  if (!form) {
+    /* /rent-a-site-thanks is shared by eight landing pages, so name the
+       lead after the page the visitor actually submitted from. */
+    form = 'rent-a-site';
+    try {
+      var r = new URL(document.referrer).pathname
+        .replace(/\.html$/, '').replace(/^\//, '').replace(/\/$/, '');
+      if (r) form = r;
+    } catch (e) {}
+  }
+  /* A refresh or a bookmarked visit must not count a second lead. */
+  var once = 'ain_lead_' + path;
+  try { if (sessionStorage.getItem(once)) return; sessionStorage.setItem(once, '1'); } catch (e) {}
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'generate_lead', { form_source: form, page_path: path });
+  }
+})();
+</script>
 </body>
 </html>

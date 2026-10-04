@@ -36,6 +36,7 @@
   var messages = loadMsgs() || [{ role: 'user', content: OPENER, hidden: true }];
   var busy = false;
   var greeted = messages.some(function (m) { return m.role === 'assistant'; });
+  var opened = false; // chatbot_open fires once per page view
 
   /* ---- styles ---- */
   var css =
@@ -180,8 +181,14 @@
   }
 
   /* ---- open/close + events ---- */
+  /* Fire a GA4 event if analytics is present; never break the chat if it isn't. */
+  function track(name, params) {
+    try { if (typeof gtag === 'function') gtag('event', name, params || {}); } catch (e) {}
+  }
+
   function open() {
     wrap.classList.add('open');
+    if (!opened) { opened = true; track('chatbot_open', { page_path: location.pathname }); }
     if (!greeted && !busy) { greeted = true; send(apiMessages()); } // fetch the greeting on first open
     setTimeout(function () { elIn.focus(); }, 50);
   }
@@ -199,6 +206,18 @@
     elIn.style.height = 'auto';
     elIn.style.height = Math.min(elIn.scrollHeight, 110) + 'px';
   });
+
+  /* Phone and email clicks are the other way someone reaches out.
+     One delegated listener covers every tel:/mailto: link on the page. */
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href^="tel:"], a[href^="mailto:"]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    track('contact_click', {
+      method: href.indexOf('tel:') === 0 ? 'phone' : 'email',
+      page_path: location.pathname
+    });
+  }, true);
 
   renderAll(); // restore any prior conversation from this session
 })();
