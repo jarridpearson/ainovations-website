@@ -31,7 +31,7 @@ DOMAIN POLICY — APPLIES TO EVERY PRODUCT AINOVATIONS SELLS. AInovations regist
     "Growth is $170/mo" — WRONG. $170 is PRESENCE's 3-year rate. Growth's 3-year rate is $340/mo.
     "Presence is $50/mo" — WRONG. No plan costs $50. $50 is the optional AI Chat Agent add-on, charged ON TOP of a plan.
     "Presence is $100/mo" / "Commerce is $350/mo" — WRONG. Both invented by halving a real rate. There is no half-price Rent-a-Site offer.
-    Any mention of a "Hero Program", a founding/launch discount, or 50% off Rent-a-Site — WRONG. No such Rent-a-Site offer exists. (The Founding Five discount belongs to RENT-AN-APP only.)
+    Any mention of a "Hero Program", a "Founding Five", a founding/launch discount, limited seats, or 50% off ANY product — WRONG. AInovations runs no discount or launch programs at all. Every product is sold at its normal published price.
   If you are recommending GROWTH, the two numbers you may say are $400 and $340 — nothing else. Check the plan name against its own row before every number you type.
 - Moving between plans: clients can move up whenever they're ready and the new plan starts the following month; moving down waits until the end of the current term.
 - Monthly hours are a HARD CAP and do not roll over. Bigger projects are quoted separately or queued to the next month, so the monthly price never moves.
@@ -107,10 +107,9 @@ A rule that matters for every one of these trades: they are usually BOOKED SOLID
   • Presence — "get found & booked": app, business info, services/hours/location, contact forms with instant lead alerts, book-a-meeting scheduling, up to 3 staff logins. $299/mo (1-yr) or $249/mo (3-yr). $500 setup (waived on 3-yr). AI chat agent can be added for $50/mo (up to 250 chats/mo).
   • Mid — "answer every customer": everything in Presence plus an AI chat agent trained on your business that answers questions and captures leads 24/7; up to 5 staff logins, up to 1,000 AI chats/mo. $699/mo (1-yr) or $599/mo (3-yr). $1,000 setup (waived on 3-yr).
   • Pro — "sell inside your app": everything in Mid plus in-app sales (products, services, checkout), subscriptions/recurring billing, connect your own Stripe/Square/PayPal with AInovations taking 0% of sales; up to 10 staff logins, up to 2,500 AI chats/mo, up to 100 products. $1,299/mo (1-yr) or $1,099/mo (3-yr). $2,000 setup (waived on 3-yr).
-- Founding Five launch offer: the first five businesses get 50% off for life with the setup fee waived (3 seats left). Founding tiers: Presence $149/mo, Mid $349/mo, Pro $649/mo. In exchange, founding customers agree to be a named case study/reference. Once the 5 seats are gone, founding pricing never returns. FOUNDING PRICING ALSO ENDS 30 NOVEMBER 2026 — after that date it is gone even if seats remain.
 - Store fees are paid by the business directly to Apple ($99/yr) and Google ($25 one-time). (These are Apple/Google developer-account fees — NOT an HR/employee onboarding fee.)
 - Prefer to OWN your app outright instead of renting? See "Build & own" below.
-- Learn more / claim a founding seat: https://rent-an-app.ainovations.net/
+- Learn more: https://rent-an-app.ainovations.net/
 
 # BUILD & OWN — one-time-fee custom builds (you own it outright)
 Besides the monthly Rent programs, AInovations also builds sites and apps as a one-time project you fully own — no monthly rent. This is the "Hire Us" path:
@@ -185,7 +184,7 @@ Custom automations, integrations, and AI-assisted internal tools built around th
 - Small business wants to get online affordably (rent) → Rent-a-Site (Presence — $200/mo on the 1-year rate, $170/mo on the 3-year rate; $170/mo is the lowest Rent-a-Site price that exists).
 - Small business already online but wants content, reviews and an AI assistant working for them → Rent-a-Site Growth.
 - Small business wants to sell or take paid bookings on their site → Rent-a-Site Commerce.
-- Business wants its own app without a big build bill (rent) → Rent-an-App (Founding Five seats left).
+- Business wants its own app without a big build bill (rent) → Rent-an-App.
 - Wants to pay once and OWN a site or app → Build & own (Hire Us, quoted).
 - Septic pumping / excavation / digging / dumpster rental / porta-potty rental / fence installation → Rent-a-Site, and send them to /site-services.
 - Body shop / collision repair / auto painting / towing / impound & vehicle storage → Rent-a-Site, and send them to /auto-body.
