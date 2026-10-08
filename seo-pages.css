@@ -422,3 +422,84 @@ a {
     width: 100%;
   }
 }
+
+/* ---------- acquisition inquiry form ---------- */
+.acq-form {
+  max-width: 860px;
+  margin: 34px auto 0;
+  text-align: left;
+}
+.acq-form .fg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.acq-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.acq-form .field.full {
+  grid-column: 1 / -1;
+}
+.acq-form label {
+  color: var(--dark);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+.acq-form input,
+.acq-form select,
+.acq-form textarea {
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--dark);
+  font-family: inherit;
+  font-size: 1rem;
+}
+.acq-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.acq-form input:focus,
+.acq-form select:focus,
+.acq-form textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+}
+.acq-form .actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.acq-form .submit {
+  min-height: 56px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--teal);
+  color: var(--white);
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 1.02rem;
+  cursor: pointer;
+}
+.acq-form .submit:hover {
+  background: var(--deep);
+}
+.acq-form .note {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+@media (max-width: 700px) {
+  .acq-form .fg {
+    grid-template-columns: 1fr;
+  }
+}
