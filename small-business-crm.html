@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SSSRNSG9P2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SSSRNSG9P2');
+</script>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="A simple CRM built around your business: customers, money in, money out, processing fees, mileage and the year-end totals your accountant asks for. Your CPA gets a free read-only login. $100 a month on a 3-year agreement, or $125 a month on a 1-year plus a $500 setup." />
+<meta name="keywords" content="small business crm, simple crm, crm with accountant access, crm expense tracking, crm for contractors, affordable crm" />
+<meta name="theme-color" content="#071c2f" />
+<link rel="canonical" href="https://ainovations.net/small-business-crm" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="AInovations" />
+<meta property="og:title" content="A CRM That Also Does Your Shoebox | AInovations" />
+<meta property="og:description" content="Customers, money in, money out, fees, mileage and the year-end totals — in one place. Your accountant gets a free read-only login. $100/month on a 3-year agreement." />
+<meta property="og:url" content="https://ainovations.net/small-business-crm" />
+<meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="A CRM That Also Does Your Shoebox | AInovations" />
+<meta name="twitter:description" content="Customers, money in, money out, fees, mileage, year-end totals. Your CPA gets in free. $100/month on a 3-year agreement." />
+<meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<title>A CRM That Also Does Your Shoebox | AInovations</title>
+<style>
+:root{
+  --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06);
+  --text:#f7fbff; --muted:#b8cad7; --teal:#1dc8c6; --teal-dark:#078c92; --teal-soft:#72e6df;
+  --gold:#ffd166; --border:rgba(255,255,255,.13); --shadow:0 28px 80px rgba(0,0,0,.38);
+  --ink:#071c2f; --light-muted:#5b6b78; --light-border:#d7dee2;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;overflow-x:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,Helvetica,sans-serif;color:var(--text);
+  background:radial-gradient(circle at 12% 4%,rgba(29,200,198,.2),transparent 26%),radial-gradient(circle at 86% 12%,rgba(255,209,102,.08),transparent 24%),linear-gradient(180deg,#09263b 0%,var(--bg) 46%,var(--bg-deep) 100%);}
+a{color:inherit}
+img{max-width:100%;display:block}
+.page{width:min(1180px,calc(100% - 40px));margin:0 auto}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:20px 0}
+.brand{display:inline-flex;align-items:center;width:min(300px,42vw);min-width:210px;text-decoration:none}
+.brand img{width:100%;height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 12px 30px rgba(0,0,0,.28))}
+.nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nav-links a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
+.nav-links a:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
+.nav-links a.cta{background:var(--teal);color:#03212a}
+.nav-links a.cta:hover{background:var(--teal-soft)}
+.hero{padding:clamp(30px,5vw,58px);border:1px solid var(--border);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:var(--shadow)}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;padding:9px 14px;border:1px solid rgba(255,209,102,.5);border-radius:999px;background:rgba(255,209,102,.1);color:#ffe3a1;font-size:13px;font-weight:900;letter-spacing:.04em}
+.eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(255,209,102,.9)}
+.hero h1{max-width:21ch;margin:0;font-size:clamp(36px,5.6vw,64px);line-height:1.05;letter-spacing:-.045em}
+.hero h1 .gold{color:var(--gold)}
+.hero p.lede{max-width:62ch;margin:20px 0 0;color:var(--muted);font-size:clamp(16px,2vw,19px);line-height:1.6}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border-radius:14px;font-weight:850;font-size:17px;text-decoration:none;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+.btn-gold{background:linear-gradient(180deg,#ffd982,#ffc94d);color:#3a2a00;box-shadow:0 6px 0 #b8860b}
+.btn-gold:hover{filter:brightness(1.05);transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--border);background:rgba(255,255,255,.045);color:#fff}
+.btn-ghost:hover{border-color:var(--teal-soft);transform:translateY(-2px)}
+.hero-points{display:flex;gap:10px 22px;flex-wrap:wrap;margin-top:26px;color:#cfe3ec;font-size:14px;font-weight:700}
+.hero-points span::before{content:"✓";margin-right:8px;color:var(--teal-soft);font-weight:900}
+.price-hero{margin-top:34px;display:inline-flex;flex-wrap:wrap;max-width:100%;align-items:baseline;gap:14px;padding:18px 28px;border:2px solid rgba(255,209,102,.5);border-radius:20px;background:rgba(255,209,102,.08)}
+.price-hero .amt{font-size:clamp(40px,6vw,64px);font-weight:900;letter-spacing:-.04em;color:var(--gold)}
+.price-hero .per{font-size:18px;font-weight:800;color:var(--muted)}
+.price-hero .flat{font-size:15px;font-weight:750;color:#e9dfc3}
+.section{margin-top:90px}
+.section-head{max-width:860px;margin-bottom:38px}
+.kicker{margin:0 0 12px;color:var(--teal-soft);font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.kicker.gold{color:var(--gold)}
+.section-head h2{margin:0;font-size:clamp(28px,4vw,44px);line-height:1.08;letter-spacing:-.035em}
+.section-head p{margin:16px 0 0;color:var(--muted);font-size:17px;line-height:1.65}
+.included{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.inc-card{padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
+.inc-card h3{margin:0;font-size:21px;letter-spacing:-.02em}
+.inc-card h3 .tag{display:inline-block;margin-left:10px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;letter-spacing:.05em;vertical-align:middle}
+.inc-card h3 .tag.teal{background:rgba(29,200,198,.16);color:var(--teal-soft)}
+.inc-card h3 .tag.gold{background:rgba(255,209,102,.14);color:var(--gold)}
+.inc-card ul{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.inc-card li{position:relative;padding-left:26px;color:#dcebf2;font-size:15.5px;line-height:1.55}
+.inc-card li::before{content:"✓";position:absolute;left:0;color:var(--teal-soft);font-weight:900}
+.inc-card p.note{margin:16px 0 0;color:#9fb3bf;font-size:13.5px;line-height:1.6}
+.faq{display:grid;gap:12px;max-width:860px}
+.faq details{border:1px solid var(--border);border-radius:16px;background:var(--panel);overflow:hidden}
+.faq summary{padding:20px 22px;cursor:pointer;font-weight:850;font-size:16.5px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:22px;color:var(--teal-soft);font-weight:900;flex:0 0 auto}
+.faq details[open] summary::after{content:"–"}
+.faq .a{padding:0 22px 20px;color:var(--muted);font-size:15.5px;line-height:1.65}
+.contact{margin-top:90px;padding:clamp(34px,6vw,66px);border-radius:32px;text-align:center;border:1px solid rgba(255,209,102,.35);background:radial-gradient(circle at 80% 10%,rgba(255,209,102,.12),transparent 34%),rgba(255,255,255,.04)}
+.contact h2{margin:0;font-size:clamp(30px,4.6vw,48px);letter-spacing:-.04em}
+.contact > p{margin:16px auto 0;max-width:56ch;color:var(--muted);font-size:17px;line-height:1.6}
+.inquire-form{max-width:680px;margin:34px auto 0;padding:clamp(26px,4vw,40px);border-radius:20px;background:#fff;color:var(--ink);text-align:left;box-shadow:0 22px 54px rgba(0,0,0,.34)}
+.inquire-form .fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.inquire-form .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.inquire-form .field.full{grid-column:1 / -1}
+.inquire-form label{font-size:.85rem;font-weight:800;color:var(--ink)}
+.inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--light-border);border-radius:11px;background:#fbfdfe;color:var(--ink);width:100%;max-width:100%;min-width:0}
+.inquire-form input:focus,.inquire-form textarea:focus,.inquire-form select:focus{outline:2px solid var(--teal-dark);border-color:var(--teal-dark)}
+.inquire-form textarea{min-height:130px;resize:vertical}
+.inquire-form .actions{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.inquire-form .submit{min-height:54px;padding:0 28px;border:0;border-radius:14px;background:var(--teal-dark);color:#fff;font-weight:900;font-size:1rem;cursor:pointer}
+.inquire-form .submit:hover{background:#0aa3a9}
+.inquire-form .note{color:var(--light-muted);font-size:.85rem;line-height:1.5}
+.inquire-form .note a{color:var(--teal-dark);font-weight:800}
+.footer{margin-top:100px;padding:44px 0 60px;border-top:1px solid var(--border)}
+.footer-cols{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:30px}
+.footer h5{margin:0 0 12px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#8ea6b5}
+.footer a{display:block;margin:8px 0;color:#c6dbe5;text-decoration:none;font-size:14.5px;font-weight:700}
+.footer a:hover{color:#fff}
+.footer .about{margin:0;color:#8da6b4;font-size:14px;line-height:1.6;max-width:34ch}
+.footer-bottom{margin-top:34px;color:#78909d;font-size:13px;line-height:1.7}
+.bt{width:100%;border-collapse:collapse;margin-top:6px;font-size:15px}
+.bt th,.bt td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+.bt th{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:#8ea6b5;font-weight:900}
+.bt td.lab{color:#dcebf2;font-weight:700}
+.bt td.own{color:#ff9b9b;font-weight:850}
+.bt td.rent{color:var(--teal-soft);font-weight:850}
+.bt tr:last-child td{border-bottom:0}
+.bt tr.tot td{border-top:2px solid var(--border);font-size:17px;font-weight:900;padding-top:18px}
+.scroller{overflow-x:auto;border:1px solid var(--border);border-radius:22px;background:var(--panel);padding:8px 4px}
+.plan{max-width:560px;margin:0 auto;padding:34px;border:2px solid rgba(255,209,102,.5);border-radius:26px;background:rgba(255,209,102,.07);text-align:center}
+.plan .thero{display:flex;align-items:baseline;justify-content:center;gap:10px;margin:6px 0 4px}
+.plan .thero .amt{font-size:clamp(44px,8vw,68px);font-weight:900;letter-spacing:-.045em;color:var(--gold);line-height:1}
+.plan .thero .per{font-size:17px;font-weight:800;color:var(--muted)}
+.plan .term{margin:0;font-size:15px;font-weight:850;color:#e9dfc3}
+.plan .alt{margin:14px 0 0;font-size:15px;color:var(--muted);line-height:1.6}
+.plan ul{margin:22px 0 0;padding:0;list-style:none;display:grid;gap:10px;text-align:left}
+.plan li{position:relative;padding-left:26px;color:#dcebf2;font-size:15.5px;line-height:1.55}
+.plan li::before{content:"✓";position:absolute;left:0;color:var(--teal-soft);font-weight:900}
+.cpa{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:960px){.included{grid-template-columns:1fr}.cpa{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.inquire-form .fg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}}
+</style>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Service",
+  "name":"Small business CRM",
+  "serviceType":"Managed customer and bookkeeping record system for small businesses",
+  "provider":{"@type":"Organization","name":"AInovations LLC","url":"https://ainovations.net/"},
+  "url":"https://ainovations.net/small-business-crm",
+  "description":"A simple CRM built and run by AInovations around one business: customer records with notes and an automatic activity log, money in pulled read-only from the business's own payment processor, money out with receipts attached, card processing fees tracked in their own bucket and attributed per customer, mileage at the current IRS rate, and every figure filtered by tax year with profit margin per customer and overall. Includes a free read-only login for the business's accountant or bookkeeper that does not use a user seat. Up to 10 users. $100 a month on a three-year agreement, or $125 a month on a one-year agreement plus a $500 setup.",
+  "areaServed":"US",
+  "offers":[
+    {"@type":"Offer","name":"CRM — 3-year agreement","price":"100","priceCurrency":"USD","description":"$100/month on a three-year agreement. Up to 10 users plus a free read-only accountant login that does not use a seat. Customers, money in, money out with receipts, processing fees, mileage, tax-year totals and per-customer profit margin. No setup fee on the three-year agreement."},
+    {"@type":"Offer","name":"CRM — 1-year agreement","price":"125","priceCurrency":"USD","description":"$125/month on a one-year agreement plus a $500 setup. Same system as the three-year: up to 10 users plus a free read-only accountant login that does not use a seat."},
+    {"@type":"Offer","name":"AI Chat Agent add-on","price":"50","priceCurrency":"USD","description":"The AI Chat Agent add-on, $50/month covering up to 250 chats, can be added to the CRM."}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"How much does it cost?","acceptedAnswer":{"@type":"Answer","text":"$100 a month on a three-year agreement, with no setup fee. On a one-year agreement it is $125 a month plus a $500 setup. Both include up to 10 users and the free read-only accountant login."}},
+    {"@type":"Question","name":"Does my accountant have to buy a seat?","acceptedAnswer":{"@type":"Answer","text":"No. Your accountant or bookkeeper gets a read-only login at no cost, and it does not count against your 10 users. They see the money — revenue, expenses, receipts, fees, mileage and the tax-year totals — and not your customer notes."}},
+    {"@type":"Question","name":"Does it take payments or send invoices?","acceptedAnswer":{"@type":"Answer","text":"No. It reads. It connects to the payment processor you already use and mirrors what already happened there — who paid, how much, when, and what the processing fee was. Nothing in the CRM can charge a customer or change anything in your payment account, which is exactly why it is safe to give your bookkeeper a login."}},
+    {"@type":"Question","name":"How many users do I get?","acceptedAnswer":{"@type":"Answer","text":"Up to 10, plus the free accountant login on top of that. If you need more than 10 we will quote it."}},
+    {"@type":"Question","name":"Can I add the AI assistant?","acceptedAnswer":{"@type":"Answer","text":"Yes. The AI Chat Agent add-on is $50 a month and covers up to 250 chats, the same terms as everywhere else we offer it."}},
+    {"@type":"Question","name":"Is my data mine?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every screen exports to a spreadsheet, and if you ever leave we hand you your data in full."}},
+    {"@type":"Question","name":"Does this replace my accountant?","acceptedAnswer":{"@type":"Answer","text":"No, and it is not tax advice. It puts the numbers your accountant asks for in one place, already added up and already tied to receipts, so the January scramble is a download instead of a shoebox."}},
+    {"@type":"Question","name":"Is it built for my business specifically?","acceptedAnswer":{"@type":"Answer","text":"Yes. We set the categories, the fields and the screens up around how your business actually runs before you ever log in, and we keep adjusting them as it changes."}}
+  ]
+}
+</script>
+</head>
+<body>
+<div class="page">
+  <nav class="nav" aria-label="Main navigation">
+    <a class="brand" href="/" aria-label="AInovations home"><img src="/ainovations-logo-header.png" alt="AInovations — The AI Product Studio That Ships" /></a>
+    <div class="nav-links">
+      <a href="#problem">The problem</a>
+      <a href="#tracks">What it tracks</a>
+      <a href="#cpa">Your accountant</a>
+      <a href="#pricing">Pricing</a>
+      <a class="cta" href="#inquire">Get a look</a>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <header class="hero">
+      <span class="eyebrow">SMALL BUSINESS · CONTRACTORS · SHOPS · SERVICE TRADES</span>
+      <h1>Your customers are in your head. <span class="gold">Your receipts are in your truck.</span></h1>
+      <p class="lede">You know who owes you. You know roughly what you spent. Then January comes, your accountant asks for the totals, and you spend a weekend going through a glove box and a bank statement trying to rebuild a year you already lived. This is that, fixed — one place for customers, money in, money out, fees and mileage, set up around how your business actually runs.</p>
+      <div class="price-hero">
+        <span class="amt">$100</span><span class="per">a month</span><span class="flat">On a 3-year agreement, no setup fee · $125/month on a 1-year, plus a $500 setup · Up to 10 users · Your accountant gets in free</span>
+      </div>
+      <div class="hero-cta">
+        <a class="btn btn-gold" href="#inquire" onclick="gtag('event','crm_cta',{placement:'hero'})">Set mine up →</a>
+        <a class="btn btn-ghost" href="#tracks">See what it tracks</a>
+      </div>
+      <div class="hero-points">
+        <span>Built around your business, not a template</span>
+        <span>Your CPA logs in free, read-only</span>
+        <span>It reads your payments, it never touches them</span>
+      </div>
+    </header>
+
+    <section class="section" id="problem" aria-labelledby="problem-h">
+      <div class="section-head">
+        <p class="kicker">Why this exists</p>
+        <h2 id="problem-h">The big CRMs are built for sales teams. You're not a sales team.</h2>
+        <p>Every well-known CRM is designed around a pipeline full of reps — forecasting, quotas, campaign attribution, territory management. You pay for all of it per person, every month, and then still track your actual money in a spreadsheet because the CRM has no idea what you paid your supplier. We built ours the other way around: customers and money, in one place, and nothing else.</p>
+      </div>
+
+      <div class="scroller">
+        <table class="bt">
+          <thead>
+            <tr><th>What 10 people costs, per month</th><th>Published list price</th><th>Up-front</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="lab">Salesforce Sales Cloud — Pro Suite</td><td class="own">$1,000</td><td>—</td></tr>
+            <tr><td class="lab">HubSpot Sales Hub — Professional</td><td class="own">$1,000</td><td class="own">$1,500 onboarding, required</td></tr>
+            <tr><td class="lab">Zoho CRM — Professional</td><td class="own">$230</td><td>—</td></tr>
+            <tr class="tot"><td class="lab">This, up to 10 users</td><td class="rent">$100</td><td class="rent">$0 on a 3-year agreement</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-head" style="margin-top:18px;font-size:14px;color:#8ea6b5;line-height:1.6">Their published per-seat list prices as of October 2026, multiplied by ten people. Ours is a flat monthly price that doesn't move when you hire someone.</p>
+    </section>
+
+    <section class="section" id="tracks" aria-labelledby="tracks-h">
+      <div class="section-head">
+        <p class="kicker gold">What it tracks</p>
+        <h2 id="tracks-h">Six things. That's the whole system.</h2>
+        <p>Deliberately small. Everything here is something you already have to keep track of anyway — it just stops living in six different places.</p>
+      </div>
+
+      <div class="included">
+        <div class="inc-card">
+          <h3>Customers <span class="tag teal">THE RECORD</span></h3>
+          <ul>
+            <li>Business name, contact, email, phone, town, website</li>
+            <li>Status — lead, quoted, won, active, paused, done</li>
+            <li>What they bought, what they pay, what term they're on</li>
+            <li>Notes you can pin to the top of the record</li>
+            <li>An activity log that writes itself when something changes</li>
+            <li>Search and filter, so you can find anyone in two seconds</li>
+          </ul>
+        </div>
+
+        <div class="inc-card">
+          <h3>Money in <span class="tag teal">READ-ONLY</span></h3>
+          <ul>
+            <li>Every payment received, tied to the customer who sent it</li>
+            <li>Amount, date, invoice number, paid or still open</li>
+            <li>Collected all-time and currently outstanding, per customer</li>
+            <li>Pulled straight from the payment processor you already use</li>
+          </ul>
+          <p class="note">It mirrors what your processor already did. Nothing in the CRM can charge anyone or change anything in your payment account.</p>
+        </div>
+
+        <div class="inc-card">
+          <h3>Money out <span class="tag gold">WITH RECEIPTS</span></h3>
+          <ul>
+            <li>Date, vendor, description, category, amount, how you paid</li>
+            <li>Tag it to a customer when it was for a specific job</li>
+            <li>Billable and reimbursed flags, so nothing gets eaten</li>
+            <li>Photograph the receipt onto the line — stored privately</li>
+          </ul>
+          <p class="note">Snap it in the parking lot and it's done. Nothing to file later.</p>
+        </div>
+
+        <div class="inc-card">
+          <h3>Processing fees <span class="tag gold">DEDUCTIBLE</span></h3>
+          <ul>
+            <li>Your card processor's cut, in its own bucket</li>
+            <li>Pulled automatically, never typed by hand</li>
+            <li>Attributed to the customer whose payment caused it</li>
+          </ul>
+          <p class="note">This is the line most small businesses never capture. It's real money and it's deductible.</p>
+        </div>
+
+        <div class="inc-card">
+          <h3>Mileage <span class="tag teal">IRS RATE</span></h3>
+          <ul>
+            <li>Date, purpose, where from, where to, miles</li>
+            <li>Round-trip toggle so you log it once</li>
+            <li>Current IRS rate, updated each year</li>
+            <li>Tag the trip to a customer if it was for a job</li>
+          </ul>
+        </div>
+
+        <div class="inc-card">
+          <h3>Year-end totals <span class="tag gold">THE POINT</span></h3>
+          <ul>
+            <li>Everything filtered by tax year</li>
+            <li>Deductible expenses, mileage value, fees paid, revenue collected</li>
+            <li>Profit margin per customer, and across the whole business</li>
+            <li>Any screen exports to a spreadsheet</li>
+          </ul>
+          <p class="note">The figures your accountant asks for, already added up and already attached to receipts.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cpa" aria-labelledby="cpa-h">
+      <div class="section-head">
+        <p class="kicker">The part nobody else does</p>
+        <h2 id="cpa-h">Your accountant gets a login. It's free, and it doesn't use a seat.</h2>
+        <p>Every other CRM makes you buy a seat for your bookkeeper, so most small businesses don't — and then spend January emailing PDFs back and forth. Yours gets their own read-only login instead.</p>
+      </div>
+
+      <div class="cpa">
+        <div class="inc-card">
+          <h3>What they can see</h3>
+          <ul>
+            <li>Revenue collected, by customer and by year</li>
+            <li>Every expense with its category and its receipt</li>
+            <li>Processing fees as their own deductible line</li>
+            <li>Mileage logs at the rate for that year</li>
+            <li>Profit margin per customer and overall</li>
+            <li>Export of all of it to a spreadsheet</li>
+          </ul>
+        </div>
+        <div class="inc-card">
+          <h3>What they can't</h3>
+          <ul>
+            <li>Change a single record — the login is read-only</li>
+            <li>See your customer notes or your activity log</li>
+            <li>Reach your payment account, because nothing here can</li>
+          </ul>
+          <p class="note">Which is why handing it out costs you nothing to worry about.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing" aria-labelledby="pricing-h">
+      <div class="section-head">
+        <p class="kicker gold">Pricing</p>
+        <h2 id="pricing-h">One price. Up to ten people.</h2>
+        <p>Flat monthly, built and run by us. We set it up around your business before you log in, and we keep adjusting it as things change.</p>
+      </div>
+
+      <div class="plan">
+        <div class="thero"><span class="amt">$100</span><span class="per">/month</span></div>
+        <p class="term">on a 3-year agreement · no setup fee</p>
+        <p class="alt"><strong>$125/month on a 1-year agreement</strong>, plus a $500 setup.</p>
+        <ul>
+          <li>Up to 10 users</li>
+          <li>A free read-only login for your accountant or bookkeeper, on top of the 10</li>
+          <li>Customers, money in, money out, processing fees, mileage, year-end totals</li>
+          <li>Receipt storage, private to you</li>
+          <li>Set up around your business, and adjusted as it changes</li>
+          <li>Export anything to a spreadsheet, any time</li>
+          <li>Built, hosted, backed up and maintained by us — you never patch anything</li>
+        </ul>
+        <p class="alt">Want the AI assistant on it? The AI Chat Agent add-on is <strong>$50/month</strong> for up to 250 chats, same as everywhere else.</p>
+        <div class="hero-cta" style="justify-content:center">
+          <a class="btn btn-gold" href="#inquire" onclick="gtag('event','crm_cta',{placement:'pricing'})">Set mine up →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="faq-h">
+      <div class="section-head">
+        <p class="kicker">Questions</p>
+        <h2 id="faq-h">Straight answers</h2>
+      </div>
+      <div class="faq">
+        <details><summary>How much does it cost?</summary><div class="a"><strong>$100 a month on a three-year agreement</strong>, with no setup fee. On a <strong>one-year agreement it's $125 a month plus a $500 setup</strong>. Both include up to 10 users and the free read-only accountant login.</div></details>
+        <details><summary>Does my accountant have to buy a seat?</summary><div class="a">No. Your accountant or bookkeeper gets a read-only login at no cost, and it doesn't count against your 10 users. They see the money — revenue, expenses, receipts, fees, mileage and the tax-year totals — and not your customer notes.</div></details>
+        <details><summary>Does it take payments or send invoices?</summary><div class="a">No. It reads. It connects to the payment processor you already use and mirrors what already happened there — who paid, how much, when, and what the processing fee was. Nothing in the CRM can charge a customer or change anything in your payment account, which is exactly why it's safe to hand your bookkeeper a login.</div></details>
+        <details><summary>How many users do I get?</summary><div class="a">Up to 10, plus the free accountant login on top of that. Need more than 10? We'll quote it.</div></details>
+        <details><summary>Can I add the AI assistant?</summary><div class="a">Yes. The AI Chat Agent add-on is <strong>$50 a month</strong> and covers up to 250 chats — the same terms as everywhere else we offer it.</div></details>
+        <details><summary>Is my data mine?</summary><div class="a">Yes. Every screen exports to a spreadsheet, and if you ever leave we hand you your data in full.</div></details>
+        <details><summary>Does this replace my accountant?</summary><div class="a">No, and it isn't tax advice. It puts the numbers your accountant asks for in one place, already added up and already tied to receipts, so January is a download instead of a shoebox.</div></details>
+        <details><summary>Is it built for my business specifically?</summary><div class="a">Yes. We set the categories, the fields and the screens up around how your business actually runs before you ever log in, and we keep adjusting them as it changes. That's the difference between this and configuring a generic CRM yourself on a Sunday.</div></details>
+        <details><summary>What if I already use something?</summary><div class="a">Tell us what it is and what you keep in it. If moving your records across makes sense we'll say so, and if staying where you are makes more sense we'll say that too.</div></details>
+      </div>
+    </section>
+
+    <section class="contact" id="inquire" aria-labelledby="inquire-h">
+      <h2 id="inquire-h">Want to see yours?</h2>
+      <p>Tell us how your business runs and we'll set up a version with your categories in it, free, so you can click around before you decide anything.</p>
+      <form class="inquire-form" name="crm-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/rent-a-site-thanks">
+        <input type="hidden" name="form-name" value="crm-inquiry" />
+        <p hidden><label>Don't fill this out: <input name="bot-field" /></label></p>
+        <div class="fg">
+          <div class="field"><label for="name">Your name *</label><input id="name" name="contact_name" type="text" required autocomplete="name" /></div>
+          <div class="field"><label for="business">Business name *</label><input id="business" name="business_name" type="text" required autocomplete="organization" /></div>
+          <div class="field"><label for="email">Email *</label><input id="email" name="email" type="email" required autocomplete="email" /></div>
+          <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" autocomplete="tel" /></div>
+          <div class="field full"><label for="people">How many people would use it?</label>
+            <select id="people" name="people">
+              <option value="">Just me</option>
+              <option>2 to 4</option>
+              <option>5 to 10</option>
+              <option>More than 10</option>
+            </select>
+          </div>
+          <div class="field full"><label for="payments">How do customers pay you?</label>
+            <select id="payments" name="payments">
+              <option value="">Stripe</option>
+              <option>Square</option>
+              <option>PayPal</option>
+              <option>Checks and cash</option>
+              <option>A mix</option>
+              <option>Not sure</option>
+            </select>
+          </div>
+          <div class="field full"><label for="today">Where does all this live today?</label>
+            <select id="today" name="today">
+              <option value="">Spreadsheets</option>
+              <option>Paper, notebooks, the truck</option>
+              <option>QuickBooks or similar</option>
+              <option>Another CRM</option>
+              <option>Honestly, nowhere</option>
+            </select>
+          </div>
+          <div class="field full"><label for="about">What do you most want to stop doing by hand?</label><textarea id="about" name="business_description" placeholder="What you do, what your accountant asks you for every year, and the thing you dread most about January."></textarea></div>
+        </div>
+        <div class="actions">
+          <button class="submit" type="submit" onclick="gtag('event','crm_inquiry_submit',{})">Send it</button>
+          <span class="note">Goes to jp@ainovations.net. Prefer email? <a href="mailto:jp@ainovations.net?subject=CRM">Email us directly</a>.</span>
+        </div>
+      </form>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-cols">
+      <div>
+        <h5>AInovations</h5>
+        <p class="about">An AI product studio. We build our own software, and we build and run websites and apps for businesses nationwide.</p>
+      </div>
+      <div>
+        <h5>Rent-a-Site</h5>
+        <a href="/rent-a-site">Plans &amp; pricing</a>
+        <a href="/game-stores">Game stores</a>
+        <a href="/creators">Creators</a>
+        <a href="/rental-yards">Equipment rental yards</a>
+        <a href="/marinas">Marinas &amp; boatyards</a>
+        <a href="/well-water">Wells &amp; water treatment</a>
+        <a href="/auto-body">Body shops &amp; towing</a>
+        <a href="/site-services">Septic, digging &amp; rentals</a>
+      </div>
+      <div>
+        <h5>Straight answers</h5>
+        <a href="/how-much-does-a-website-cost-for-a-small-business">What a website really costs</a>
+        <a href="/facebook-page-vs-website-for-small-business">Is a Facebook page enough?</a>
+        <a href="/what-is-a-managed-website">What "managed" should include</a>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <a href="/">Home</a>
+        <a href="/hire">Hire us</a>
+        <a href="/service-areas">Service areas</a>
+        <a href="/support">Support</a>
+      </div>
+    </div>
+    <p class="footer-bottom">© 2026 AInovations LLC. We don't promise followers, downloads or Google rankings — nobody honestly can.<br />We do tell you what things cost, including what it would cost without us.</p>
+  </footer>
+</div>
+</body>
+</html>
