@@ -113,6 +113,117 @@ function monthlyCents(amountCents, interval, intervalCount = 1) {
   return Math.round(per);
 }
 
+// Stripe's cut is a real cost and a real deduction, so it lands in the expense
+// ledger like any other cost — but in its own category, and attributed to the
+// client whose payment generated it. Pulled from Stripe rather than typed by
+// hand so the figures reconcile to the cent.
+const FEE_CATEGORY = 'Processing fees';
+
+async function syncStripeFees(byStripe) {
+  // The fee lives on the balance transaction, not the charge. Rather than rely
+  // on ?expand= coming back as an object — if it ever came back as a bare id
+  // instead, every fee would silently import as nothing — pull the ledger once
+  // and join by id. The same pass also yields the account-level fees.
+  const [charges, txns] = await Promise.all([
+    stripeAll('charges'),
+    stripeAll('balance_transactions'),
+  ]);
+  const txnById = new Map(txns.map((t) => [t.id, t]));
+
+  const candidates = [];
+  let unresolved = 0;
+
+  for (const ch of charges) {
+    // A failed charge never posted to the ledger, so it owes no fee.
+    if (!ch.balance_transaction) continue;
+    const btId = typeof ch.balance_transaction === 'string'
+      ? ch.balance_transaction : ch.balance_transaction.id;
+    const bt = txnById.get(btId)
+      || (typeof ch.balance_transaction === 'object' ? ch.balance_transaction : null);
+    if (!bt) { unresolved++; continue; }
+    if (!bt.fee) continue;
+
+    const client = byStripe.get(ch.customer);
+    candidates.push({
+      source_ref: `stripe:fee:${ch.id}`,
+      spent_on: (ts(ch.created) || '').slice(0, 10),
+      vendor: 'Stripe',
+      category: FEE_CATEGORY,
+      description: `Processing fee on ${money(ch.amount)} collected`,
+      amount_cents: bt.fee,
+      payment_method: 'Card',
+      client_id: client?.id || null,
+      billable: false,
+      notes: client ? null : `Stripe customer ${ch.customer || 'unknown'} is not a CRM client.`,
+    });
+  }
+
+  // Fees Stripe bills the account itself — invoicing fees, dispute fees. They
+  // belong to no client but are still deductible.
+  for (const t of txns) {
+    if (t.type !== 'stripe_fee') continue;
+    const amount = Math.abs(t.fee || t.amount || 0);
+    if (!amount) continue;
+    candidates.push({
+      source_ref: `stripe:fee:${t.id}`,
+      spent_on: (ts(t.created) || '').slice(0, 10),
+      vendor: 'Stripe',
+      category: FEE_CATEGORY,
+      description: t.description || 'Stripe account fee',
+      amount_cents: amount,
+      payment_method: 'Card',
+      client_id: null,
+      billable: false,
+    });
+  }
+
+  if (!candidates.length) return { fees: 0, feeCents: 0, unresolved };
+
+  // source_ref's unique index is partial (WHERE source_ref IS NOT NULL), which
+  // PostgREST cannot infer for an upsert — so skip what is already imported and
+  // plain-insert the rest. Re-running a sync must never double a fee.
+  const have = new Set(
+    (await db('crm_expenses?select=source_ref&source_ref=not.is.null'))
+      .map((r) => r.source_ref),
+  );
+  const seen = new Set();
+  const fresh = candidates.filter((c) => {
+    if (!c.amount_cents || have.has(c.source_ref) || seen.has(c.source_ref)) return false;
+    seen.add(c.source_ref);
+    return true;
+  });
+  if (!fresh.length) return { fees: 0, feeCents: 0, unresolved };
+
+  for (let i = 0; i < fresh.length; i += 200) {
+    await db('crm_expenses', {
+      method: 'POST', body: fresh.slice(i, i + 200), prefer: 'return=minimal',
+    });
+  }
+  return {
+    fees: fresh.length,
+    feeCents: fresh.reduce((a, r) => a + r.amount_cents, 0),
+    unresolved,
+  };
+}
+
+// Revenue, the processor's cut, and anything else booked against a client —
+// summed per client id. Fees are split out of the other costs because they are
+// tracked and deducted on their own.
+function rollUp(paidInvoices, expenses) {
+  const revenue = new Map();
+  const fees = new Map();
+  const costs = new Map();
+  const add = (m, k, v) => m.set(k, (m.get(k) || 0) + (v || 0));
+  for (const i of paidInvoices) {
+    if (i.client_id) add(revenue, i.client_id, i.amount_paid_cents);
+  }
+  for (const e of expenses) {
+    if (!e.client_id) continue;
+    add(e.category === FEE_CATEGORY ? fees : costs, e.client_id, e.amount_cents);
+  }
+  return { revenue, fees, costs };
+}
+
 async function syncStripe() {
   if (!STRIPE_KEY) {
     return { ok: false, message: 'STRIPE_SECRET_KEY is not set in Netlify — nothing to sync yet.' };
@@ -286,6 +397,18 @@ async function syncStripe() {
     }).catch(() => {});
   }
 
+  // Fees last: byStripe is only complete once every customer above has a client.
+  // Fail soft — the customer/subscription/invoice sync above already succeeded,
+  // and losing all of it over a fee call would be worse than reporting the gap.
+  let feeResult = { fees: 0, feeCents: 0, unresolved: 0 };
+  let feeError = null;
+  try {
+    feeResult = await syncStripeFees(byStripe);
+  } catch (err) {
+    feeError = err.message || 'fee sync failed';
+    console.error('stripe fee sync failed:', err);
+  }
+
   return {
     ok: true,
     customers: customers.length,
@@ -293,6 +416,10 @@ async function syncStripe() {
     invoices: invRows.length,
     created,
     linked,
+    newFees: feeResult.fees,
+    newFeeCents: feeResult.feeCents,
+    feesUnresolved: feeResult.unresolved || 0,
+    feeError,
   };
 }
 
@@ -388,14 +515,90 @@ async function handleAction(action, payload, user) {
     case 'client': {
       const id = payload.id;
       if (!id) return { error: 'missing id' };
-      const [client, notes, activity, subs, invoices] = await Promise.all([
+      const [client, notes, activity, subs, invoices, expenses, allPaid] = await Promise.all([
         db(`crm_clients?id=eq.${id}&select=*`),
         db(`crm_notes?client_id=eq.${id}&select=*&order=pinned.desc,created_at.desc`),
         db(`crm_activity?client_id=eq.${id}&select=*&order=occurred_at.desc&limit=100`),
         db(`crm_subscriptions?client_id=eq.${id}&select=*&order=started_at.desc`),
         db(`crm_invoices?client_id=eq.${id}&select=*&order=created_at.desc&limit=100`),
+        db(`crm_expenses?client_id=eq.${id}&select=*&order=spent_on.desc`),
+        // Unbounded on purpose: the invoice list above is capped for display,
+        // but "since the start" has to mean every payment, not the last 100.
+        db(`crm_invoices?client_id=eq.${id}&select=amount_paid_cents,paid_at&amount_paid_cents=gt.0&order=paid_at.asc`),
       ]);
-      return { client: client[0] || null, notes, activity, subs, invoices };
+
+      const sum = (rows, f) => rows.reduce((a, r) => a + (r[f] || 0), 0);
+      const feeRows = expenses.filter((e) => e.category === FEE_CATEGORY);
+      const costRows = expenses.filter((e) => e.category !== FEE_CATEGORY);
+      const revenueCents = sum(allPaid, 'amount_paid_cents');
+      const feeCents = sum(feeRows, 'amount_cents');
+      const costCents = sum(costRows, 'amount_cents');
+
+      return {
+        client: client[0] || null,
+        notes,
+        activity,
+        subs,
+        invoices,
+        expenses,
+        rollup: {
+          revenueCents,
+          feeCents,
+          costCents,
+          marginCents: revenueCents - feeCents - costCents,
+          firstPaymentAt: allPaid[0]?.paid_at || null,
+          payments: allPaid.length,
+        },
+      };
+    }
+
+    // Revenue, fees, other costs and margin for every client at once, plus the
+    // business-wide totals underneath.
+    case 'margins': {
+      const [clients, paidInvoices, expenses] = await Promise.all([
+        db('crm_clients?select=id,client_no,business_name,status,product,mrr_cents&order=business_name.asc'),
+        db('crm_invoices?select=client_id,amount_paid_cents&amount_paid_cents=gt.0&client_id=not.is.null'),
+        db('crm_expenses?select=client_id,category,amount_cents'),
+      ]);
+      const { revenue, fees, costs } = rollUp(paidInvoices, expenses);
+
+      const rows = clients.map((c) => {
+        const revenueCents = revenue.get(c.id) || 0;
+        const feeCents = fees.get(c.id) || 0;
+        const costCents = costs.get(c.id) || 0;
+        return {
+          id: c.id,
+          client_no: c.client_no,
+          business_name: c.business_name,
+          status: c.status,
+          product: c.product,
+          mrr_cents: c.mrr_cents || 0,
+          revenueCents,
+          feeCents,
+          costCents,
+          marginCents: revenueCents - feeCents - costCents,
+        };
+      });
+
+      // Costs with no client on them are shared overhead, not a client's margin.
+      // They are reported separately so the page reconciles to the expense
+      // ledger instead of quietly losing money that was really spent.
+      const loose = expenses.filter((e) => !e.client_id);
+      const sum = (rows2, f) => rows2.reduce((a, r) => a + (r[f] || 0), 0);
+      const sharedFeeCents = sum(loose.filter((e) => e.category === FEE_CATEGORY), 'amount_cents');
+      const sharedCostCents = sum(loose.filter((e) => e.category !== FEE_CATEGORY), 'amount_cents');
+
+      const totals = {
+        revenueCents: sum(rows, 'revenueCents'),
+        feeCents: sum(rows, 'feeCents'),
+        costCents: sum(rows, 'costCents'),
+        marginCents: sum(rows, 'marginCents'),
+        sharedFeeCents,
+        sharedCostCents,
+      };
+      totals.netCents = totals.marginCents - sharedFeeCents - sharedCostCents;
+
+      return { rows, totals };
     }
 
     case 'create_client': {

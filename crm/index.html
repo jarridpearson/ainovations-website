@@ -251,6 +251,7 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
     <div class="viewnav">
       <button class="vbtn on" data-view="clients">Clients</button>
       <button class="vbtn" data-view="money">Expenses</button>
+      <button class="vbtn" data-view="margins">Margins</button>
     </div>
     <div class="spacer"></div>
     <span id="clientTools">
@@ -305,6 +306,14 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
         <button class="tab" data-mtab="mileage">Mileage</button>
       </div>
       <div class="card-body" id="moneyBody"></div>
+    </div>
+  </div>
+
+  <div class="wrap hidden" id="marginsView">
+    <div class="stats" id="marginStats"></div>
+    <div class="card">
+      <h2><span>Revenue, fees and margin by client</span></h2>
+      <div class="card-body" id="marginBody"></div>
     </div>
   </div>
 </div>
@@ -628,12 +637,40 @@ function renderTab() {
     const owed = invs.filter((i) => ['open', 'draft', 'uncollectible'].includes(i.status))
       .reduce((s, i) => s + (i.amount_due_cents || 0), 0);
 
+    // Lifetime figures come from the server, which counts every payment and
+    // every cost booked to this client — not just the invoices shown below.
+    const r = detailData.rollup || { revenueCents: 0, feeCents: 0, costCents: 0, marginCents: 0 };
+    const pct = r.revenueCents ? Math.round((r.marginCents / r.revenueCents) * 100) : null;
+    const feeRows = (detailData.expenses || []).filter((e) => e.category === FEE_CATEGORY);
+    const costRows = (detailData.expenses || []).filter((e) => e.category !== FEE_CATEGORY);
+
     b.innerHTML = `
       <div class="stats" style="margin-bottom:16px">
         <div class="stat accent"><b>${esc(money0(c.mrr_cents))}</b><small>Monthly recurring</small></div>
         <div class="stat"><b>${esc(money0(paid))}</b><small>Collected all time</small></div>
         <div class="stat ${owed ? 'accent' : ''}"><b>${esc(money0(owed))}</b><small>Outstanding</small></div>
       </div>
+
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px">Lifetime margin${
+        r.firstPaymentAt ? ` — since ${esc(date(r.firstPaymentAt))}` : ''}</h3>
+      <div class="stats" style="margin-bottom:16px">
+        <div class="stat"><b>${esc(money(r.revenueCents))}</b><small>Revenue they paid</small></div>
+        <div class="stat"><b>${esc(money(r.feeCents))}</b><small>Processing fees</small></div>
+        <div class="stat"><b>${esc(money(r.costCents))}</b><small>Other costs</small></div>
+        <div class="stat accent"><b>${esc(money(r.marginCents))}</b><small>Profit margin${
+          pct === null ? '' : ` — ${pct}%`}</small></div>
+      </div>
+
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:20px 0 8px">Fees and costs booked to this client</h3>
+      <div class="scroll-x">${(feeRows.length + costRows.length) ? `<table class="tbl">
+        <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Description</th><th class="num">Amount</th></tr></thead>
+        <tbody>${feeRows.concat(costRows).map((e) => `<tr>
+          <td>${esc(date(e.spent_on))}</td>
+          <td>${esc(e.vendor || '—')}</td>
+          <td>${esc(e.category || '—')}</td>
+          <td>${esc(e.description || '—')}</td>
+          <td class="num">${esc(money(e.amount_cents))}</td></tr>`).join('')}</tbody></table>`
+        : '<div class="empty">Nothing booked against this client yet. Stripe fees land here on the next sync.</div>'}</div>
 
       <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px">Subscriptions</h3>
       <div class="scroll-x">${subs.length ? `<table class="tbl">
@@ -736,10 +773,14 @@ async function openProspects() {
 
 /* ---------------- expenses & mileage ---------------- */
 
+// Must match FEE_CATEGORY in netlify/functions/crm.mjs — the Stripe sync files
+// processor fees under this exact name, and the margin math keys off it.
+const FEE_CATEGORY = 'Processing fees';
+
 const CATEGORIES = [
   'Software / SaaS', 'Hosting / Domains', 'Advertising', 'Equipment',
   'Office supplies', 'Travel', 'Meals', 'Phone / Internet',
-  'Professional services', 'Fees / Bank', 'Education', 'Other',
+  'Professional services', FEE_CATEGORY, 'Fees / Bank', 'Education', 'Other',
 ];
 const PAY_METHODS = ['', 'Card', 'ACH', 'Check', 'Cash'];
 
@@ -792,6 +833,10 @@ function renderMoneyStats() {
   const mileageValue = trips.reduce((s, t) => s + mileageAmount(t), 0);
   const owed = exp.filter((e) => e.billable && !e.reimbursed)
     .reduce((s, e) => s + (e.amount_cents || 0), 0);
+  // Fees get their own tile because they are deducted and reconciled on their
+  // own, not read off the lump expense total.
+  const feesPaid = exp.filter((e) => e.category === FEE_CATEGORY)
+    .reduce((s, e) => s + (e.amount_cents || 0), 0);
 
   // Exact cents here — these are tax figures, and a rounded tile that disagrees
   // with the table's own total is worse than useless.
@@ -800,10 +845,81 @@ function renderMoneyStats() {
     ['Miles driven', miles.toLocaleString('en-US', { maximumFractionDigits: 1 }), ''],
     ['Mileage value', money(mileageValue), 'accent'],
     ['Deductible total', money(spent + mileageValue), ''],
+    [`Processing fees ${moneyYear}`, money(feesPaid), feesPaid ? 'accent' : ''],
     ['Billable, unreimbursed', money(owed), owed ? 'accent' : ''],
     ['Missing receipts', exp.filter((e) => !e.receipt_path).length, ''],
   ].map(([label, value, cls]) =>
     `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
+}
+
+/* ---------------- margins ---------------- */
+
+let marginData = null;
+
+async function loadMargins() {
+  $('marginBody').innerHTML = '<div class="empty">Loading…</div>';
+  marginData = await api('margins');
+  renderMargins();
+}
+
+function renderMargins() {
+  const { rows, totals } = marginData;
+  const pct = (margin, revenue) =>
+    revenue ? `${Math.round((margin / revenue) * 100)}%` : '—';
+
+  $('marginStats').innerHTML = [
+    ['Revenue collected, all clients', money(totals.revenueCents), ''],
+    ['Processing fees', money(totals.feeCents), ''],
+    ['Other client costs', money(totals.costCents), ''],
+    ['Margin across all clients', money(totals.marginCents), 'accent'],
+    [`Margin %`, pct(totals.marginCents, totals.revenueCents), ''],
+  ].map(([label, value, cls]) =>
+    `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
+
+  // Only clients with money on them. A lead that has never paid and never cost
+  // anything is noise on a margin page.
+  const live = rows.filter((r) => r.revenueCents || r.feeCents || r.costCents);
+  const shared = totals.sharedFeeCents + totals.sharedCostCents;
+
+  $('marginBody').innerHTML = `
+    <div class="scroll-x">${live.length ? `<table class="tbl">
+      <thead><tr>
+        <th>Client</th><th>Status</th>
+        <th class="num">Revenue</th><th class="num">Fees</th>
+        <th class="num">Other costs</th><th class="num">Margin</th><th class="num">%</th>
+      </tr></thead>
+      <tbody>${live.map((r) => `<tr data-go="${r.id}" style="cursor:pointer">
+        <td>${esc(r.business_name)} <small style="color:var(--muted)">${esc(r.client_no || '')}</small></td>
+        <td><span class="pill ${esc(r.status)}">${esc(r.status)}</span></td>
+        <td class="num">${esc(money(r.revenueCents))}</td>
+        <td class="num">${esc(money(r.feeCents))}</td>
+        <td class="num">${esc(money(r.costCents))}</td>
+        <td class="num">${esc(money(r.marginCents))}</td>
+        <td class="num">${esc(pct(r.marginCents, r.revenueCents))}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr style="font-weight:600;border-top:2px solid var(--border)">
+        <td colspan="2">All clients</td>
+        <td class="num">${esc(money(totals.revenueCents))}</td>
+        <td class="num">${esc(money(totals.feeCents))}</td>
+        <td class="num">${esc(money(totals.costCents))}</td>
+        <td class="num">${esc(money(totals.marginCents))}</td>
+        <td class="num">${esc(pct(totals.marginCents, totals.revenueCents))}</td>
+      </tr></tfoot></table>`
+      : '<div class="empty">No revenue or costs booked to a client yet.</div>'}</div>
+
+    <p style="margin:16px 0 0;font-size:12px;color:var(--muted);line-height:1.55">
+      Margin is revenue the client paid, minus processing fees on those payments,
+      minus any other expense tagged to them.
+      ${shared ? `A further <strong>${esc(money(shared))}</strong> of fees and costs
+        is not tagged to any client — shared overhead — which puts the business
+        at <strong>${esc(money(totals.netCents))}</strong> net.` : ''}
+    </p>`;
+
+  $('marginBody').querySelectorAll('[data-go]').forEach((tr) =>
+    tr.addEventListener('click', async () => {
+      document.querySelector('.vbtn[data-view="clients"]').click();
+      await openClient(tr.dataset.go);
+    }));
 }
 
 function clientOptions(selected) {
@@ -1095,7 +1211,11 @@ $('btnSync').addEventListener('click', async () => {
     else {
       toast(`Stripe synced — ${r.customers} customers, ${r.subscriptions} subscriptions, ${r.invoices} invoices`
         + `${r.created ? `, ${r.created} new client${r.created === 1 ? '' : 's'}` : ''}`
-        + `${r.linked ? `, ${r.linked} linked` : ''}.`);
+        + `${r.linked ? `, ${r.linked} linked` : ''}`
+        + `${r.newFees ? `, ${r.newFees} new fee${r.newFees === 1 ? '' : 's'} (${money(r.newFeeCents)})` : ''}.`);
+      // Never let a fee problem pass as a clean sync.
+      if (r.feeError) toast(`Fees did not sync: ${r.feeError}`, true);
+      else if (r.feesUnresolved) toast(`${r.feesUnresolved} charge(s) had no matching ledger entry — fees may be incomplete.`, true);
       await reload();
     }
   } catch (err) {
@@ -1114,8 +1234,10 @@ document.querySelectorAll('.vbtn').forEach((b) => b.addEventListener('click', as
   document.querySelectorAll('.vbtn').forEach((x) => x.classList.toggle('on', x === b));
   $('clientsView').classList.toggle('hidden', view !== 'clients');
   $('moneyView').classList.toggle('hidden', view !== 'money');
+  $('marginsView').classList.toggle('hidden', view !== 'margins');
   $('clientTools').classList.toggle('hidden', view !== 'clients');
   if (view === 'money') await loadMoney().catch((e) => toast(e.message, true));
+  if (view === 'margins') await loadMargins().catch((e) => toast(e.message, true));
 }));
 
 document.querySelectorAll('[data-mtab]').forEach((b) => b.addEventListener('click', () => {
