@@ -14,16 +14,6 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 
-// Every processor the client might already use. A connector switches itself on
-// as soon as its credentials are present, so adding a client's processor is an
-// env-var change, never a code change. Adding a NEW processor is one object in
-// the PROCESSORS array below — that is the whole point of the shape.
-const SQUARE_TOKEN = process.env.SQUARE_ACCESS_TOKEN;
-const SQUARE_ENV = (process.env.SQUARE_ENVIRONMENT || 'production').toLowerCase();
-const PAYPAL_ID = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
-const PAYPAL_ENV = (process.env.PAYPAL_ENVIRONMENT || 'live').toLowerCase();
-
 const ALLOWED = (process.env.CRM_ALLOWED_EMAILS || 'jp@ainovations.net')
   .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 
@@ -123,353 +113,109 @@ function monthlyCents(amountCents, interval, intervalCount = 1) {
   return Math.round(per);
 }
 
-// --- payment processors ----------------------------------------------------
-//
-// Every connector returns the SAME normalized payment shape, so the sync and
-// the margin math never learn a processor's vocabulary:
-//
-//   { ref, customerRef, email, name, amountCents, feeCents,
-//     currency, status, occurredAt, invoiceRef, url }
-//
-// amountCents is gross, feeCents is the processor's cut, both positive.
-
-const centsFrom = (major) => Math.round(Number(major || 0) * 100);
-
-// Square — GET /v2/payments, cursor paged. The fee is processing_fee[], an
-// array because Square posts adjustments as additional entries; they all count.
-async function squarePayments() {
-  const base = SQUARE_ENV === 'sandbox'
-    ? 'https://connect.squareupsandbox.com' : 'https://connect.squareup.com';
-  const headers = {
-    authorization: `Bearer ${SQUARE_TOKEN}`,
-    'Square-Version': '2026-09-16',
-    'content-type': 'application/json',
-  };
-  const walk = async (path, key) => {
-    const out = [];
-    let cursor;
-    for (let page = 0; page < 60; page++) {
-      const qs = new URLSearchParams({ limit: '100' });
-      if (cursor) qs.set('cursor', cursor);
-      const res = await fetch(`${base}${path}?${qs}`, { headers });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.errors?.[0]?.detail || `square ${res.status}`);
-      out.push(...(json[key] || []));
-      cursor = json.cursor;
-      if (!cursor) break;
-    }
-    return out;
-  };
-
-  const [payments, customers] = await Promise.all([
-    walk('/v2/payments', 'payments'),
-    // Square puts only customer_id on a payment, so the email we match clients
-    // on has to come from the customer list.
-    walk('/v2/customers', 'customers').catch(() => []),
-  ]);
-  const byId = new Map(customers.map((c) => [c.id, c]));
-
-  return payments.map((p) => {
-    const c = p.customer_id ? byId.get(p.customer_id) : null;
-    const fee = (p.processing_fee || [])
-      .reduce((a, f) => a + (f.amount_money?.amount || 0), 0);
-    return {
-      ref: p.id,
-      customerRef: p.customer_id || null,
-      email: c?.email_address || null,
-      name: [c?.given_name, c?.family_name].filter(Boolean).join(' ')
-        || c?.company_name || null,
-      amountCents: p.total_money?.amount ?? p.amount_money?.amount ?? 0,
-      feeCents: fee,
-      currency: (p.total_money?.currency || 'USD').toLowerCase(),
-      status: (p.status || '').toLowerCase(),
-      occurredAt: p.created_at || null,
-      invoiceRef: p.order_id || null,
-      url: p.receipt_url || null,
-    };
-  });
-}
-
-// PayPal — Transaction Search. Two things shape this: it takes an OAuth token
-// rather than a static key, and it refuses any window wider than 31 days, so
-// the history has to be walked a month at a time.
-async function paypalPayments() {
-  const base = PAYPAL_ENV === 'sandbox'
-    ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
-
-  const tokenRes = await fetch(`${base}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      authorization: `Basic ${Buffer.from(`${PAYPAL_ID}:${PAYPAL_SECRET}`).toString('base64')}`,
-      'content-type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials',
-  });
-  const tokenJson = await tokenRes.json();
-  if (!tokenRes.ok) {
-    throw new Error(tokenJson?.error_description || `paypal auth ${tokenRes.status}`);
-  }
-  const headers = { authorization: `Bearer ${tokenJson.access_token}` };
-
-  const out = [];
-  const now = Date.now();
-  const DAY = 86400000;
-  // Three years is as far back as PayPal will report.
-  for (let w = 0; w < 37; w++) {
-    const end = new Date(now - w * 30 * DAY);
-    const start = new Date(end.getTime() - 30 * DAY);
-    for (let page = 1; page <= 20; page++) {
-      const qs = new URLSearchParams({
-        start_date: start.toISOString().replace(/\.\d+Z$/, 'Z'),
-        end_date: end.toISOString().replace(/\.\d+Z$/, 'Z'),
-        fields: 'all',
-        page_size: '100',
-        page: String(page),
-      });
-      const res = await fetch(`${base}/v1/reporting/transactions?${qs}`, { headers });
-      const json = await res.json();
-      if (!res.ok) {
-        // An empty month answers with an error rather than an empty list.
-        if (res.status === 404) break;
-        throw new Error(json?.message || `paypal ${res.status}`);
-      }
-      const rows = json.transaction_details || [];
-      out.push(...rows);
-      if (rows.length < 100) break;
-    }
-  }
-
-  return out.map((t) => {
-    const i = t.transaction_info || {};
-    const p = t.payer_info || {};
-    const gross = centsFrom(i.transaction_amount?.value);
-    // PayPal reports the fee as a negative number; we store cost as positive.
-    const fee = Math.abs(centsFrom(i.fee_amount?.value));
-    return {
-      ref: i.transaction_id,
-      customerRef: p.account_id || null,
-      email: p.email_address || null,
-      name: [p.payer_name?.given_name, p.payer_name?.surname].filter(Boolean).join(' ')
-        || p.payer_name?.alternate_full_name || null,
-      amountCents: gross,
-      feeCents: fee,
-      currency: (i.transaction_amount?.currency_code || 'USD').toLowerCase(),
-      status: i.transaction_status === 'S' ? 'completed' : (i.transaction_status || '').toLowerCase(),
-      occurredAt: i.transaction_initiation_date || null,
-      invoiceRef: i.invoice_id || null,
-      url: null,
-    };
-  // Money going OUT of the account is not revenue.
-  }).filter((r) => r.ref && r.amountCents > 0);
-}
-
-// Stripe — the fee lives on the balance transaction, not the charge, and we
-// join through the ledger rather than ?expand= so a bare id in the response
-// can never make every fee read as zero.
-async function stripePayments() {
-  const [charges, txns] = await Promise.all([
-    stripeAll('charges'),
-    stripeAll('balance_transactions'),
-  ]);
-  const txnById = new Map(txns.map((t) => [t.id, t]));
-
-  const rows = charges.map((ch) => {
-    const btId = typeof ch.balance_transaction === 'string'
-      ? ch.balance_transaction : ch.balance_transaction?.id;
-    const bt = txnById.get(btId)
-      || (typeof ch.balance_transaction === 'object' ? ch.balance_transaction : null);
-    return {
-      ref: ch.id,
-      customerRef: ch.customer || null,
-      email: ch.billing_details?.email || ch.receipt_email || null,
-      name: ch.billing_details?.name || null,
-      amountCents: ch.amount || 0,
-      feeCents: bt?.fee || 0,
-      currency: (ch.currency || 'usd').toLowerCase(),
-      status: ch.status || null,
-      occurredAt: ts(ch.created),
-      invoiceRef: ch.invoice || null,
-      url: ch.receipt_url || null,
-      unresolved: !!ch.balance_transaction && !bt,
-    };
-  });
-
-  // Fees Stripe bills the account itself — invoicing fees, dispute fees. No
-  // customer, still deductible.
-  for (const t of txns) {
-    if (t.type !== 'stripe_fee') continue;
-    const amount = Math.abs(t.fee || t.amount || 0);
-    if (!amount) continue;
-    rows.push({
-      ref: t.id,
-      customerRef: null,
-      email: null,
-      name: null,
-      amountCents: 0,
-      feeCents: amount,
-      currency: (t.currency || 'usd').toLowerCase(),
-      status: 'account_fee',
-      occurredAt: ts(t.created),
-      invoiceRef: null,
-      url: null,
-      houseFee: true,
-      description: t.description || 'Stripe account fee',
-    });
-  }
-  return rows;
-}
-
-// Adding a processor means adding an entry here and nothing else. Any provider
-// that exposes a read API for payments belongs on this list.
-const PROCESSORS = [
-  { id: 'stripe', label: 'Stripe', ready: () => !!STRIPE_KEY, fetch: stripePayments },
-  { id: 'square', label: 'Square', ready: () => !!SQUARE_TOKEN, fetch: squarePayments },
-  { id: 'paypal', label: 'PayPal', ready: () => !!(PAYPAL_ID && PAYPAL_SECRET), fetch: paypalPayments },
-];
-
-const activeProcessors = () => PROCESSORS.filter((p) => p.ready());
-
 // Stripe's cut is a real cost and a real deduction, so it lands in the expense
 // ledger like any other cost — but in its own category, and attributed to the
 // client whose payment generated it. Pulled from Stripe rather than typed by
 // hand so the figures reconcile to the cent.
 const FEE_CATEGORY = 'Processing fees';
 
-// Runs EVERY connected processor, not just the one we happen to know best.
-// Each connector hands back the same normalized shape, so everything below is
-// processor-agnostic: payments land in crm_payments, and the processor's cut
-// lands in crm_expenses so it is deductible and attributable like any cost.
-async function syncProcessors(byStripe) {
-  const clients = await db('crm_clients?select=id,email,stripe_customer_id');
-  const byEmail = new Map();
-  for (const c of clients) if (c.email) byEmail.set(c.email.toLowerCase(), c.id);
-  const matchClient = (row, processorId) => {
-    if (processorId === 'stripe' && row.customerRef) {
-      const viaStripe = byStripe.get(row.customerRef)?.id;
-      if (viaStripe) return viaStripe;
-    }
-    if (row.email) return byEmail.get(row.email.toLowerCase()) || null;
-    return null;
+async function syncStripeFees(byStripe) {
+  // The fee lives on the balance transaction, not the charge. Rather than rely
+  // on ?expand= coming back as an object — if it ever came back as a bare id
+  // instead, every fee would silently import as nothing — pull the ledger once
+  // and join by id. The same pass also yields the account-level fees.
+  const [charges, txns] = await Promise.all([
+    stripeAll('charges'),
+    stripeAll('balance_transactions'),
+  ]);
+  const txnById = new Map(txns.map((t) => [t.id, t]));
+
+  const candidates = [];
+  let unresolved = 0;
+
+  for (const ch of charges) {
+    // A failed charge never posted to the ledger, so it owes no fee.
+    if (!ch.balance_transaction) continue;
+    const btId = typeof ch.balance_transaction === 'string'
+      ? ch.balance_transaction : ch.balance_transaction.id;
+    const bt = txnById.get(btId)
+      || (typeof ch.balance_transaction === 'object' ? ch.balance_transaction : null);
+    if (!bt) { unresolved++; continue; }
+    if (!bt.fee) continue;
+
+    const client = byStripe.get(ch.customer);
+    candidates.push({
+      source_ref: `stripe:fee:${ch.id}`,
+      spent_on: (ts(ch.created) || '').slice(0, 10),
+      vendor: 'Stripe',
+      category: FEE_CATEGORY,
+      description: `Processing fee on ${money(ch.amount)} collected`,
+      amount_cents: bt.fee,
+      payment_method: 'Card',
+      client_id: client?.id || null,
+      billable: false,
+      notes: client ? null : `Stripe customer ${ch.customer || 'unknown'} is not a CRM client.`,
+    });
+  }
+
+  // Fees Stripe bills the account itself — invoicing fees, dispute fees. They
+  // belong to no client but are still deductible.
+  for (const t of txns) {
+    if (t.type !== 'stripe_fee') continue;
+    const amount = Math.abs(t.fee || t.amount || 0);
+    if (!amount) continue;
+    candidates.push({
+      source_ref: `stripe:fee:${t.id}`,
+      spent_on: (ts(t.created) || '').slice(0, 10),
+      vendor: 'Stripe',
+      category: FEE_CATEGORY,
+      description: t.description || 'Stripe account fee',
+      amount_cents: amount,
+      payment_method: 'Card',
+      client_id: null,
+      billable: false,
+    });
+  }
+
+  if (!candidates.length) return { fees: 0, feeCents: 0, unresolved };
+
+  // source_ref's unique index is partial (WHERE source_ref IS NOT NULL), which
+  // PostgREST cannot infer for an upsert — so skip what is already imported and
+  // plain-insert the rest. Re-running a sync must never double a fee.
+  const have = new Set(
+    (await db('crm_expenses?select=source_ref&source_ref=not.is.null'))
+      .map((r) => r.source_ref),
+  );
+  const seen = new Set();
+  const fresh = candidates.filter((c) => {
+    if (!c.amount_cents || have.has(c.source_ref) || seen.has(c.source_ref)) return false;
+    seen.add(c.source_ref);
+    return true;
+  });
+  if (!fresh.length) return { fees: 0, feeCents: 0, unresolved };
+
+  for (let i = 0; i < fresh.length; i += 200) {
+    await db('crm_expenses', {
+      method: 'POST', body: fresh.slice(i, i + 200), prefer: 'return=minimal',
+    });
+  }
+  return {
+    fees: fresh.length,
+    feeCents: fresh.reduce((a, r) => a + r.amount_cents, 0),
+    unresolved,
   };
-
-  const results = [];
-  const paymentRows = [];
-  const feeRows = [];
-
-  for (const proc of activeProcessors()) {
-    try {
-      const rows = await proc.fetch();
-      let unresolved = 0;
-      for (const r of rows) {
-        if (!r.ref) continue;
-        if (r.unresolved) unresolved++;
-        const clientId = matchClient(r, proc.id);
-
-        // A $0 house fee is not a payment, only a cost.
-        if (!r.houseFee) {
-          paymentRows.push({
-            processor: proc.id,
-            processor_ref: r.ref,
-            client_id: clientId,
-            processor_customer_ref: r.customerRef || null,
-            customer_email: r.email || null,
-            customer_name: r.name || null,
-            amount_cents: r.amountCents || 0,
-            fee_cents: r.feeCents || 0,
-            net_cents: (r.amountCents || 0) - (r.feeCents || 0),
-            currency: r.currency || 'usd',
-            status: r.status || null,
-            occurred_at: r.occurredAt || null,
-            invoice_ref: r.invoiceRef || null,
-            url: r.url || null,
-            synced_at: new Date().toISOString(),
-          });
-        }
-
-        if (r.feeCents > 0) {
-          feeRows.push({
-            source_ref: `${proc.id}:fee:${r.ref}`,
-            spent_on: (r.occurredAt || '').slice(0, 10) || null,
-            vendor: proc.label,
-            category: FEE_CATEGORY,
-            description: r.description
-              || `Processing fee on ${money(r.amountCents)} collected`,
-            amount_cents: r.feeCents,
-            payment_method: 'Card',
-            client_id: clientId,
-            billable: false,
-            notes: clientId ? null
-              : `${proc.label} payer ${r.email || r.customerRef || 'unknown'} is not a CRM client.`,
-          });
-        }
-      }
-      results.push({ processor: proc.id, label: proc.label, payments: rows.length, unresolved });
-    } catch (err) {
-      console.error(`${proc.id} sync failed:`, err);
-      results.push({ processor: proc.id, label: proc.label, error: err.message || 'failed' });
-    }
-  }
-
-  // Payments: the (processor, processor_ref) index makes this a true upsert, so
-  // a re-sync refreshes a payment rather than duplicating it.
-  let payments = 0;
-  for (let i = 0; i < paymentRows.length; i += 200) {
-    await db('crm_payments?on_conflict=processor,processor_ref', {
-      method: 'POST',
-      body: paymentRows.slice(i, i + 200),
-      prefer: 'resolution=merge-duplicates,return=minimal',
-    });
-    payments += paymentRows.slice(i, i + 200).length;
-  }
-
-  // Fees: source_ref's unique index is partial, which PostgREST cannot infer
-  // for an upsert, so skip what is already filed and insert the rest. A re-sync
-  // must never double a fee.
-  let fees = 0;
-  let feeCents = 0;
-  if (feeRows.length) {
-    const have = new Set(
-      (await db('crm_expenses?select=source_ref&source_ref=not.is.null'))
-        .map((r) => r.source_ref),
-    );
-    const seen = new Set();
-    const fresh = feeRows.filter((f) => {
-      if (!f.amount_cents || !f.spent_on) return false;
-      if (have.has(f.source_ref) || seen.has(f.source_ref)) return false;
-      seen.add(f.source_ref);
-      return true;
-    });
-    for (let i = 0; i < fresh.length; i += 200) {
-      await db('crm_expenses', {
-        method: 'POST', body: fresh.slice(i, i + 200), prefer: 'return=minimal',
-      });
-    }
-    fees = fresh.length;
-    feeCents = fresh.reduce((a, r) => a + r.amount_cents, 0);
-  }
-
-  return { processors: results, payments, fees, feeCents };
 }
 
 // Revenue, the processor's cut, and anything else booked against a client —
 // summed per client id. Fees are split out of the other costs because they are
 // tracked and deducted on their own.
-// Revenue has two sources and they must not overlap. Stripe reports invoices,
-// which is what we count for it — an invoice marked paid out of band has no
-// charge behind it, and counting charges instead would silently lose it. Every
-// other processor reports payments, so those come from crm_payments. Stripe
-// rows in crm_payments are therefore deliberately NOT counted here.
-function rollUp(paidInvoices, expenses, payments = []) {
+function rollUp(paidInvoices, expenses) {
   const revenue = new Map();
   const fees = new Map();
   const costs = new Map();
   const add = (m, k, v) => m.set(k, (m.get(k) || 0) + (v || 0));
   for (const i of paidInvoices) {
     if (i.client_id) add(revenue, i.client_id, i.amount_paid_cents);
-  }
-  for (const pmt of payments) {
-    if (pmt.processor === 'stripe') continue;
-    if (pmt.client_id) add(revenue, pmt.client_id, pmt.amount_cents);
   }
   for (const e of expenses) {
     if (!e.client_id) continue;
@@ -651,18 +397,16 @@ async function syncStripe() {
     }).catch(() => {});
   }
 
-  // Processors last: byStripe is only complete once every customer above has a
-  // client. Fail soft — the sync above already succeeded, and losing all of it
-  // over one processor would be worse than reporting the gap. Each connector
-  // also catches its own errors, so one bad processor cannot take the others
-  // down with it.
-  let procResult = { processors: [], payments: 0, fees: 0, feeCents: 0 };
+  // Fees last: byStripe is only complete once every customer above has a client.
+  // Fail soft — the customer/subscription/invoice sync above already succeeded,
+  // and losing all of it over a fee call would be worse than reporting the gap.
+  let feeResult = { fees: 0, feeCents: 0, unresolved: 0 };
   let feeError = null;
   try {
-    procResult = await syncProcessors(byStripe);
+    feeResult = await syncStripeFees(byStripe);
   } catch (err) {
-    feeError = err.message || 'processor sync failed';
-    console.error('processor sync failed:', err);
+    feeError = err.message || 'fee sync failed';
+    console.error('stripe fee sync failed:', err);
   }
 
   return {
@@ -672,10 +416,9 @@ async function syncStripe() {
     invoices: invRows.length,
     created,
     linked,
-    newPayments: procResult.payments,
-    newFees: procResult.fees,
-    newFeeCents: procResult.feeCents,
-    processors: procResult.processors,
+    newFees: feeResult.fees,
+    newFeeCents: feeResult.feeCents,
+    feesUnresolved: feeResult.unresolved || 0,
     feeError,
   };
 }
@@ -744,7 +487,7 @@ const money = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 async function handleAction(action, payload, user) {
   switch (action) {
     case 'bootstrap': {
-      const [clients, openInvoices, paidInvoices, allProspects, otherPayments] = await Promise.all([
+      const [clients, openInvoices, paidInvoices, allProspects] = await Promise.all([
         db('crm_clients?select=*&order=created_at.desc'),
         db('crm_invoices?select=stripe_invoice_id,client_id,number,status,amount_due_cents,due_date&status=in.(open,draft,uncollectible)&order=created_at.desc'),
         // Revenue counts ONLY from clients still in the CRM. Everything Stripe
@@ -752,8 +495,6 @@ async function handleAction(action, payload, user) {
         // gone, so their invoices are unlinked and must not read as revenue.
         db('crm_invoices?select=client_id,amount_paid_cents,paid_at&amount_paid_cents=gt.0&client_id=not.is.null&order=paid_at.asc'),
         db('prospects?select=id&limit=2000'),
-        // Non-Stripe processors report payments, not invoices.
-        db('crm_payments?select=amount_cents,occurred_at&processor=neq.stripe&client_id=not.is.null'),
       ]);
       // "Waiting" means not yet pulled into the CRM, so discount the converted ones.
       const converted = new Set(
@@ -763,8 +504,7 @@ async function handleAction(action, payload, user) {
         clients,
         openInvoices,
         // Every dollar Stripe has actually collected, all time.
-        collectedCents: paidInvoices.reduce((s, i) => s + (i.amount_paid_cents || 0), 0)
-          + otherPayments.reduce((s, p) => s + (p.amount_cents || 0), 0),
+        collectedCents: paidInvoices.reduce((s, i) => s + (i.amount_paid_cents || 0), 0),
         firstPaymentAt: paidInvoices[0]?.paid_at || null,
         prospectCount: allProspects.filter((p) => !converted.has(p.id)).length,
         stripeConfigured: !!STRIPE_KEY,
@@ -775,7 +515,7 @@ async function handleAction(action, payload, user) {
     case 'client': {
       const id = payload.id;
       if (!id) return { error: 'missing id' };
-      const [client, notes, activity, subs, invoices, expenses, allPaid, payments] = await Promise.all([
+      const [client, notes, activity, subs, invoices, expenses, allPaid] = await Promise.all([
         db(`crm_clients?id=eq.${id}&select=*`),
         db(`crm_notes?client_id=eq.${id}&select=*&order=pinned.desc,created_at.desc`),
         db(`crm_activity?client_id=eq.${id}&select=*&order=occurred_at.desc&limit=100`),
@@ -785,14 +525,12 @@ async function handleAction(action, payload, user) {
         // Unbounded on purpose: the invoice list above is capped for display,
         // but "since the start" has to mean every payment, not the last 100.
         db(`crm_invoices?client_id=eq.${id}&select=amount_paid_cents,paid_at&amount_paid_cents=gt.0&order=paid_at.asc`),
-        db(`crm_payments?client_id=eq.${id}&select=*&order=occurred_at.desc`),
       ]);
 
       const sum = (rows, f) => rows.reduce((a, r) => a + (r[f] || 0), 0);
       const feeRows = expenses.filter((e) => e.category === FEE_CATEGORY);
       const costRows = expenses.filter((e) => e.category !== FEE_CATEGORY);
-      const otherPaid = payments.filter((p) => p.processor !== 'stripe');
-      const revenueCents = sum(allPaid, 'amount_paid_cents') + sum(otherPaid, 'amount_cents');
+      const revenueCents = sum(allPaid, 'amount_paid_cents');
       const feeCents = sum(feeRows, 'amount_cents');
       const costCents = sum(costRows, 'amount_cents');
 
@@ -803,14 +541,13 @@ async function handleAction(action, payload, user) {
         subs,
         invoices,
         expenses,
-        payments,
         rollup: {
           revenueCents,
           feeCents,
           costCents,
           marginCents: revenueCents - feeCents - costCents,
-          firstPaymentAt: allPaid[0]?.paid_at || payments[payments.length - 1]?.occurred_at || null,
-          payments: allPaid.length + otherPaid.length,
+          firstPaymentAt: allPaid[0]?.paid_at || null,
+          payments: allPaid.length,
         },
       };
     }
@@ -818,13 +555,12 @@ async function handleAction(action, payload, user) {
     // Revenue, fees, other costs and margin for every client at once, plus the
     // business-wide totals underneath.
     case 'margins': {
-      const [clients, paidInvoices, expenses, payments] = await Promise.all([
+      const [clients, paidInvoices, expenses] = await Promise.all([
         db('crm_clients?select=id,client_no,business_name,status,product,mrr_cents&order=business_name.asc'),
         db('crm_invoices?select=client_id,amount_paid_cents&amount_paid_cents=gt.0&client_id=not.is.null'),
         db('crm_expenses?select=client_id,category,amount_cents'),
-        db('crm_payments?select=client_id,processor,amount_cents&client_id=not.is.null'),
       ]);
-      const { revenue, fees, costs } = rollUp(paidInvoices, expenses, payments);
+      const { revenue, fees, costs } = rollUp(paidInvoices, expenses);
 
       const rows = clients.map((c) => {
         const revenueCents = revenue.get(c.id) || 0;
