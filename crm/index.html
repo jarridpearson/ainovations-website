@@ -661,6 +661,20 @@ function renderTab() {
           pct === null ? '' : ` — ${pct}%`}</small></div>
       </div>
 
+      ${(detailData.payments || []).length ? `
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:20px 0 8px">Payments received</h3>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Date</th><th>Processor</th><th>From</th><th class="num">Gross</th><th class="num">Fee</th><th class="num">Net</th><th></th></tr></thead>
+        <tbody>${detailData.payments.map((p) => `<tr>
+          <td>${esc(date(p.occurred_at))}</td>
+          <td>${esc(p.processor)}</td>
+          <td>${esc(p.customer_email || p.customer_name || '—')}</td>
+          <td class="num">${esc(money(p.amount_cents))}</td>
+          <td class="num">${esc(money(p.fee_cents))}</td>
+          <td class="num">${esc(money(p.net_cents))}</td>
+          <td>${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Receipt</a>` : ''}</td>
+        </tr>`).join('')}</tbody></table></div>` : ''}
+
       <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:20px 0 8px">Fees and costs booked to this client</h3>
       <div class="scroll-x">${(feeRows.length + costRows.length) ? `<table class="tbl">
         <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Description</th><th class="num">Amount</th></tr></thead>
@@ -1209,13 +1223,19 @@ $('btnSync').addEventListener('click', async () => {
     const r = await api('sync_stripe');
     if (r.ok === false) toast(r.message, true);
     else {
-      toast(`Stripe synced — ${r.customers} customers, ${r.subscriptions} subscriptions, ${r.invoices} invoices`
+      const live = (r.processors || []).filter((p) => !p.error).map((p) => p.label);
+      toast(`Synced — ${r.customers} customers, ${r.subscriptions} subscriptions, ${r.invoices} invoices`
         + `${r.created ? `, ${r.created} new client${r.created === 1 ? '' : 's'}` : ''}`
         + `${r.linked ? `, ${r.linked} linked` : ''}`
-        + `${r.newFees ? `, ${r.newFees} new fee${r.newFees === 1 ? '' : 's'} (${money(r.newFeeCents)})` : ''}.`);
-      // Never let a fee problem pass as a clean sync.
-      if (r.feeError) toast(`Fees did not sync: ${r.feeError}`, true);
-      else if (r.feesUnresolved) toast(`${r.feesUnresolved} charge(s) had no matching ledger entry — fees may be incomplete.`, true);
+        + `${r.newPayments ? `, ${r.newPayments} payment${r.newPayments === 1 ? '' : 's'}` : ''}`
+        + `${r.newFees ? `, ${r.newFees} new fee${r.newFees === 1 ? '' : 's'} (${money(r.newFeeCents)})` : ''}`
+        + `${live.length ? ` · ${live.join(', ')}` : ''}.`);
+      // A processor that failed must never pass as a clean sync.
+      if (r.feeError) toast(`Payments did not sync: ${r.feeError}`, true);
+      (r.processors || []).filter((p) => p.error)
+        .forEach((p) => toast(`${p.label} did not sync: ${p.error}`, true));
+      (r.processors || []).filter((p) => p.unresolved)
+        .forEach((p) => toast(`${p.label}: ${p.unresolved} charge(s) had no ledger entry — fees may be incomplete.`, true));
       await reload();
     }
   } catch (err) {
