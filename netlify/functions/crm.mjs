@@ -119,6 +119,26 @@ function monthlyCents(amountCents, interval, intervalCount = 1) {
 // hand so the figures reconcile to the cent.
 const FEE_CATEGORY = 'Processing fees';
 
+// Every fee row goes through here. PostgREST rejects a bulk insert whose
+// objects do not all carry the SAME keys (PGRST102, "All object keys must
+// match"), and two branches building their own object literals is exactly how
+// that happens — one of them forgets a field. One factory, one key set, so the
+// shape cannot drift no matter how many kinds of fee we learn to file.
+function feeRow({ source_ref, spent_on, description, amount_cents, client_id = null, notes = null }) {
+  return {
+    source_ref,
+    spent_on: spent_on ? String(spent_on).slice(0, 10) : null,
+    vendor: 'Stripe',
+    category: FEE_CATEGORY,
+    description,
+    amount_cents,
+    payment_method: 'Card',
+    client_id,
+    billable: false,
+    notes,
+  };
+}
+
 async function syncStripeFees(byStripe) {
   // The fee lives on the balance transaction, not the charge. Rather than rely
   // on ?expand= coming back as an object — if it ever came back as a bare id
@@ -144,18 +164,14 @@ async function syncStripeFees(byStripe) {
     if (!bt.fee) continue;
 
     const client = byStripe.get(ch.customer);
-    candidates.push({
+    candidates.push(feeRow({
       source_ref: `stripe:fee:${ch.id}`,
-      spent_on: (ts(ch.created) || '').slice(0, 10),
-      vendor: 'Stripe',
-      category: FEE_CATEGORY,
+      spent_on: ts(ch.created),
       description: `Processing fee on ${money(ch.amount)} collected`,
       amount_cents: bt.fee,
-      payment_method: 'Card',
       client_id: client?.id || null,
-      billable: false,
       notes: client ? null : `Stripe customer ${ch.customer || 'unknown'} is not a CRM client.`,
-    });
+    }));
   }
 
   // Fees Stripe bills the account itself — invoicing fees, dispute fees. They
@@ -164,17 +180,12 @@ async function syncStripeFees(byStripe) {
     if (t.type !== 'stripe_fee') continue;
     const amount = Math.abs(t.fee || t.amount || 0);
     if (!amount) continue;
-    candidates.push({
+    candidates.push(feeRow({
       source_ref: `stripe:fee:${t.id}`,
-      spent_on: (ts(t.created) || '').slice(0, 10),
-      vendor: 'Stripe',
-      category: FEE_CATEGORY,
+      spent_on: ts(t.created),
       description: t.description || 'Stripe account fee',
       amount_cents: amount,
-      payment_method: 'Card',
-      client_id: null,
-      billable: false,
-    });
+    }));
   }
 
   if (!candidates.length) return { fees: 0, feeCents: 0, unresolved };
@@ -188,7 +199,8 @@ async function syncStripeFees(byStripe) {
   );
   const seen = new Set();
   const fresh = candidates.filter((c) => {
-    if (!c.amount_cents || have.has(c.source_ref) || seen.has(c.source_ref)) return false;
+    if (!c.amount_cents || !c.spent_on) return false;
+    if (have.has(c.source_ref) || seen.has(c.source_ref)) return false;
     seen.add(c.source_ref);
     return true;
   });
