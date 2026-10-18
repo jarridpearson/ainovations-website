@@ -1,13 +1,15 @@
 ---
 name: outbound
-description: Run AInovations outbound sales prospecting — find CNY businesses with no website, qualify them, capture evidence, draft personalized email, and stage it in a review queue for Jarrid to approve. Use when asked to do outbound, prospecting, lead gen, or "find customers" for Rent-a-Site / Chalkline.
+description: Run AInovations outbound sales prospecting — find CNY businesses with no website or a broken one, qualify them, capture evidence, draft personalized email, and stage it in a review queue for Jarrid to approve. Use when asked to do outbound, prospecting, lead gen, or "find customers" for Rent-a-Site.
 ---
 
 # AInovations outbound prospecting
 
-Goal: fill the **first 20 Rent-a-Site clients** (Hero Program — 50% off any plan, from $100/mo,
-no setup fee, the rate held for as long as they stay subscribed)
-and feed Chalkline ($20/mo base) from the same pool.
+Goal: fill Rent-a-Site.
+
+**PRICES LIVE IN ONE PLACE AND IT IS NOT THIS FILE.** Read
+`netlify/functions/kb.mjs` before quoting any number. This file has been wrong before and
+cost a run. Never quote a price from memory and never do arithmetic on one.
 
 **I research, qualify, evidence and draft. Jarrid approves and sends. I never send cold mail
 myself.** Two reasons: outbound messages need his explicit go-ahead, and cold volume from
@@ -33,7 +35,7 @@ answered first. Never concede that a website might not be a priority for them.
 
 Then, secondarily: **CNY trades & contractors** — framing, siding, roofing, remodeling, decking,
 GC, concrete, HVAC, plumbing, electrical. Small residential crews ~2-10 people. These are
-dual-purpose: Rent-a-Site AND Chalkline prospects.
+These are Rent-a-Site prospects.
 
 Geography: Syracuse metro, Watertown, Fort Drum, Lewis County / Tug Hill.
 (Same service areas as the Google Business Profile.)
@@ -56,23 +58,18 @@ those only about their rental side).
   list. This is absolute (see `no-puzzlehr-invites` memory).
 - **NEVER use Jarrid's personal LinkedIn profile** for anything.
 - **Never invent pricing, and never do arithmetic on a price.** Source of truth is
-  `netlify/functions/kb.mjs` — read it before quoting anything. Rent-a-Site has THREE plans and
-  each has THREE numbers that are never interchangeable:
+  `netlify/functions/kb.mjs` — open it and read the Rent-a-Site block every single time.
+  Rent-a-Site has three plans, each with a 1-year and a 3-year monthly rate and nothing else.
+  **Lead with the 3-year rate; never state a price without naming its term.** The build is
+  always included — there is NO setup fee on any Rent-a-Site plan, ever.
 
-  | Plan | 1-year | 3-year | Hero (first 20) |
-  |---|---|---|---|
-  | Presence | $200/mo | $170/mo | **$100/mo** |
-  | Growth | $400/mo | $340/mo | **$200/mo** |
-  | Commerce | $700/mo | $595/mo | **$350/mo** |
+  **There is no discount program and no promotional rate. None. Do not name one, do not
+  describe one, and do not say one ended.** Anyone asking about a discount gets an invitation
+  to talk about custom pricing, not a number.
 
-  The Hero price is ALREADY the 50%-off figure — never halve it again, never present it as the
-  list rate, and there is no separate Hero price for a 3-year term. No setup fee on any plan,
-  ever. The lock is **"for as long as you stay subscribed"** — never "for life" or "forever".
-  It is a 1-year or 3-year term, **not month-to-month**; if asked what leaving early costs, say
-  you don't have that and point to support@ainovations.net.
-  Also real: +$50/mo AI Chat Agent on Presence only (included in Growth/Commerce).
-  Chalkline $20/mo base, +$10 full seat, +$3 crew seat. Rent-an-App Presence $299 / Mid $699 /
-  Pro $1,299 (1-yr), setup $500/$1,000/$2,000 waived on 3-yr; Founding Five $149/$349/$649.
+  Do not pitch, price or mention any other product on an outbound run. If a prospect asks
+  about one, read kb.mjs and answer from that.
+
 - **Never promise Google rankings.** Nobody honestly can. This is a core brand position.
 - **Never say a competitor is greedy** or frame standard processing rates as gouging.
 - American spelling only.
@@ -142,10 +139,10 @@ no "I was just browsing your website and was blown away."
 Structure:
 - One line naming the **specific** thing you observed about *their* business.
 - One line on what it costs them (a customer who looked at 9PM and found nothing).
-- The offer in one sentence: a managed site built and run for them, from $100/month on the Hero
-  Program (half off, first 20 clients, held for as long as they stay subscribed), no setup fee.
-  Quote the plan that actually fits — most of these trades want Growth, which is $200/mo on the
-  Hero Program, not $100. Do not undersell the plan to make the number look smaller.
+- The offer in one sentence: a managed site built and run for them, at the plan's rate read
+  fresh out of kb.mjs, with the term named and the build included. Quote the plan that
+  actually fits — do not undersell the plan to make the number look smaller, and do not
+  upsell past what their problem needs.
 - One low-friction ask ("want me to send a mockup?" beats "book a call").
 - Signature: Jarrid, AInovations, ainovations.net.
 
