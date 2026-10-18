@@ -12,7 +12,7 @@
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="A simple CRM built around your business: customers, money in, money out, processing fees, mileage and the year-end totals your accountant asks for. Your CPA gets a free read-only login. $100 a month on a 3-year agreement, or $125 a month on a 1-year plus a $500 setup." />
+<meta name="description" content="A simple CRM built around your business: customers, money in, money out, processing fees, mileage and the year-end totals your accountant asks for. Your CPA gets a free read-only login. Three tiers from $100 a month on a 3-year agreement, no setup fee." />
 <meta name="keywords" content="small business crm, simple crm, crm with accountant access, crm expense tracking, crm for contractors, affordable crm" />
 <meta name="theme-color" content="#071c2f" />
 <link rel="canonical" href="https://ainovations.net/small-business-crm" />
@@ -22,12 +22,12 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="AInovations" />
 <meta property="og:title" content="A CRM That Also Does Your Shoebox | AInovations" />
-<meta property="og:description" content="Customers, money in, money out, fees, mileage and the year-end totals — in one place. Your accountant gets a free read-only login. $100/month on a 3-year agreement." />
+<meta property="og:description" content="Customers, money in, money out, fees, mileage and the year-end totals — in one place. Your accountant gets a free read-only login. Three tiers from $100/month on a 3-year agreement." />
 <meta property="og:url" content="https://ainovations.net/small-business-crm" />
 <meta property="og:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="A CRM That Also Does Your Shoebox | AInovations" />
-<meta name="twitter:description" content="Customers, money in, money out, fees, mileage, year-end totals. Your CPA gets in free. $100/month on a 3-year agreement." />
+<meta name="twitter:description" content="Customers, money in, money out, fees, mileage, year-end totals. Your CPA gets in free. Three tiers from $100/month on a 3-year agreement." />
 <meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <title>A CRM That Also Does Your Shoebox | AInovations</title>
@@ -135,6 +135,18 @@ img{max-width:100%;display:block}
 .plan ul{margin:22px 0 0;padding:0;list-style:none;display:grid;gap:10px;text-align:left}
 .plan li{position:relative;padding-left:26px;color:#dcebf2;font-size:15.5px;line-height:1.55}
 .plan li::before{content:"✓";position:absolute;left:0;color:var(--teal-soft);font-weight:900}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch;max-width:1120px;margin:0 auto}
+.tier{padding:28px 24px;border:1px solid var(--border);border-radius:22px;background:var(--panel);text-align:center;display:flex;flex-direction:column}
+.tier.feat{border:2px solid rgba(255,209,102,.5);background:rgba(255,209,102,.07)}
+.tier .tname{font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+.tier .thero{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:2px 0 4px}
+.tier .thero .amt{font-size:clamp(34px,5vw,46px);font-weight:900;letter-spacing:-.045em;color:var(--gold);line-height:1}
+.tier .thero .per{font-size:15px;font-weight:800;color:var(--muted)}
+.tier .term{margin:0;font-size:14px;font-weight:850;color:#e9dfc3}
+.tier .alt{margin:10px 0 0;font-size:13.5px;color:var(--muted);line-height:1.55}
+.tier .who{margin:14px 0 0;font-size:14.5px;color:#dcebf2;line-height:1.6;text-align:left;flex:1}
+.tier .cap{margin:16px 0 0;font-size:13px;font-weight:900;color:var(--teal-soft);letter-spacing:.04em}
+@media(max-width:900px){.tiers{grid-template-columns:1fr}}
 .cpa{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 @media(max-width:960px){.included{grid-template-columns:1fr}.cpa{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.inquire-form .fg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}}
@@ -147,11 +159,13 @@ img{max-width:100%;display:block}
   "serviceType":"Managed customer and bookkeeping record system for small businesses",
   "provider":{"@type":"Organization","name":"AInovations LLC","url":"https://ainovations.net/"},
   "url":"https://ainovations.net/small-business-crm",
-  "description":"A simple CRM built and run by AInovations around one business: customer records with notes and an automatic activity log, money in pulled read-only from the business's own payment processor, money out with receipts attached, card processing fees tracked in their own bucket and attributed per customer, mileage at the current IRS rate, and every figure filtered by tax year with profit margin per customer and overall. Includes a free read-only login for the business's accountant or bookkeeper that does not use a user seat. Up to 10 users. $100 a month on a three-year agreement, or $125 a month on a one-year agreement plus a $500 setup.",
+  "description":"A simple CRM built and run by AInovations around one business: customer records with notes and an automatic activity log, money in pulled read-only from the business's own payment processor, money out with receipts attached, card processing fees tracked in their own bucket and attributed per customer, mileage at the current IRS rate, and every figure filtered by tax year with profit margin per customer and overall. Includes a free read-only login for the business's accountant or bookkeeper that does not use a user seat. Three tiers: Essentials up to 10 users at $100 a month, Tailored up to 15 users at $200 a month, and Built-for-you up to 25 users at $300 a month, all on a three-year agreement with no setup fee. On a one-year agreement the same tiers are $125, $250 and $350 a month plus a $500 setup.",
   "areaServed":"US",
   "offers":[
-    {"@type":"Offer","name":"CRM — 3-year agreement","price":"100","priceCurrency":"USD","description":"$100/month on a three-year agreement. Up to 10 users plus a free read-only accountant login that does not use a seat. Customers, money in, money out with receipts, processing fees, mileage, tax-year totals and per-customer profit margin. No setup fee on the three-year agreement."},
-    {"@type":"Offer","name":"CRM — 1-year agreement","price":"125","priceCurrency":"USD","description":"$125/month on a one-year agreement plus a $500 setup. Same system as the three-year: up to 10 users plus a free read-only accountant login that does not use a seat."},
+    {"@type":"Offer","name":"CRM Essentials — 3-year agreement","price":"100","priceCurrency":"USD","description":"$100/month on a three-year agreement, no setup fee. Up to 10 users plus a free read-only accountant login that does not use a seat. The six screens as built: customers, money in, money out with receipts, processing fees, mileage and tax-year totals."},
+    {"@type":"Offer","name":"CRM Tailored — 3-year agreement","price":"200","priceCurrency":"USD","description":"$200/month on a three-year agreement, no setup fee. Up to 15 users plus the free accountant login. The same six screens reshaped around one trade: their job types, their own fields and the reports they actually run."},
+    {"@type":"Offer","name":"CRM Built-for-you — 3-year agreement","price":"300","priceCurrency":"USD","description":"$300/month on a three-year agreement, no setup fee. Up to 25 users plus the free accountant login. Designed around the business from scratch and connected to the other software it already runs. Scoped per client."},
+    {"@type":"Offer","name":"CRM — 1-year agreements","price":"125","priceCurrency":"USD","description":"On a one-year agreement the same three tiers are $125, $250 and $350 a month, each plus a $500 one-time setup."},
     {"@type":"Offer","name":"AI Chat Agent add-on","price":"50","priceCurrency":"USD","description":"The AI Chat Agent add-on, $50/month covering up to 250 chats, can be added to the CRM."}
   ]
 }
@@ -161,7 +175,7 @@ img{max-width:100%;display:block}
   "@context":"https://schema.org",
   "@type":"FAQPage",
   "mainEntity":[
-    {"@type":"Question","name":"How much does it cost?","acceptedAnswer":{"@type":"Answer","text":"$100 a month on a three-year agreement, with no setup fee. On a one-year agreement it is $125 a month plus a $500 setup. Both include up to 10 users and the free read-only accountant login."}},
+    {"@type":"Question","name":"How much does it cost?","acceptedAnswer":{"@type":"Answer","text":"Three tiers, all on a three-year agreement with no setup fee: Essentials $100 a month for up to 10 users, Tailored $200 a month for up to 15, and Built-for-you $300 a month for up to 25. On a one-year agreement they are $125, $250 and $350 a month plus a $500 setup. Every tier includes the free read-only accountant login, which does not use a seat."}},
     {"@type":"Question","name":"Does my accountant have to buy a seat?","acceptedAnswer":{"@type":"Answer","text":"No. Your accountant or bookkeeper gets a read-only login at no cost, and it does not count against your 10 users. They see the money — revenue, expenses, receipts, fees, mileage and the tax-year totals — and not your customer notes."}},
     {"@type":"Question","name":"Does it take payments or send invoices?","acceptedAnswer":{"@type":"Answer","text":"No. It reads. It connects to the payment processor you already use and mirrors what already happened there — who paid, how much, when, and what the processing fee was. Nothing in the CRM can charge a customer or change anything in your payment account, which is exactly why it is safe to give your bookkeeper a login."}},
     {"@type":"Question","name":"How many users do I get?","acceptedAnswer":{"@type":"Answer","text":"Up to 10, plus the free accountant login on top of that. If you need more than 10 we will quote it."}},
@@ -193,7 +207,7 @@ img{max-width:100%;display:block}
       <h1>Your customers are in your head. <span class="gold">Your receipts are in your truck.</span></h1>
       <p class="lede">You know who owes you. You know roughly what you spent. Then January comes, your accountant asks for the totals, and you spend a weekend going through a glove box and a bank statement trying to rebuild a year you already lived. This is that, fixed — one place for customers, money in, money out, fees and mileage, set up around how your business actually runs.</p>
       <div class="price-hero">
-        <span class="amt">$100</span><span class="per">a month</span><span class="flat">On a 3-year agreement, no setup fee · $125/month on a 1-year, plus a $500 setup · Up to 10 users · Your accountant gets in free</span>
+        <span class="amt">$100</span><span class="per">a month</span><span class="flat">Three tiers from $100 to $300 on a 3-year, no setup fee · 10, 15 or 25 users · Your accountant gets in free on every one</span>
       </div>
       <div class="hero-cta">
         <a class="btn btn-gold" href="#inquire" onclick="gtag('event','crm_cta',{placement:'hero'})">Set mine up →</a>
@@ -338,26 +352,52 @@ img{max-width:100%;display:block}
     <section class="section" id="pricing" aria-labelledby="pricing-h">
       <div class="section-head">
         <p class="kicker gold">Pricing</p>
-        <h2 id="pricing-h">One price. Up to ten people.</h2>
-        <p>Flat monthly, built and run by us. We set it up around your business before you log in, and we keep adjusting it as things change.</p>
+        <h2 id="pricing-h">Three tiers. Nothing is switched off to make a cheaper one.</h2>
+        <p>Flat monthly, built and run by us. The tiers differ by how much of it we shape around your business &mdash; not by features we withhold. Every price below is the 3-year rate with no setup fee.</p>
       </div>
 
-      <div class="plan">
-        <div class="thero"><span class="amt">$100</span><span class="per">/month</span></div>
-        <p class="term">on a 3-year agreement · no setup fee</p>
-        <p class="alt"><strong>$125/month on a 1-year agreement</strong>, plus a $500 setup.</p>
+      <div class="tiers">
+        <article class="tier feat">
+          <p class="tname">Essentials</p>
+          <div class="thero"><span class="amt">$100</span><span class="per">/month</span></div>
+          <p class="term">3-year &middot; no setup fee</p>
+          <p class="alt">$125/month on a 1-year, plus a $500 setup.</p>
+          <p class="who">The six screens exactly as they are built. Customers, money in, money out, processing fees, mileage, year-end totals. The fastest to stand up, and enough for most one-truck and small-crew businesses.</p>
+          <p class="cap">Up to 10 users</p>
+        </article>
+
+        <article class="tier">
+          <p class="tname">Tailored</p>
+          <div class="thero"><span class="amt">$200</span><span class="per">/month</span></div>
+          <p class="term">3-year &middot; no setup fee</p>
+          <p class="alt">$250/month on a 1-year, plus a $500 setup.</p>
+          <p class="who">The same six screens, reshaped around your trade. Your job types, your own fields, the reports you actually run, labelled the way you say them out loud instead of the way software usually words it.</p>
+          <p class="cap">Up to 15 users</p>
+        </article>
+
+        <article class="tier">
+          <p class="tname">Built-for-you</p>
+          <div class="thero"><span class="amt">$300</span><span class="per">/month</span></div>
+          <p class="term">3-year &middot; no setup fee</p>
+          <p class="alt">$350/month on a 1-year, plus a $500 setup.</p>
+          <p class="who">Designed around your business from scratch, and connected to the other software you already run so you stop typing the same thing twice. Scoped with you before any work starts.</p>
+          <p class="cap">Up to 25 users</p>
+        </article>
+      </div>
+
+      <div class="plan" style="margin-top:26px">
+        <p class="term" style="font-size:16px">Every tier includes all of this</p>
         <ul>
-          <li>Up to 10 users</li>
-          <li>A free read-only login for your accountant or bookkeeper, on top of the 10</li>
+          <li>A free read-only login for your accountant or bookkeeper &mdash; it does not use one of your seats</li>
           <li>Customers, money in, money out, processing fees, mileage, year-end totals</li>
           <li>Receipt storage, private to you</li>
-          <li>Set up around your business, and adjusted as it changes</li>
-          <li>Export anything to a spreadsheet, any time</li>
-          <li>Built, hosted, backed up and maintained by us — you never patch anything</li>
+          <li>Read-only on money: it mirrors your payment account and can never charge anyone</li>
+          <li>Export anything to a spreadsheet, any time &mdash; and if you leave, you get all of it</li>
+          <li>Built, hosted, backed up and maintained by us &mdash; you never patch anything</li>
         </ul>
-        <p class="alt">Want the AI assistant on it? The AI Chat Agent add-on is <strong>$50/month</strong> for up to 250 chats, same as everywhere else.</p>
+        <p class="alt">Want the AI assistant on it? The AI Chat Agent add-on is <strong>$50/month</strong> for up to 250 chats, same as everywhere else. More than 25 people? Tell us how many and we&rsquo;ll quote it.</p>
         <div class="hero-cta" style="justify-content:center">
-          <a class="btn btn-gold" href="#inquire" onclick="gtag('event','crm_cta',{placement:'pricing'})">Set mine up →</a>
+          <a class="btn btn-gold" href="#inquire" onclick="gtag('event','crm_cta',{placement:'pricing'})">Set mine up &rarr;</a>
         </div>
       </div>
     </section>
@@ -368,7 +408,7 @@ img{max-width:100%;display:block}
         <h2 id="faq-h">Straight answers</h2>
       </div>
       <div class="faq">
-        <details><summary>How much does it cost?</summary><div class="a"><strong>$100 a month on a three-year agreement</strong>, with no setup fee. On a <strong>one-year agreement it's $125 a month plus a $500 setup</strong>. Both include up to 10 users and the free read-only accountant login.</div></details>
+        <details><summary>How much does it cost?</summary><div class="a">Three tiers, all on a <strong>three-year agreement with no setup fee</strong>: <strong>Essentials $100/month</strong> (up to 10 users), <strong>Tailored $200/month</strong> (15 users), <strong>Built-for-you $300/month</strong> (25 users). On a one-year it is $125, $250 and $350 a month plus a $500 setup. Every tier includes the free read-only accountant login, and it never uses one of your seats.</div></details>
         <details><summary>Does my accountant have to buy a seat?</summary><div class="a">No. Your accountant or bookkeeper gets a read-only login at no cost, and it doesn't count against your 10 users. They see the money — revenue, expenses, receipts, fees, mileage and the tax-year totals — and not your customer notes.</div></details>
         <details><summary>Does it take payments or send invoices?</summary><div class="a">No. It reads. It connects to the payment processor you already use and mirrors what already happened there — who paid, how much, when, and what the processing fee was. Nothing in the CRM can charge a customer or change anything in your payment account, which is exactly why it's safe to hand your bookkeeper a login.</div></details>
         <details><summary>How many users do I get?</summary><div class="a">Up to 10, plus the free accountant login on top of that. Need more than 10? We'll quote it.</div></details>
