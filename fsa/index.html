@@ -51,7 +51,8 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .msg.err{color:var(--red)} .msg.good{color:var(--green)}
 
 .tabs{display:flex;gap:8px;margin-bottom:16px}
-.tabs .btn{flex:1}
+.tabs{flex-wrap:wrap}
+.tabs .btn{flex:1 1 40%}
 .tabs .btn.on{background:var(--teal-dark);border-color:var(--teal-dark)}
 
 .item{padding:13px 15px;border-bottom:1px solid var(--border)}
@@ -99,6 +100,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
       <button class="btn on" data-tab="bookings">Bookings</button>
       <button class="btn" data-tab="blocks">Block off time</button>
       <button class="btn" data-tab="schedule">Schedule</button>
+      <button class="btn" data-tab="push">Send message</button>
     </div>
 
     <div data-pane="bookings">
@@ -121,6 +123,22 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
         </form>
       </div>
       <div class="card"><h2>Blocked</h2><div id="blockList"></div></div>
+    </div>
+
+    <div data-pane="push" hidden>
+      <div class="card">
+        <h2>Send a message to customers</h2>
+        <form class="card-body" id="pushForm">
+          <p class="meta" id="pushCount" style="margin:0 0 12px;color:var(--muted)"></p>
+          <div class="field"><label for="pTitle">Title</label><input type="text" id="pTitle" maxlength="60" required></div>
+          <div class="field"><label for="pBody">Message</label>
+            <textarea id="pBody" maxlength="240" rows="4" required style="width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:10px 11px"></textarea>
+          </div>
+          <button class="btn primary" type="submit" style="width:100%">Send to every phone</button>
+          <div class="msg" id="pushMsg"></div>
+        </form>
+      </div>
+      <div class="card"><h2>Sent</h2><div id="pushLog"></div></div>
     </div>
 
     <div data-pane="schedule" hidden>
@@ -170,6 +188,18 @@ function show(which) {
 }
 
 let state = { bookings: [], blocks: [], today: '', settings: null, services: [] };
+
+function renderPush() {
+  const n = state.pushPhones || 0;
+  $('#pushCount').textContent = `${n} phone${n === 1 ? ' has' : 's have'} notifications turned on.`;
+  const log = state.pushLog || [];
+  $('#pushLog').innerHTML = log.length ? log.map((m) => `
+    <div class="item">
+      <div class="top"><span class="name">${esc(m.title)}</span><span class="meta">${new Date(m.at).toLocaleString()}</span></div>
+      <div class="meta">${esc(m.body)}</div>
+      <div class="meta">Delivered to ${m.sent} of ${m.phones}</div>
+    </div>`).join('') : '<div class="empty">Nothing sent yet.</div>';
+}
 
 function renderSchedule() {
   const st = state.settings || {};
@@ -238,6 +268,7 @@ async function load() {
   renderBookings();
   renderBlocks();
   renderSchedule();
+  renderPush();
   $('#bDate').min = state.today;
   const st = state.settings || {};
   const missing = !Number.isInteger(st.buffer) || !st.firstStart || !st.lastStart || !Object.keys(st.durations || {}).length;
@@ -333,6 +364,26 @@ $('#schedForm').addEventListener('submit', async (e) => {
     $('#schedWarn').hidden = !!Object.keys(data.settings.durations).length;
     msg.className = 'msg good'; msg.textContent = 'Saved. New bookings use these times.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+});
+
+$('#pushForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#pushMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  const n = state.pushPhones || 0;
+  if (!n) { msg.className = 'msg err'; msg.textContent = 'No phones to send to yet.'; return; }
+  if (!confirm(`Send this to ${n} phone${n === 1 ? '' : 's'}?`)) return;
+  const btn = e.target.querySelector('button');
+  btn.disabled = true;
+  try {
+    const r = await api('push-send', { title: $('#pTitle').value, body: $('#pBody').value });
+    state.pushLog = r.pushLog;
+    state.pushPhones = r.phones - r.dropped;
+    renderPush();
+    $('#pTitle').value = ''; $('#pBody').value = '';
+    msg.className = 'msg good'; msg.textContent = `Sent to ${r.sent} of ${r.phones} phones.`;
+  } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+  finally { btn.disabled = false; }
 });
 
 boot();

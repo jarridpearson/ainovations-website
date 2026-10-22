@@ -11,6 +11,7 @@
 //     pay-info       what the Venmo page needs to render (booking must match its secret)
 //     client-token   Braintree client token for the Venmo page
 //     vault          turn the Venmo nonce into a saved payment method on the booking
+//     push-register  save a phone's Expo push address so she can message it
 //
 //   Owner only (login cookie):
 //     login / logout / me
@@ -20,6 +21,7 @@
 //     charge         charge the saved Venmo for one visit
 //     mark-paid      record a cash payment
 //     set-status     cancel / reopen a booking
+//     push-send      send one message to every phone that allowed notifications
 //
 // Braintree credentials live in env vars and never reach a browser or the app.
 
@@ -324,6 +326,45 @@ function ownerView(b) {
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
+// --- push -------------------------------------------------------------------
+//
+// Expo's push service (free) delivers to both iPhone and Android. Each phone's
+// address lives at push/<hash of the address>, so registering twice is a no-op.
+
+const PUSH_TOKEN_RE = /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{10,}\]$/;
+const pushKey = (token) => 'push/' + crypto.createHash('sha256').update(token).digest('hex').slice(0, 32);
+
+async function pushTokens() {
+  const { blobs } = await store().list({ prefix: 'push/' });
+  const rows = await Promise.all(blobs.map((x) => store().get(x.key, { type: 'json' })));
+  return rows.filter(Boolean).map((r) => r.token);
+}
+
+async function sendPush(title, body) {
+  const tokens = await pushTokens();
+  let sent = 0;
+  let dropped = 0;
+  for (let i = 0; i < tokens.length; i += 100) {
+    const batch = tokens.slice(i, i + 100);
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(batch.map((to) => ({ to, title, body, sound: 'default' }))),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !Array.isArray(data?.data)) throw new Error(`Expo push returned ${res.status}`);
+    await Promise.all(data.data.map(async (ticket, n) => {
+      if (ticket.status === 'ok') { sent++; return; }
+      // The app was deleted or notifications turned off: stop sending to it.
+      if (ticket.details?.error === 'DeviceNotRegistered') {
+        dropped++;
+        await store().delete(pushKey(batch[n]));
+      }
+    }));
+  }
+  return { phones: tokens.length, sent, dropped };
+}
+
 // --- handler ----------------------------------------------------------------
 
 export default async (req, context) => {
@@ -453,6 +494,14 @@ export default async (req, context) => {
       return ok({ ok: true, username: pm.details.username });
     }
 
+    if (action === 'push-register') {
+      if (await overLimit('push', ipOf(req, context), 20, 60)) return fail(429, 'Too many requests.');
+      const token = str(input.token, 200);
+      if (!PUSH_TOKEN_RE.test(token)) return fail(400, 'bad token');
+      await store().setJSON(pushKey(token), { token, at: new Date().toISOString() });
+      return ok({ ok: true });
+    }
+
     // ---------------- owner ----------------
     if (action === 'login') {
       if (!ADMIN_USER || !ADMIN_PASS_HASH || !SESSION_SECRET) return fail(503, 'Login is not configured.');
@@ -477,7 +526,12 @@ export default async (req, context) => {
 
     if (action === 'bookings') {
       const rows = (await allBookings()).map(ownerView).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-      return ok({ bookings: rows, blocks: await getBlocks(), today: todayLocal(), settings: await getSettings(), services: SERVICES });
+      const { blobs: phones } = await store().list({ prefix: 'push/' });
+      const pushLog = (await store().get('pushlog', { type: 'json' })) || [];
+      return ok({
+        bookings: rows, blocks: await getBlocks(), today: todayLocal(), settings: await getSettings(), services: SERVICES,
+        pushPhones: phones.length, pushLog,
+      });
     }
 
     if (action === 'settings') {
@@ -558,6 +612,17 @@ export default async (req, context) => {
       b.payments.push({ id: crypto.randomUUID(), kind: 'cash', cents, at: new Date().toISOString(), status: 'PAID' });
       await saveBooking(b);
       return ok({ booking: ownerView(b) });
+    }
+
+    if (action === 'push-send') {
+      const title = str(input.title, 60);
+      const body = str(input.body, 240);
+      if (!title || !body) return fail(400, 'Write a title and a message.');
+      const result = await sendPush(title, body);
+      const pushLog = (await store().get('pushlog', { type: 'json' })) || [];
+      pushLog.unshift({ at: new Date().toISOString(), title, body, ...result });
+      await store().setJSON('pushlog', pushLog.slice(0, 50));
+      return ok({ ...result, pushLog: pushLog.slice(0, 50) });
     }
 
     if (action === 'set-status') {
