@@ -18,6 +18,12 @@
   to = "/.netlify/functions/crm"
   status = 200
 
+# Dog waste booking app (client build): app + owner page + Venmo page.
+[[redirects]]
+  from = "/api/fsa"
+  to = "/.netlify/functions/fsa"
+  status = 200
+
 # Keep the back office out of every index, even if a URL leaks.
 [[headers]]
   for = "/personal/*"
@@ -27,6 +33,18 @@
 
 [[headers]]
   for = "/crm/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/fsa/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/fsa-pay/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
     Referrer-Policy = "no-referrer"

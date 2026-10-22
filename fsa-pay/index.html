@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Link Venmo</title>
+<style>
+:root{--bg:#f6f8fa;--card:#fff;--text:#14202b;--muted:#5b6b78;--venmo:#008cff;--green:#11845b;--red:#c62828;--border:#dde3e8}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:16px}
+.card{max-width:440px;margin:8vh auto 0;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+h1{font-size:21px;margin:0 0 6px}
+p{color:var(--muted);margin:0 0 16px}
+button{width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:700;color:#fff;background:var(--venmo);cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+.msg{margin-top:14px;font-size:15px}
+.err{color:var(--red)} .good{color:var(--green)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1 id="title">Link your Venmo</h1>
+  <p id="detail">Loading your booking…</p>
+  <button id="venmo" hidden disabled>Link Venmo</button>
+  <div class="msg" id="msg"></div>
+</div>
+
+<script src="https://js.braintreegateway.com/web/3.97.2/js/client.min.js"></script>
+<script src="https://js.braintreegateway.com/web/3.97.2/js/venmo.min.js"></script>
+<script src="https://js.braintreegateway.com/web/3.97.2/js/data-collector.min.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const id = q.get('b');
+const secret = q.get('t');
+const $ = (s) => document.querySelector(s);
+const msg = (t, cls) => { $('#msg').className = 'msg ' + (cls || ''); $('#msg').textContent = t; };
+
+async function api(action, body = {}) {
+  const res = await fetch('/api/fsa', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action, id, secret, ...body }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+  return data;
+}
+
+function done(username) {
+  $('#title').textContent = 'Venmo linked';
+  $('#detail').textContent = `@${username} will be charged after each visit is done. You can close this page.`;
+  $('#venmo').hidden = true;
+}
+
+(async () => {
+  let info;
+  try { info = await api('pay-info'); }
+  catch (e) { $('#detail').textContent = ''; return msg(e.message, 'err'); }
+
+  const when = new Date(info.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  $('#detail').textContent = `${info.serviceName} on ${when}. Link Venmo and you're charged after each visit is done, never before.`;
+  if (info.linked) return done('your account');
+  if (!info.ready) return msg('Venmo payments are not switched on yet. Your booking is in; you can pay at the visit.', 'err');
+
+  try {
+    const { clientToken } = await api('client-token');
+    const client = await braintree.client.create({ authorization: clientToken });
+    await braintree.dataCollector.create({ client, paypal: true });
+    const venmo = await braintree.venmo.create({
+      client,
+      allowDesktop: true,
+      mobileWebFallBack: true,
+      paymentMethodUsage: 'multi_use',
+    });
+    if (!venmo.isBrowserSupported()) return msg('Open this link in Safari or Chrome on your phone to link Venmo.', 'err');
+
+    const btn = $('#venmo');
+    btn.hidden = false;
+    btn.disabled = false;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      msg('Opening Venmo…');
+      try {
+        const payload = await venmo.tokenize();
+        const res = await api('vault', { nonce: payload.nonce });
+        msg('');
+        done(res.username);
+      } catch (e) {
+        btn.disabled = false;
+        msg(e.code === 'VENMO_CANCELED' || e.code === 'VENMO_APP_CANCELED' ? 'Cancelled. Tap the button to try again.' : e.message, 'err');
+      }
+    });
+    // Returning from the Venmo app on mobile web resumes here.
+    if (venmo.hasTokenizationResult()) btn.click();
+  } catch (e) {
+    msg(e.message, 'err');
+  }
+})();
+</script>
+</body>
+</html>

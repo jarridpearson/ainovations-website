@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Bookings</title>
+<style>
+:root{
+  --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06); --panel-2:rgba(255,255,255,.09);
+  --text:#f7fbff; --muted:#b8cad7; --teal:#1dc8c6; --teal-dark:#078c92; --teal-soft:#72e6df;
+  --border:rgba(255,255,255,.13); --green:#3ddc97; --amber:#ffc14d; --red:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg-deep);color:var(--text);min-height:100vh;
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--text)}
+[hidden]{display:none!important}
+
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.brand{font-weight:800;font-size:16px}
+.spacer{flex:1 1 auto}
+.wrap{padding:16px;max-width:860px;margin:0 auto}
+
+.btn{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:10px 14px;font-size:15px;font-weight:600}
+.btn.primary{background:var(--teal-dark);border-color:var(--teal-dark)}
+.btn.sm{padding:6px 10px;font-size:13.5px}
+.btn.danger{color:var(--red)}
+.btn:disabled{opacity:.5;cursor:default}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.card>h2{margin:0;padding:12px 15px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)}
+.card-body{padding:15px}
+
+label{display:block;font-size:13px;color:var(--muted);margin:0 0 5px}
+.field{margin-bottom:12px}
+input[type=text],input[type=password],input[type=date],input[type=time],input[type=number],select{
+  width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:10px 11px;color-scheme:dark;
+}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--text);font-size:15px}
+.check input{width:20px;height:20px}
+
+.msg{font-size:14px;margin-top:8px;min-height:1em}
+.msg.err{color:var(--red)} .msg.good{color:var(--green)}
+
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tabs .btn{flex:1}
+.tabs .btn.on{background:var(--teal-dark);border-color:var(--teal-dark)}
+
+.item{padding:13px 15px;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item .top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.item .name{font-weight:700}
+.item .when{color:var(--teal-soft);font-weight:600}
+.item .meta{color:var(--muted);font-size:14px;margin-top:4px;word-break:break-word}
+.item .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.item .actions input{width:110px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--border)}
+.pill.new{color:var(--amber)} .pill.confirmed{color:var(--green)} .pill.cancelled{color:var(--red)}
+.pill.venmo{color:var(--teal-soft)}
+.pay{font-size:13.5px;color:var(--muted)}
+.pay b{color:var(--text)}
+.empty{padding:18px 15px;color:var(--muted)}
+
+#login{max-width:380px;margin:12vh auto 0}
+</style>
+</head>
+<body>
+
+<section id="login" class="wrap" hidden>
+  <div class="card">
+    <h2>Sign in</h2>
+    <form class="card-body" id="loginForm" autocomplete="on">
+      <div class="field"><label for="u">Username</label><input type="text" id="u" name="username" autocomplete="username" autocapitalize="none" required></div>
+      <div class="field"><label for="p">Password</label><input type="password" id="p" name="password" autocomplete="current-password" required></div>
+      <button class="btn primary" type="submit" style="width:100%">Sign in</button>
+      <div class="msg err" id="loginMsg"></div>
+    </form>
+  </div>
+</section>
+
+<section id="app" hidden>
+  <div class="topbar">
+    <div class="brand">Bookings</div>
+    <div class="spacer"></div>
+    <button class="btn sm" id="logout">Sign out</button>
+  </div>
+  <div class="wrap">
+    <div class="msg err" id="venmoWarn" hidden></div>
+    <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set your travel time, start hours and how long each job takes.</div>
+    <div class="tabs">
+      <button class="btn on" data-tab="bookings">Bookings</button>
+      <button class="btn" data-tab="blocks">Block off time</button>
+      <button class="btn" data-tab="schedule">Schedule</button>
+    </div>
+
+    <div data-pane="bookings">
+      <div class="card"><h2>Bookings</h2><div id="bookingList"></div></div>
+    </div>
+
+    <div data-pane="blocks" hidden>
+      <div class="card">
+        <h2>Block off time</h2>
+        <form class="card-body" id="blockForm">
+          <div class="field"><label for="bDate">Date</label><input type="date" id="bDate" required></div>
+          <label class="check"><input type="checkbox" id="bAllDay" checked> All day</label>
+          <div class="row2" id="bTimes" hidden>
+            <div class="field"><label for="bFrom">From</label><input type="time" id="bFrom" step="1800"></div>
+            <div class="field"><label for="bTo">To</label><input type="time" id="bTo" step="1800"></div>
+          </div>
+          <div class="field"><label for="bNote">Note (only you see this)</label><input type="text" id="bNote" maxlength="120"></div>
+          <button class="btn primary" type="submit" style="width:100%">Block it</button>
+          <div class="msg" id="blockMsg"></div>
+        </form>
+      </div>
+      <div class="card"><h2>Blocked</h2><div id="blockList"></div></div>
+    </div>
+
+    <div data-pane="schedule" hidden>
+      <div class="card">
+        <h2>Schedule</h2>
+        <form class="card-body" id="schedForm">
+          <div class="field">
+            <label for="sBuffer">Travel time between appointments (minutes)</label>
+            <input type="number" id="sBuffer" min="0" max="240" step="5" inputmode="numeric" required>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="sFirst">Earliest start</label><input type="time" id="sFirst" step="1800" required></div>
+            <div class="field"><label for="sLast">Latest start</label><input type="time" id="sLast" step="1800" required></div>
+          </div>
+          <label style="margin-top:6px">How long each job takes (minutes). A service left blank can't be booked.</label>
+          <div id="sDurations"></div>
+          <button class="btn primary" type="submit" style="width:100%">Save</button>
+          <div class="msg" id="schedMsg"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const money = (c) => '$' + (c / 100).toFixed(2);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDate = (d) => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+const fmtTime = (t) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); return `${(h % 12) || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+
+async function api(action, body = {}) {
+  const res = await fetch('/api/fsa', {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action, ...body }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && action !== 'login') { show('login'); throw new Error('Signed out'); }
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function show(which) {
+  $('#login').hidden = which !== 'login';
+  $('#app').hidden = which !== 'app';
+}
+
+let state = { bookings: [], blocks: [], today: '', settings: null, services: [] };
+
+function renderSchedule() {
+  const st = state.settings || {};
+  $('#sBuffer').value = Number.isInteger(st.buffer) ? st.buffer : '';
+  $('#sFirst').value = st.firstStart || '';
+  $('#sLast').value = st.lastStart || '';
+  $('#sDurations').innerHTML = state.services.map((sv) => `
+    <div class="field" style="display:flex;align-items:center;gap:10px">
+      <span style="flex:1">${esc(sv.name)}</span>
+      <input type="number" data-dur="${sv.id}" min="5" max="600" step="5" inputmode="numeric" style="width:110px"
+        value="${st.durations?.[sv.id] ?? ''}" aria-label="${esc(sv.name)} minutes">
+    </div>`).join('');
+}
+
+function renderBookings() {
+  const el = $('#bookingList');
+  if (!state.bookings.length) { el.innerHTML = '<div class="empty">No bookings yet.</div>'; return; }
+  el.innerHTML = state.bookings.map((b) => {
+    const paid = b.payments.filter((p) => p.status !== 'FAILED');
+    const failed = b.payments.filter((p) => p.status === 'FAILED');
+    return `
+    <div class="item" data-id="${b.id}">
+      <div class="top">
+        <span class="name">${esc(b.name)}</span>
+        <span class="when">${fmtDate(b.date)} · ${fmtTime(b.time)}</span>
+        <span class="pill ${b.status}">${b.status}</span>
+        ${b.venmo ? `<span class="pill venmo">Venmo @${esc(b.venmo.username)}</span>` : ''}
+      </div>
+      <div class="meta">${esc(b.serviceName)} · ${b.dogs} dog${b.dogs === 1 ? '' : 's'} · list ${money(b.listCents)}</div>
+      <div class="meta"><a href="tel:${esc(b.phone)}" style="color:var(--teal-soft)">${esc(b.phone)}</a>${b.email ? ' · ' + esc(b.email) : ''}</div>
+      <div class="meta">${esc(b.address)}</div>
+      ${b.notes ? `<div class="meta">Notes: ${esc(b.notes)}</div>` : ''}
+      ${paid.length ? `<div class="pay">Paid: ${paid.map((p) => `<b>${money(p.cents)}</b> ${p.kind} ${new Date(p.at).toLocaleDateString()}`).join(' · ')}</div>` : ''}
+      ${failed.length ? `<div class="pay" style="color:var(--red)">Failed: ${failed.map((p) => `${money(p.cents)} ${new Date(p.at).toLocaleDateString()}`).join(' · ')}</div>` : ''}
+      <div class="actions">
+        <input type="number" inputmode="decimal" min="1" step="0.01" placeholder="Amount" value="${(b.listCents / 100).toFixed(2)}" aria-label="Amount">
+        <button class="btn sm primary" data-act="charge" ${b.venmo ? '' : 'disabled title="Customer has not linked Venmo"'}>Charge Venmo</button>
+        <button class="btn sm" data-act="cash">Got cash</button>
+        ${b.status !== 'confirmed' ? '<button class="btn sm" data-act="confirmed">Confirm</button>' : ''}
+        ${b.status !== 'cancelled' ? '<button class="btn sm danger" data-act="cancelled">Cancel</button>' : '<button class="btn sm" data-act="new">Reopen</button>'}
+      </div>
+      <div class="msg"></div>
+    </div>`;
+  }).join('');
+}
+
+function renderBlocks() {
+  const el = $('#blockList');
+  const upcoming = state.blocks.filter((b) => b.date >= state.today);
+  if (!upcoming.length) { el.innerHTML = '<div class="empty">Nothing blocked. Customers can book any day.</div>'; return; }
+  el.innerHTML = upcoming.map((b) => `
+    <div class="item">
+      <div class="top">
+        <span class="when">${fmtDate(b.date)}</span>
+        <span>${b.from ? `${fmtTime(b.from)} – ${fmtTime(b.to)}` : 'All day'}</span>
+        <span class="spacer"></span>
+        <button class="btn sm danger" data-unblock="${b.id}">Remove</button>
+      </div>
+      ${b.note ? `<div class="meta">${esc(b.note)}</div>` : ''}
+    </div>`).join('');
+}
+
+async function load() {
+  const data = await api('bookings');
+  state = data;
+  renderBookings();
+  renderBlocks();
+  renderSchedule();
+  $('#bDate').min = state.today;
+  const st = state.settings || {};
+  const missing = !Number.isInteger(st.buffer) || !st.firstStart || !st.lastStart || !Object.keys(st.durations || {}).length;
+  $('#schedWarn').hidden = !missing;
+}
+
+async function boot() {
+  try {
+    const me = await api('me');
+    show('app');
+    const warn = $('#venmoWarn');
+    warn.hidden = me.venmoReady;
+    warn.textContent = me.venmoReady ? '' : 'Venmo is not connected yet. Bookings still come in; charging turns on once the Braintree account is approved.';
+    await load();
+  } catch { show('login'); }
+}
+
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#loginMsg').textContent = '';
+  try {
+    await api('login', { username: $('#u').value, password: $('#p').value });
+    $('#p').value = '';
+    await boot();
+  } catch (err) { $('#loginMsg').textContent = err.message; }
+});
+
+$('#logout').addEventListener('click', async () => { await api('logout').catch(() => {}); show('login'); });
+
+document.querySelectorAll('[data-tab]').forEach((t) => t.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === t));
+  document.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== t.dataset.tab; });
+}));
+
+$('#bAllDay').addEventListener('change', (e) => { $('#bTimes').hidden = e.target.checked; });
+
+$('#blockForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#blockMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  try {
+    const data = await api('block', {
+      date: $('#bDate').value, allDay: $('#bAllDay').checked,
+      from: $('#bFrom').value, to: $('#bTo').value, note: $('#bNote').value,
+    });
+    state.blocks = data.blocks;
+    renderBlocks();
+    $('#bNote').value = '';
+    msg.className = 'msg good'; msg.textContent = 'Blocked. Customers can no longer pick that time.';
+  } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+});
+
+$('#blockList').addEventListener('click', async (e) => {
+  const id = e.target.dataset.unblock;
+  if (!id) return;
+  e.target.disabled = true;
+  try { state.blocks = (await api('unblock', { id })).blocks; renderBlocks(); }
+  catch (err) { e.target.disabled = false; alert(err.message); }
+});
+
+$('#bookingList').addEventListener('click', async (e) => {
+  const act = e.target.dataset.act;
+  if (!act) return;
+  const item = e.target.closest('.item');
+  const id = item.dataset.id;
+  const msg = item.querySelector('.msg');
+  const cents = Math.round(parseFloat(item.querySelector('input').value) * 100);
+  msg.className = 'msg'; msg.textContent = '';
+  if ((act === 'charge' || act === 'cash') && !(cents > 0)) { msg.className = 'msg err'; msg.textContent = 'Enter an amount.'; return; }
+  if (act === 'charge' && !confirm(`Charge ${money(cents)} to this customer's Venmo?`)) return;
+  if (act === 'cancelled' && !confirm('Cancel this booking?')) return;
+  e.target.disabled = true;
+  try {
+    const action = act === 'charge' ? 'charge' : act === 'cash' ? 'mark-paid' : 'set-status';
+    const { booking } = await api(action, { id, cents, status: act });
+    state.bookings = state.bookings.map((b) => (b.id === id ? booking : b));
+    renderBookings();
+  } catch (err) { e.target.disabled = false; msg.className = 'msg err'; msg.textContent = err.message; }
+});
+
+$('#schedForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#schedMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  const durations = {};
+  document.querySelectorAll('[data-dur]').forEach((i) => { if (i.value !== '') durations[i.dataset.dur] = Number(i.value); });
+  try {
+    const data = await api('settings', {
+      buffer: Number($('#sBuffer').value), firstStart: $('#sFirst').value, lastStart: $('#sLast').value, durations,
+    });
+    state.settings = data.settings;
+    renderSchedule();
+    $('#schedWarn').hidden = !!Object.keys(data.settings.durations).length;
+    msg.className = 'msg good'; msg.textContent = 'Saved. New bookings use these times.';
+  } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+});
+
+boot();
+</script>
+</body>
+</html>

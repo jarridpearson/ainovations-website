@@ -3,6 +3,8 @@ Allow: /
 
 Disallow: /node_modules/
 Disallow: /crm/
+Disallow: /fsa/
+Disallow: /fsa-pay/
 Disallow: /personal/
 Disallow: /everward-portal/
 Disallow: /seo-backups-*/
