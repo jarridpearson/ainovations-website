@@ -231,7 +231,7 @@ img{max-width:100%;display:block}
         <h2 id="how-h">Three steps. You only do the first one.</h2>
       </div>
       <div class="steps">
-        <div class="step"><span class="num">1</span><h3>Buy the card, send the link</h3><p>Pick the card, paste the link to their website, and pay. You get a printable gift card to hand them.</p></div>
+        <div class="step"><span class="num">1</span><h3>Buy the card, send the link</h3><p>Pick the card, paste the link to their website, and pay. We email you the gift card to forward or hand over.</p></div>
         <div class="step"><span class="num">2</span><h3>We rebuild it — they approve</h3><p>We revamp the site and show it to them. Nothing is final until they say it's right.</p></div>
         <div class="step"><span class="num">3</span><h3>Handed over, ready to run</h3><p>The finished site is set up so any webmaster can take over the updates, search work, and upkeep — or we can.</p></div>
       </div>
@@ -306,7 +306,7 @@ img{max-width:100%;display:block}
 
     <section class="contact" id="buy" aria-labelledby="buy-h">
       <h2 id="buy-h">Send us the site that needs help.</h2>
-      <p>Paste the link, pick the card, and pay. You'll get a printable gift card right after checkout.</p>
+      <p>Paste the link, pick the card, and pay. We email you the gift card the moment you pay.</p>
       <form class="inquire-form" id="gc-form" name="website-gift-card" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/website-gift-card-thanks">
         <input type="hidden" name="form-name" value="website-gift-card" />
         <input type="hidden" name="gift_code" id="gift_code" value="" />
@@ -331,7 +331,7 @@ img{max-width:100%;display:block}
           <div class="field"><label for="recipient_business">Their business *</label><input id="recipient_business" name="recipient_business" type="text" required /></div>
           <div class="field"><label for="buyer_name">Your name *</label><input id="buyer_name" name="buyer_name" type="text" required autocomplete="name" /></div>
           <div class="field"><label for="buyer_email">Your email *</label><input id="buyer_email" name="buyer_email" type="email" required autocomplete="email" /></div>
-          <div class="field full"><label for="message">Gift message (printed on the card)</label><input id="message" name="gift_message" type="text" maxlength="140" placeholder="Optional — up to 140 characters" /></div>
+          <div class="field full"><label for="message">Gift message (shown on the card)</label><input id="message" name="gift_message" type="text" maxlength="140" placeholder="Optional — up to 140 characters" /></div>
         </div>
         <div class="terms-box" style="margin-top:20px;color:#4a4030;background:#fff8e6;border-color:#f0d58a">
           <strong style="color:#7a5a00">TERMS AND CONDITIONS ARE APPLIED TO GIFT CERTIFICATES/GIFT CARDS.</strong>
@@ -440,16 +440,20 @@ function gcPick(v){
     var fd = new FormData(form);
     var card = fd.get('card');
     var body = new URLSearchParams(fd).toString();
-    try {
-      sessionStorage.setItem('ain_gc', JSON.stringify({
-        code: c, card: card,
-        to: fd.get('recipient_name'), biz: fd.get('recipient_business'),
-        from: fd.get('buyer_name'), msg: fd.get('gift_message'), site: fd.get('site_url')
-      }));
-    } catch (x) {}
-    fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
-      .then(function (r) {
-        if (!r.ok) throw new Error('form ' + r.status);
+    var cardData = {
+      code: c, card: card, to: fd.get('recipient_name'), biz: fd.get('recipient_business'),
+      from: fd.get('buyer_name'), msg: fd.get('gift_message'), site: fd.get('site_url'),
+      email: fd.get('buyer_email')
+    };
+    try { sessionStorage.setItem('ain_gc', JSON.stringify({ code: c, card: card, email: cardData.email })); } catch (x) {}
+    /* Two saves: the Netlify form (the lead, with the site link) and the card
+       record the payment webhook emails from. Both must land before paying. */
+    Promise.all([
+      fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }),
+      fetch('/api/gift-card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cardData) })
+    ])
+      .then(function (rs) {
+        if (!rs[0].ok || !rs[1].ok) throw new Error('save ' + rs[0].status + '/' + rs[1].status);
         if (typeof gtag === 'function') gtag('event', 'gc_checkout_start', { card: card });
         location.href = GC_LINKS[card] +
           '?client_reference_id=' + encodeURIComponent(c) +

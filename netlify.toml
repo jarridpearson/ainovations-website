@@ -12,6 +12,12 @@
   to = "/.netlify/functions/chat"
   status = 200
 
+# Website revamp gift card: card records + the Stripe payment webhook.
+[[redirects]]
+  from = "/api/gift-card"
+  to = "/.netlify/functions/gift-card"
+  status = 200
+
 # Internal CRM back office.
 [[redirects]]
   from = "/api/crm"

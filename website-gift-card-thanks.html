@@ -58,8 +58,8 @@ h1{margin:10px 0 0;font-size:clamp(28px,5vw,42px);letter-spacing:-.04em;line-hei
 <a class="noprint" href="/" style="display:block;padding:0 0 10px"><img src="/ainovations-logo-header.png" alt="AInovations" style="height:32px;width:auto" /></a>
 <main class="wrap">
   <div class="noprint">
-    <h1>Paid. Here's your gift card.</h1>
-    <p>Print it or save it as a PDF and hand it over. We already have the site link, and we'll check it before any work starts.</p>
+    <h1 id="t-h">Paid. Here's your gift card.</h1>
+    <p id="t-p">Your gift card is on its way to your email — forward it or show it to them. We already have the site link.</p>
   </div>
 
   <section class="gift" aria-label="Gift card">
@@ -73,7 +73,7 @@ h1{margin:10px 0 0;font-size:clamp(28px,5vw,42px);letter-spacing:-.04em;line-hei
     <div class="row"><b>Covers</b> <span id="g-pages">One website revamp, up to 5 pages</span></div>
     <div class="msg" id="g-msg" hidden></div>
     <div class="code" id="g-code">—</div>
-    <div class="redeem">To redeem: go to <strong>ainovations.net/website-gift-card#redeem</strong> and enter the code above.</div>
+    <div class="redeem">To redeem: go to <strong>ainovations.net/giftcardredeem</strong> and enter the code above.</div>
     <div class="terms">
       <strong>TERMS AND CONDITIONS ARE APPLIED TO GIFT CERTIFICATES/GIFT CARDS.</strong>
       Pays for one revamp of one existing website, up to the pages shown. Not covered: online stores or e-sales, subscriptions or memberships, or anything needing a back end (logins, accounts, databases, booking systems). Never expires. No fees of any kind. All sales are final: no refunds, and not redeemable for cash. Hosting and domain names not included. AInovations never asks anyone to pay a bill or debt with a gift card — if someone does, it's a scam. Issued by AInovations LLC.
@@ -81,7 +81,7 @@ h1{margin:10px 0 0;font-size:clamp(28px,5vw,42px);letter-spacing:-.04em;line-hei
   </section>
 
   <div class="btns noprint">
-    <button class="btn primary" type="button" onclick="window.print()">Print or save as PDF</button>
+    <button class="btn primary" type="button" onclick="window.print()">Save a copy</button>
     <a class="btn ghost" href="/website-gift-card">Buy another</a>
   </div>
 </main>
@@ -90,25 +90,59 @@ h1{margin:10px 0 0;font-size:clamp(28px,5vw,42px);letter-spacing:-.04em;line-hei
   var q = new URLSearchParams(location.search);
   var d = {};
   try { d = JSON.parse(sessionStorage.getItem('ain_gc') || '{}'); } catch (e) {}
-  var card = q.get('card') || d.card || '5';
-  var ten = card === '10';
-  /* Fallback when sessionStorage was lost (different device / private tab):
-     the Stripe session id still identifies the payment in the dashboard. */
-  var code = d.code || ('GC-' + (q.get('session_id') || '').slice(-8).toUpperCase());
+  /* ?code= is the link in the email; right after checkout the code is in
+     sessionStorage. Either way the card is read back from the server, and only
+     once Stripe has confirmed the payment. */
+  var code = (q.get('code') || d.code || '').toUpperCase();
+  var fromEmail = !!q.get('code');
+  var gift = document.querySelector('.gift');
+  var btns = document.querySelector('.btns');
   function set(id, v) { var el = document.getElementById(id); if (el && v) el.textContent = v; }
-  set('g-amt', ten ? '$150' : '$100');
-  set('g-pages', 'One website revamp, up to ' + (ten ? '10' : '5') + ' pages');
-  set('g-to', [d.to, d.biz].filter(Boolean).join(' — '));
-  set('g-from', d.from);
-  set('g-code', code);
-  if (d.msg) { var m = document.getElementById('g-msg'); m.textContent = '“' + d.msg + '”'; m.hidden = false; }
+  function say(h, p) { set('t-h', h); set('t-p', p); }
+
+  gift.style.display = 'none'; btns.style.display = 'none';
+  if (fromEmail) say('Your gift card', 'Forward it, show it, or save a copy.');
+  else if (d.email) set('t-p', 'Your gift card is on its way to ' + d.email + ' — forward it or show it to them. We already have the site link.');
+
+  function show(c) {
+    var ten = c.card === '10';
+    set('g-amt', ten ? '$150' : '$100');
+    set('g-pages', 'One website revamp, up to ' + (ten ? '10' : '5') + ' pages');
+    set('g-to', [c.to, c.biz].filter(Boolean).join(' — '));
+    set('g-from', c.from);
+    set('g-code', c.code);
+    if (c.msg) { var m = document.getElementById('g-msg'); m.textContent = '“' + c.msg + '”'; m.hidden = false; }
+    gift.style.display = ''; btns.style.display = '';
+    if (!fromEmail) countSale(c);
+  }
+
+  var tries = 0;
+  function load() {
+    if (!/^GC-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) {
+      return say('We couldn’t find that card', 'Check the link in your gift card email.');
+    }
+    fetch('/api/gift-card?code=' + encodeURIComponent(code), { cache: 'no-store' })
+      .then(function (r) { return r.json().then(function (b) { return { s: r.status, b: b }; }); })
+      .then(function (x) {
+        if (x.s === 200) return show(x.b);
+        /* 402: Stripe's confirmation usually lands within seconds of the redirect. */
+        if (x.s === 402 && tries++ < 20) return setTimeout(load, 1500);
+        if (x.s === 402) return say('Payment is still confirming', 'Your gift card will arrive by email as soon as it does.');
+        say('We couldn’t find that card', 'Check the link in your gift card email.');
+      })
+      .catch(function () { if (tries++ < 20) setTimeout(load, 1500); });
+  }
+  load();
 
   /* Count the sale once; a refresh must not double it. */
-  var once = 'ain_gc_paid_' + (q.get('session_id') || code);
-  try { if (sessionStorage.getItem(once)) return; sessionStorage.setItem(once, '1'); } catch (e) {}
-  if (typeof gtag === 'function') {
-    gtag('event', 'purchase', { transaction_id: q.get('session_id') || code, value: ten ? 150 : 100, currency: 'USD',
-      items: [{ item_name: 'Website Revamp Gift Card', item_variant: ten ? '10 pages' : '5 pages' }] });
+  function countSale(c) {
+    var once = 'ain_gc_paid_' + c.code;
+    try { if (sessionStorage.getItem(once)) return; sessionStorage.setItem(once, '1'); } catch (e) {}
+    if (typeof gtag === 'function') {
+      var ten = c.card === '10';
+      gtag('event', 'purchase', { transaction_id: c.code, value: ten ? 150 : 100, currency: 'USD',
+        items: [{ item_name: 'Website Revamp Gift Card', item_variant: ten ? '10 pages' : '5 pages' }] });
+    }
   }
 })();
 </script>
