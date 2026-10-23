@@ -102,7 +102,7 @@ A rule that matters for every one of these trades: they are usually BOOKED SOLID
 - Never expires. No fees of any kind.
 - HOW TO BUY: ainovations.net/website-gift-card — pick the card, paste the link to their website, enter both names, pay by card through Stripe. The gift card is emailed to the BUYER (the person who paid) the moment they pay, with a link to save a copy; the buyer then forwards it or hands it to the site owner. AInovations NEVER emails the recipient or site owner directly — never say the card "goes to the recipient" or that we contact them. The buyer does not need the site owner's permission; it is a gift, and nothing about the owner's site changes until the owner approves the new one.
 - HOW TO REDEEM: ainovations.net/giftcardredeem — enter the GC- code from the card, a name, an email and the website. AInovations takes it from there and shows the owner the new site before anything is final.
-- It is a PURCHASE, not a donation. Never call it a donation, a contribution or tax-deductible.
+- It is a PURCHASE, not a donation. Never call it a donation, a contribution or tax-deductible. Give NO tax advice of any kind — never say it is or works like a business expense or a write-off; if asked about taxes, say it is a purchase, not a donation, and that tax questions are for their accountant.
 - Gift card vs Rent-a-Site: the gift card is one revamp of a site that already exists, handed over ready for anyone to run. Someone who wants AInovations to keep running and growing the site every month wants Rent-a-Site — mention it only if they ask about ongoing upkeep.
 
 ## MARQUEE — the $50 website the business updates itself
