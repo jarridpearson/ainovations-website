@@ -215,6 +215,22 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
   </nav>
 
   <main id="main">
+    <!-- WEBSITE GIFT CARD — prime spot, above the hero -->
+    <a class="gc-band" href="/website-gift-card" onclick="gtag('event','home_gc_band',{})">
+      <span class="gc-tag">NEW &middot; GIFT CARD</span>
+      <span class="gc-text"><strong>Know someone with a bad website?</strong> Gift them a revamp &mdash; <span class="gc-price">$100</span> up to 5 pages, <span class="gc-price">$150</span> up to 10.</span>
+      <span class="gc-go">Buy a gift card &rarr;</span>
+    </a>
+    <style>
+    .gc-band{display:flex;align-items:center;gap:14px 20px;flex-wrap:wrap;margin:0 0 18px;padding:18px 24px;border:2px solid rgba(255,209,102,.6);border-radius:20px;background:linear-gradient(135deg,rgba(255,209,102,.18),rgba(255,209,102,.06));color:#fff;text-decoration:none;box-shadow:0 14px 40px rgba(0,0,0,.28);transition:transform .15s ease,border-color .15s ease}
+    .gc-band:hover{transform:translateY(-2px);border-color:#ffd166}
+    .gc-band .gc-tag{flex:0 0 auto;padding:6px 12px;border-radius:999px;background:#ffd166;color:#3a2a00;font-size:12px;font-weight:900;letter-spacing:.06em}
+    .gc-band .gc-text{flex:1 1 320px;min-width:0;font-size:clamp(16px,1.9vw,19px);line-height:1.45;color:#e9f2f7}
+    .gc-band .gc-text strong{color:#fff}
+    .gc-band .gc-price{color:#ffd166;font-weight:900}
+    .gc-band .gc-go{flex:0 0 auto;display:inline-flex;align-items:center;min-height:48px;padding:0 20px;border-radius:14px;background:linear-gradient(180deg,#ffd982,#ffc94d);color:#3a2a00;font-weight:900;font-size:16px;box-shadow:0 5px 0 #b8860b}
+    </style>
+
     <!-- HERO -->
     <section class="hero" aria-labelledby="hero-h">
       <div class="eyebrow" style="border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.1);color:#ffe3a1">AI PRODUCTS · CUSTOM SOFTWARE · SHIPPED</div>

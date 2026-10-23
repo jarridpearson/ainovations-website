@@ -112,6 +112,18 @@ async function markWebhookEvent(
   }
 }
 
+// One Stripe account bills several products, so this endpoint receives every
+// product's events (Rent-a-Site gift cards, client subscriptions, ...). Every
+// checkout and subscription Everward creates carries metadata.organization_id;
+// an event with no such metadata and no matching organization belongs to
+// another product and is acknowledged as ignored. Throwing on it returned 500,
+// Stripe retried it for days, and enough of those can get the endpoint
+// disabled — which would stop real Everward billing events.
+class NotEverwardEvent extends Error {}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function findOrganizationByStripeReferences(
   adminClient: AdminClient,
   details: {
@@ -120,7 +132,9 @@ async function findOrganizationByStripeReferences(
     subscriptionId?: string | null;
   },
 ) {
-  if (details.organizationId) {
+  // A non-UUID reference (another product's client_reference_id) would make
+  // Postgres reject the uuid comparison outright.
+  if (details.organizationId && UUID_PATTERN.test(details.organizationId)) {
     const { data, error } = await adminClient
       .from("organizations")
       .select(
@@ -317,6 +331,12 @@ export async function synchronizeSubscription(
   });
 
   if (!organization) {
+    if (!organizationId) {
+      throw new NotEverwardEvent(
+        `Stripe subscription ${subscription.id} is not an Everward subscription.`,
+      );
+    }
+
     throw new Error(
       `No organization is connected to Stripe subscription ${subscription.id}.`,
     );
@@ -560,6 +580,12 @@ async function handleCheckoutCompleted(
   });
 
   if (!organization) {
+    if (!session.metadata?.organization_id?.trim()) {
+      throw new NotEverwardEvent(
+        `Checkout Session ${session.id} is not an Everward checkout.`,
+      );
+    }
+
     throw new Error(
       `No organization could be matched to Checkout Session ${session.id}.`,
     );
@@ -968,6 +994,22 @@ if (import.meta.main) {
       organizationId,
     });
   } catch (error) {
+    if (error instanceof NotEverwardEvent) {
+      await markWebhookEvent(adminClient, stripeEvent.id, {
+        processing_status: "ignored",
+        processed_at: new Date().toISOString(),
+        last_error: error.message,
+      });
+
+      return jsonResponse({
+        received: true,
+        processed: false,
+        ignored: true,
+        stripeEventId: stripeEvent.id,
+        stripeEventType: stripeEvent.type,
+      });
+    }
+
     const errorMessage = sanitizeError(error);
 
     console.error("Stripe organization webhook failed:", {
