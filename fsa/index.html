@@ -99,6 +99,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
     <div class="tabs">
       <button class="btn on" data-tab="bookings">Bookings</button>
       <button class="btn" data-tab="blocks">Block off time</button>
+      <button class="btn" data-tab="prices">Prices</button>
       <button class="btn" data-tab="schedule">Schedule</button>
       <button class="btn" data-tab="push">Send message</button>
     </div>
@@ -139,6 +140,21 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
         </form>
       </div>
       <div class="card"><h2>Sent</h2><div id="pushLog"></div></div>
+    </div>
+
+    <div data-pane="prices" hidden>
+      <div class="card">
+        <h2>Services and prices</h2>
+        <form class="card-body" id="pricesForm">
+          <p class="meta" style="margin:0 0 12px;color:var(--muted)">Changes show in the app as soon as you save. Existing bookings keep the price and schedule they were booked with.</p>
+          <div id="svcList"></div>
+          <button class="btn" type="button" id="addSvc" style="width:100%;margin-bottom:16px">+ Add a service</button>
+          <label>Notes under the price list (one per line)</label>
+          <textarea id="priceNotes" rows="3" style="width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:10px 11px;margin-bottom:12px"></textarea>
+          <button class="btn primary" type="submit" style="width:100%">Save prices</button>
+          <div class="msg" id="pricesMsg"></div>
+        </form>
+      </div>
     </div>
 
     <div data-pane="schedule" hidden>
@@ -199,6 +215,40 @@ function renderPush() {
       <div class="meta">${esc(m.body)}</div>
       <div class="meta">Delivered to ${m.sent} of ${m.phones}</div>
     </div>`).join('') : '<div class="empty">Nothing sent yet.</div>';
+}
+
+const FREQ_LABEL = { one_time: 'One time', weekly: 'Every week', twice_weekly: 'Twice a week', biweekly: 'Every 2 weeks', monthly: 'Every month' };
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function svcRow(sv) {
+  const months = sv.months || [];
+  return `
+    <div class="item svc" data-id="${esc(sv.id || '')}" style="padding:13px 0">
+      <div class="field"><label>Service name</label><input type="text" data-k="name" maxlength="80" value="${esc(sv.name || '')}"></div>
+      <div class="row2">
+        <div class="field"><label>Price ($)</label><input type="number" data-k="price" min="0" step="0.01" inputmode="decimal" value="${sv.cents != null ? (sv.cents / 100).toFixed(2) : ''}"></div>
+        <div class="field"><label>How often</label><select data-k="frequency">${Object.entries(FREQ_LABEL).map(([k, v]) => `<option value="${k}"${sv.frequency === k ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Label (optional, e.g. Most Popular)</label><input type="text" data-k="badge" maxlength="30" value="${esc(sv.badge || '')}"></div>
+      <label>Months offered (leave all off for year-round)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${MONTHS.map((m, i) => `<label class="check" style="margin:0;font-size:13px;border:1px solid var(--border);border-radius:8px;padding:4px 8px"><input type="checkbox" data-m="${i + 1}" ${months.includes(i + 1) ? 'checked' : ''} style="width:16px;height:16px"> ${m}</label>`).join('')}
+      </div>
+      <button class="btn sm danger" type="button" data-remove>Remove this service</button>
+    </div>`;
+}
+
+function renderPrices() {
+  $('#svcList').innerHTML = (state.services || []).map(svcRow).join('');
+  $('#priceNotes').value = (state.priceNotes || []).join('\n');
+}
+
+function readPrices() {
+  return [...document.querySelectorAll('#svcList .svc')].map((el) => {
+    const v = (k) => el.querySelector(`[data-k="${k}"]`).value;
+    const months = [...el.querySelectorAll('[data-m]')].filter((c) => c.checked).map((c) => Number(c.dataset.m));
+    return { id: el.dataset.id, name: v('name').trim(), cents: Math.round(parseFloat(v('price')) * 100), frequency: v('frequency'), badge: v('badge').trim(), months };
+  });
 }
 
 function renderSchedule() {
@@ -268,6 +318,7 @@ async function load() {
   renderBookings();
   renderBlocks();
   renderSchedule();
+  renderPrices();
   renderPush();
   $('#bDate').min = state.today;
   const st = state.settings || {};
@@ -384,6 +435,26 @@ $('#pushForm').addEventListener('submit', async (e) => {
     msg.className = 'msg good'; msg.textContent = `Sent to ${r.sent} of ${r.phones} phones.`;
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
   finally { btn.disabled = false; }
+});
+
+$('#addSvc').addEventListener('click', () => {
+  $('#svcList').insertAdjacentHTML('beforeend', svcRow({ frequency: 'one_time' }));
+});
+$('#svcList').addEventListener('click', (e) => {
+  if (e.target.matches('[data-remove]')) e.target.closest('.svc').remove();
+});
+$('#pricesForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#pricesMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  const services = readPrices();
+  if (services.some((sv) => !sv.name || !(sv.cents >= 0))) { msg.className = 'msg err'; msg.textContent = 'Every service needs a name and a price.'; return; }
+  try {
+    const r = await api('prices', { services, priceNotes: $('#priceNotes').value.split('\n').map((x) => x.trim()).filter(Boolean) });
+    state.services = r.services; state.priceNotes = r.priceNotes;
+    renderPrices(); renderSchedule();
+    msg.className = 'msg good'; msg.textContent = 'Saved. The app shows these prices now. New services need a job length on the Schedule tab before they can be booked.';
+  } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
 });
 
 boot();

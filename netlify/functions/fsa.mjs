@@ -47,21 +47,29 @@ const BT = {
 const SESSION_COOKIE = 'fsa_session';
 const SESSION_HOURS = 24 * 14;
 
-// Her price sheet, September 2026. Prices are for one dog and the first 1/8 acre.
-// The extra-dog rate is not on the sheet, so the app never prices extra dogs.
-const SERVICES = [
-  { id: 'spring', name: 'Spring Clean-Up', cents: 10000, months: [1, 2, 3, 4, 5], per: 'one time' },
-  { id: 'initial', name: 'Initial or One-Time Clean-Up', cents: 10000, months: [1, 2, 3, 4, 5], per: 'one time' },
-  { id: 'onetime', name: 'One-Time Clean-Up', cents: 7500, months: [6, 7, 8, 9, 10, 11, 12], per: 'one time' },
-  { id: 'twice_weekly', name: 'Twice-a-Week Service', cents: 1500, per: 'visit' },
-  { id: 'weekly', name: 'Weekly Service', cents: 2000, per: 'visit', badge: 'Most Popular' },
-  { id: 'biweekly', name: 'Bi-Weekly Service', cents: 2500, per: 'visit' },
-  { id: 'monthly', name: 'Monthly Service', cents: 4000, per: 'visit' },
+// Her services and prices are HER data: she edits them on the Prices tab of her
+// page, and they live in the store under `services`. These are only the opening
+// values from her September 2026 price sheet, used until she saves her own.
+// Prices are for one dog and the first 1/8 acre.
+//
+// `frequency` decides how a booking repeats on her calendar:
+//   one_time | weekly | twice_weekly | biweekly | monthly
+const FREQUENCIES = ['one_time', 'weekly', 'twice_weekly', 'biweekly', 'monthly'];
+const DEFAULT_SERVICES = [
+  { id: 'spring', name: 'Spring Clean-Up', cents: 10000, months: [1, 2, 3, 4, 5], frequency: 'one_time' },
+  { id: 'initial', name: 'Initial or One-Time Clean-Up', cents: 10000, months: [1, 2, 3, 4, 5], frequency: 'one_time' },
+  { id: 'onetime', name: 'One-Time Clean-Up', cents: 7500, months: [6, 7, 8, 9, 10, 11, 12], frequency: 'one_time' },
+  { id: 'twice_weekly', name: 'Twice-a-Week Service', cents: 1500, frequency: 'twice_weekly' },
+  { id: 'weekly', name: 'Weekly Service', cents: 2000, frequency: 'weekly', badge: 'Most Popular' },
+  { id: 'biweekly', name: 'Bi-Weekly Service', cents: 2500, frequency: 'biweekly' },
+  { id: 'monthly', name: 'Monthly Service', cents: 4000, frequency: 'monthly' },
 ];
-const PRICE_NOTES = [
+const DEFAULT_PRICE_NOTES = [
   'Listed prices are for one dog. Additional dogs may affect pricing.',
   '+$7 per 1/8 acre.',
 ];
+
+const perLabel = (sv) => (sv.frequency === 'one_time' ? 'one time' : 'visit');
 
 const JSON_HEADERS = { 'content-type': 'application/json', 'cache-control': 'no-store' };
 
@@ -107,20 +115,31 @@ async function getSettings() {
   return (await store().get('settings', { type: 'json' })) || { durations: {}, buffer: null, firstStart: null, lastStart: null };
 }
 
+async function getServices() {
+  return (await store().get('services', { type: 'json' })) || DEFAULT_SERVICES;
+}
+async function getPriceNotes() {
+  return (await store().get('pricenotes', { type: 'json' })) || DEFAULT_PRICE_NOTES;
+}
+
 function scheduleReady(settings, serviceId) {
   return Number.isInteger(settings.buffer) && isTime(settings.firstStart) && isTime(settings.lastStart)
     && Number.isInteger(settings.durations?.[serviceId]);
 }
 
 const RECURRING_DAYS = { weekly: 7, twice_weekly: 7, biweekly: 14 };
+// Bookings carry the frequency they were booked with, so editing or deleting a
+// service later never changes an existing customer's schedule.
+const freqOf = (b) => b.frequency || (RECURRING_DAYS[b.serviceId] || b.serviceId === 'monthly' ? b.serviceId : 'one_time');
 
 /** Does a booking put her at that address on that date? Recurring ones repeat until cancelled. */
 function occursOn(b, date) {
   if (date < b.date) return false;
   if (date === b.date) return true;
   const days = Math.round((Date.parse(date + 'T00:00:00Z') - Date.parse(b.date + 'T00:00:00Z')) / 86400000);
-  if (RECURRING_DAYS[b.serviceId]) return days % RECURRING_DAYS[b.serviceId] === 0;
-  if (b.serviceId === 'monthly') {
+  const f = freqOf(b);
+  if (RECURRING_DAYS[f]) return days % RECURRING_DAYS[f] === 0;
+  if (f === 'monthly') {
     // Same weekday, same week-of-month: the 2nd Tuesday stays the 2nd Tuesday.
     const a = new Date(b.date + 'T00:00:00Z');
     const d = new Date(date + 'T00:00:00Z');
@@ -381,16 +400,16 @@ export default async (req, context) => {
     // ---------------- public ----------------
     if (action === 'availability') {
       const settings = await getSettings();
-      const services = SERVICES.map((sv) => ({ ...sv, bookable: scheduleReady(settings, sv.id) }));
+      const services = (await getServices()).map((sv) => ({ ...sv, per: perLabel(sv), bookable: scheduleReady(settings, sv.id) }));
       // Whole days off only; partial blocks and other bookings come back per date from `slots`.
       const daysOff = [...new Set((await getBlocks()).filter((b) => !b.from).map((b) => b.date))];
-      return ok({ today: todayLocal(), daysOff, services, priceNotes: PRICE_NOTES });
+      return ok({ today: todayLocal(), daysOff, services, priceNotes: await getPriceNotes() });
     }
 
     if (action === 'slots') {
       const date = str(input.date, 10);
       const serviceId = str(input.serviceId, 40);
-      if (!isDate(date) || !SERVICES.some((sv) => sv.id === serviceId)) return fail(400, 'Pick a service and date.');
+      if (!isDate(date) || !(await getServices()).some((sv) => sv.id === serviceId)) return fail(400, 'Pick a service and date.');
       if (date < todayLocal()) return ok({ slots: [] });
       const settings = await getSettings();
       if (!scheduleReady(settings, serviceId)) return ok({ slots: [] });
@@ -416,7 +435,7 @@ export default async (req, context) => {
       if (!Number.isInteger(b.dogs) || b.dogs < 1 || b.dogs > 20) return fail(400, 'Enter how many dogs.');
       if (!isDate(b.date) || !isTime(b.time)) return fail(400, 'Pick a date and time.');
       if (b.date < todayLocal()) return fail(400, 'That date has passed.');
-      const service = SERVICES.find((s) => s.id === b.serviceId);
+      const service = (await getServices()).find((s) => s.id === b.serviceId);
       if (!service) return fail(400, 'Pick a service.');
       const month = Number(b.date.slice(5, 7));
       if (service.months && !service.months.includes(month)) return fail(400, `${service.name} is not offered that month.`);
@@ -431,6 +450,7 @@ export default async (req, context) => {
         id: crypto.randomUUID(),
         serviceName: service.name,
         listCents: service.cents,
+        frequency: service.frequency,
         durationMin: settings.durations[service.id],
         status: 'new',
         createdAt: new Date().toISOString(),
@@ -529,9 +549,42 @@ export default async (req, context) => {
       const { blobs: phones } = await store().list({ prefix: 'push/' });
       const pushLog = (await store().get('pushlog', { type: 'json' })) || [];
       return ok({
-        bookings: rows, blocks: await getBlocks(), today: todayLocal(), settings: await getSettings(), services: SERVICES,
+        bookings: rows, blocks: await getBlocks(), today: todayLocal(), settings: await getSettings(), services: await getServices(), priceNotes: await getPriceNotes(), frequencies: FREQUENCIES,
         pushPhones: phones.length, pushLog,
       });
+    }
+
+    if (action === 'prices') {
+      if (!Array.isArray(input.services) || !input.services.length || input.services.length > 40) return fail(400, 'Add at least one service.');
+      const seen = new Set();
+      const services = [];
+      for (const raw of input.services) {
+        const name = str(raw?.name, 80);
+        const cents = Number(raw?.cents);
+        const frequency = str(raw?.frequency, 20);
+        if (!name) return fail(400, 'Every service needs a name.');
+        if (!Number.isInteger(cents) || cents < 0 || cents > 1000000) return fail(400, `${name}: enter a price.`);
+        if (!FREQUENCIES.includes(frequency)) return fail(400, `${name}: pick how often it repeats.`);
+        let months = null;
+        if (Array.isArray(raw?.months) && raw.months.length && raw.months.length < 12) {
+          months = [...new Set(raw.months.map(Number))].filter((m) => Number.isInteger(m) && m >= 1 && m <= 12).sort((a, b) => a - b);
+          if (!months.length) months = null;
+        }
+        let id = str(raw?.id, 40);
+        if (!/^[a-z0-9_-]{2,40}$/.test(id) || seen.has(id)) id = 'svc_' + crypto.randomBytes(5).toString('hex');
+        seen.add(id);
+        const sv = { id, name, cents, frequency };
+        if (months) sv.months = months;
+        const badge = str(raw?.badge, 30);
+        if (badge) sv.badge = badge;
+        services.push(sv);
+      }
+      const notes = Array.isArray(input.priceNotes)
+        ? input.priceNotes.map((n) => str(n, 200)).filter(Boolean).slice(0, 10)
+        : await getPriceNotes();
+      await store().setJSON('services', services);
+      await store().setJSON('pricenotes', notes);
+      return ok({ services, priceNotes: notes });
     }
 
     if (action === 'settings') {
@@ -541,7 +594,7 @@ export default async (req, context) => {
       if (!Number.isInteger(buffer) || buffer < 0 || buffer > 240) return fail(400, 'Travel time must be 0 to 240 minutes.');
       if (!isTime(firstStart) || !isTime(lastStart) || firstStart > lastStart) return fail(400, 'Set the earliest start before the latest start.');
       const durations = {};
-      for (const sv of SERVICES) {
+      for (const sv of await getServices()) {
         const v = input.durations?.[sv.id];
         if (v === '' || v === null || v === undefined) continue;
         const n = Number(v);
