@@ -105,7 +105,7 @@ function done(res) {
         done(res);
       } catch (e) {
         btn.disabled = false;
-        msg(e.code === 'VENMO_CANCELED' || e.code === 'VENMO_APP_CANCELED' ? 'Cancelled. Tap the button to try again.' : e.message, 'err');
+        msg(/^VENMO_.*CANCEL/.test(e.code || '') ? 'Cancelled. Tap the button to try again.' : e.message, 'err');
       }
     });
     // Returning from the Venmo app on mobile web resumes here.

@@ -500,6 +500,35 @@ async function bt(query, variables) {
   return body.data;
 }
 
+// A bank decline is not a GraphQL error: Braintree returns the transaction with a
+// declined status. Only these statuses mean the money is actually coming.
+const BT_PAID = new Set(['AUTHORIZED', 'AUTHORIZING', 'SUBMITTED_FOR_SETTLEMENT', 'SETTLING', 'SETTLEMENT_PENDING', 'SETTLED']);
+
+async function btCharge(token, cents, orderId) {
+  const data = await bt(
+    `mutation C($input: ChargePaymentMethodInput!) {
+       chargePaymentMethod(input: $input) {
+         transaction {
+           id status
+           statusHistory {
+             __typename
+             ... on ProcessorDeclinedEvent { processorResponse { message } }
+             ... on GatewayRejectedEvent { gatewayRejectionReason }
+           }
+         }
+       }
+     }`,
+    { input: { paymentMethodId: token, transaction: { amount: centsToAmount(cents), orderId } } },
+  );
+  const t = data.chargePaymentMethod.transaction;
+  if (!BT_PAID.has(t.status)) {
+    const ev = (t.statusHistory || []).find((h) => h.processorResponse || h.gatewayRejectionReason);
+    const why = ev?.processorResponse?.message || ev?.gatewayRejectionReason || t.status;
+    throw new Error(`Declined (${why})`);
+  }
+  return t;
+}
+
 function centsToAmount(cents) {
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
 }
@@ -593,13 +622,7 @@ async function chargeVisit(b, cents, visitDate, reason) {
   const paymentId = crypto.randomUUID();
   const at = new Date().toISOString();
   try {
-    const data = await bt(
-      `mutation C($input: ChargePaymentMethodInput!) {
-         chargePaymentMethod(input: $input) { transaction { id status } }
-       }`,
-      { input: { paymentMethodId: b.venmo.token, transaction: { amount: centsToAmount(cents), orderId: paymentId } } },
-    );
-    const t = data.chargePaymentMethod.transaction;
+    const t = await btCharge(b.venmo.token, cents, paymentId);
     const pay = { id: paymentId, kind: 'venmo', cents, at, visitDate, reason, transactionId: t.id, status: t.status };
     b.payments.push(pay);
     await saveBooking(b);
@@ -1207,18 +1230,7 @@ export default async (req, context) => {
       if (!Number.isInteger(cents) || cents < 100 || cents > 100000) return fail(400, 'Enter an amount between $1 and $1,000.');
       const paymentId = crypto.randomUUID();
       try {
-        const data = await bt(
-          `mutation C($input: ChargePaymentMethodInput!) {
-             chargePaymentMethod(input: $input) { transaction { id status } }
-           }`,
-          {
-            input: {
-              paymentMethodId: b.venmo.token,
-              transaction: { amount: centsToAmount(cents), orderId: paymentId },
-            },
-          },
-        );
-        const t = data.chargePaymentMethod.transaction;
+        const t = await btCharge(b.venmo.token, cents, paymentId);
         b.payments.push({ id: paymentId, kind: 'venmo', cents, at: new Date().toISOString(), transactionId: t.id, status: t.status });
         await saveBooking(b);
         return ok({ booking: ownerView(b) });
