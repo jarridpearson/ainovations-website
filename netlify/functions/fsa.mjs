@@ -409,8 +409,17 @@ function cookieOf(req, name) {
   const hit = raw.split(';').map((c) => c.trim()).find((c) => c.startsWith(name + '='));
   return hit ? decodeURIComponent(hit.slice(name.length + 1)) : null;
 }
-function passwordMatches(password) {
-  const [scheme, saltHex, hashHex] = ADMIN_PASS_HASH.split('$');
+// The env hash is only her starting password. The first time she signs in she must
+// set her own, which is stored as `ownerpass` and wins from then on.
+const ownerPass = () => store().get('ownerpass', { type: 'json' });
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  return `scrypt$${salt.toString('hex')}$${crypto.scryptSync(String(password), salt, 32).toString('hex')}`;
+}
+
+function passwordMatches(password, stored = ADMIN_PASS_HASH) {
+  const [scheme, saltHex, hashHex] = stored.split('$');
   if (scheme !== 'scrypt' || !saltHex || !hashHex) return false;
   const want = Buffer.from(hashHex, 'hex');
   const got = crypto.scryptSync(String(password), Buffer.from(saltHex, 'hex'), want.length);
@@ -1087,7 +1096,7 @@ export default async (req, context) => {
       if (!ADMIN_USER || !ADMIN_PASS_HASH || !SESSION_SECRET) return fail(503, 'Login is not configured.');
       if (await overLimit('login', ipOf(req, context), 10, 15)) return fail(429, 'Too many tries. Wait 15 minutes.');
       const userOk = str(input.username, 120).toLowerCase() === ADMIN_USER;
-      const passOk = passwordMatches(input.password || '');
+      const passOk = passwordMatches(input.password || '', (await ownerPass())?.hash || ADMIN_PASS_HASH);
       if (!userOk || !passOk) return fail(401, 'Wrong username or password.');
       const token = sign({ u: ADMIN_USER, exp: Date.now() + SESSION_HOURS * 3600000 });
       return ok({ ok: true }, {
@@ -1102,7 +1111,22 @@ export default async (req, context) => {
     const session = verify(cookieOf(req, SESSION_COOKIE));
     if (!session) return fail(401, 'Not signed in.');
 
-    if (action === 'me') return ok({ user: session.u, venmoReady: btConfigured(), venmoMode: BT.mode });
+    const own = await ownerPass();
+    if (action === 'me') return ok({ user: session.u, mustChangePassword: !own, venmoReady: btConfigured(), venmoMode: BT.mode });
+
+    if (action === 'change-password') {
+      if (await overLimit('login', ipOf(req, context), 10, 15)) return fail(429, 'Too many tries. Wait 15 minutes.');
+      const current = String(input.current || '');
+      const next = String(input.newPassword || '');
+      if (!passwordMatches(current, own?.hash || ADMIN_PASS_HASH)) return fail(401, 'Your current password is not right.');
+      if (next.length < 8) return fail(400, 'Use at least 8 characters for your new password.');
+      if (next === current) return fail(400, 'Pick a password different from the one you were given.');
+      await store().setJSON('ownerpass', { hash: hashPassword(next), changedAt: new Date().toISOString() });
+      return ok({ ok: true });
+    }
+
+    // Nothing else opens until she has set her own password.
+    if (!own) return fail(403, 'Set your own password first.');
 
     if (action === 'bookings') {
       const rows = (await allBookings()).map(ownerView).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));

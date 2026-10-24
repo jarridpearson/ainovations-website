@@ -101,13 +101,31 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
   </div>
 </section>
 
+<section id="pw" class="wrap" hidden>
+  <div class="card">
+    <h2 id="pwTitle">Set your own password</h2>
+    <form class="card-body" id="pwForm" autocomplete="on">
+      <p class="meta" id="pwNote" style="margin:0 0 12px;color:var(--muted)">Before you start, replace the password you were given with one only you know.</p>
+      <input type="text" name="username" autocomplete="username" value="" hidden>
+      <div class="field"><label for="pwCur">Current password</label><input type="password" id="pwCur" autocomplete="current-password" required></div>
+      <div class="field"><label for="pwNew">New password (at least 8 characters)</label><input type="password" id="pwNew" autocomplete="new-password" minlength="8" required></div>
+      <div class="field"><label for="pwNew2">Type the new password again</label><input type="password" id="pwNew2" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn primary" type="submit" style="width:100%">Save new password</button>
+      <button class="btn" type="button" id="pwCancel" style="width:100%;margin-top:8px">Cancel</button>
+      <div class="msg err" id="pwMsg"></div>
+    </form>
+  </div>
+</section>
+
 <section id="app" hidden>
   <div class="topbar">
     <div class="brand">Bookings</div>
     <div class="spacer"></div>
+    <button class="btn sm" id="pwOpen">Change password</button>
     <button class="btn sm" id="logout">Sign out</button>
   </div>
   <div class="wrap">
+    <div class="msg good" id="pwDone" hidden>Password changed. Use your new password next time you sign in.</div>
     <div class="msg err" id="venmoWarn" hidden></div>
     <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set the days and hours you work.</div>
     <div class="tabs">
@@ -252,6 +270,16 @@ async function api(action, body = {}) {
 function show(which) {
   $('#login').hidden = which !== 'login';
   $('#app').hidden = which !== 'app';
+  $('#pw').hidden = which !== 'pw';
+}
+
+function openPw(forced) {
+  $('#pwForm').reset();
+  $('#pwMsg').textContent = '';
+  $('#pwTitle').textContent = forced ? 'Set your own password' : 'Change password';
+  $('#pwNote').hidden = !forced;
+  $('#pwCancel').hidden = forced;
+  show('pw');
 }
 
 let state = { bookings: [], blocks: [], today: '', settings: null, services: [] };
@@ -479,6 +507,7 @@ async function load() {
 async function boot() {
   try {
     const me = await api('me');
+    if (me.mustChangePassword) return openPw(true);
     show('app');
     const warn = $('#venmoWarn');
     warn.hidden = me.venmoReady;
@@ -495,6 +524,21 @@ $('#loginForm').addEventListener('submit', async (e) => {
     $('#p').value = '';
     await boot();
   } catch (err) { $('#loginMsg').textContent = err.message; }
+});
+
+$('#pwOpen').addEventListener('click', () => openPw(false));
+$('#pwCancel').addEventListener('click', () => show('app'));
+$('#pwForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#pwMsg');
+  msg.className = 'msg err'; msg.textContent = '';
+  if ($('#pwNew').value !== $('#pwNew2').value) { msg.textContent = 'The two new passwords do not match.'; return; }
+  try {
+    await api('change-password', { current: $('#pwCur').value, newPassword: $('#pwNew').value });
+    $('#pwForm').reset();
+    await boot();
+    const m = $('#pwDone'); if (m) { m.hidden = false; setTimeout(() => { m.hidden = true; }, 6000); }
+  } catch (err) { msg.textContent = err.message; }
 });
 
 $('#logout').addEventListener('click', async () => { await api('logout').catch(() => {}); show('login'); });
