@@ -804,6 +804,17 @@ const todayISO = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
+// IRS standard mileage rate for BUSINESS use, newest period first.
+// Verified against irs.gov/tax-professionals/standard-mileage-rates on 24 Oct 2026.
+// 2026 changed mid-year — the rate depends on the date of the trip, not today's date.
+const IRS_MILEAGE = [
+  { from: '2026-07-01', cents: 76.0, cite: 'IR-2026-29' },
+  { from: '2026-01-01', cents: 72.5, cite: 'Notice 2026-10' },
+  { from: '2025-01-01', cents: 70.0, cite: 'Notice 2025-05' },
+];
+const irsRateFor = (iso) =>
+  (IRS_MILEAGE.find((r) => iso >= r.from) || IRS_MILEAGE[IRS_MILEAGE.length - 1]);
+
 async function loadMoney() {
   $('moneyBody').innerHTML = '<div class="empty">Loading…</div>';
   moneyData = await api('money', { year: moneyYear });
@@ -1082,7 +1093,8 @@ function renderExpenses() {
 
 function renderMileage() {
   const rows = moneyData.mileage;
-  const rate = Number(moneyData.settings.mileage_rate_cents || 70);
+  const irs = irsRateFor(todayISO());
+  const rate = irs.cents;
   const totalMiles = rows.reduce((s, t) => s + Number(t.miles || 0), 0);
   const totalValue = rows.reduce((s, t) => s + mileageAmount(t), 0);
 
@@ -1099,10 +1111,10 @@ function renderMileage() {
       <div class="f go"><button class="btn primary" id="mAdd">Add trip</button></div>
     </div>
     <p class="rate-note">
-      Rate is stamped on each trip, so changing it later never rewrites past entries.
-      <b>Confirm the current IRS standard mileage rate before you file</b> — this default is
-      just the last value you saved, not tax advice.
-      <button class="btn sm" id="mSaveRate">Save ${rate}¢ as the default</button>
+      Rate fills in from the <b>IRS standard business mileage rate for the trip date</b> and is
+      stamped on the trip. 2026 changed mid-year: <b>72.5¢</b> Jan 1–Jun 30 (Notice 2026-10),
+      <b>76¢</b> Jul 1–Dec 31 (IR-2026-29). Change the date and the rate follows it.
+      Override the box only if you have a reason to.
     </p>
 
     <div class="scroll-x">${rows.length ? `<table class="tbl">
@@ -1143,10 +1155,10 @@ function renderMileage() {
     await loadMoney();
   });
 
-  $('mSaveRate').addEventListener('click', async () => {
-    await api('set_setting', { key: 'mileage_rate_cents', value: $('mRate').value });
-    toast(`Default rate saved as ${$('mRate').value}¢ per mile.`);
-    await loadMoney();
+  // The IRS rate depends on when the trip happened, so follow the date field.
+  $('mDate').addEventListener('change', () => {
+    const r = irsRateFor($('mDate').value || todayISO());
+    $('mRate').value = r.cents;
   });
 
   $('moneyBody').querySelectorAll('[data-delm]').forEach((el) =>
