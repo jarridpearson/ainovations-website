@@ -98,21 +98,49 @@ async function getBlocks() {
 
 // --- scheduling ---------------------------------------------------------------
 //
-// She sets these on her page; nothing here guesses them. A service with no
-// length set cannot be booked, and nothing can be booked until the travel
-// buffer and her start hours are set.
+// Time between two appointments = real drive time between the two addresses
+// (Google Routes API) + her buffer (15 minutes unless she changes it).
 //
-//   durations   minutes per service id
-//   buffer      minutes she needs between any two appointments
-//   firstStart  earliest start time offered, "HH:MM"
-//   lastStart   latest start time offered, "HH:MM"
+// Job length = minutes for the service + extra minutes for each dog past the
+// first. The defaults below come from published pet-waste-removal timings
+// (routine weekly visits run ~10-30 min on site, first/catch-up cleanups ~30 min
+// and up, each extra dog adds ~5-10 min). They are only starting values: she
+// edits every one of them on the Schedule tab.
+//
+//   durations    minutes per service id
+//   extraDogMin  minutes added per dog after the first
+//   buffer       minutes added on top of drive time between appointments
+//   firstStart   earliest start time offered, "HH:MM"  (her hours: she sets these)
+//   lastStart    latest start time offered, "HH:MM"
 
 const SLOT_STEP = 30;
 const toMin = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
 const toTime = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
+const DEFAULT_DURATIONS = {
+  spring: 60, initial: 45, onetime: 45, twice_weekly: 10, weekly: 15, biweekly: 20, monthly: 30,
+};
+const DEFAULT_BY_FREQUENCY = { one_time: 45, twice_weekly: 10, weekly: 15, biweekly: 20, monthly: 30 };
+const DEFAULT_EXTRA_DOG_MIN = 5;
+const DEFAULT_BUFFER = 15;
+// If Google can't be reached, assume a long drive rather than double-book her.
+const FALLBACK_DRIVE_MIN = 45;
+
 async function getSettings() {
-  return (await store().get('settings', { type: 'json' })) || { durations: {}, buffer: null, firstStart: null, lastStart: null };
+  const saved = (await store().get('settings', { type: 'json' })) || {};
+  const services = await getServices();
+  const durations = {};
+  for (const sv of services) {
+    const v = saved.durations?.[sv.id];
+    durations[sv.id] = Number.isInteger(v) ? v : (DEFAULT_DURATIONS[sv.id] ?? DEFAULT_BY_FREQUENCY[sv.frequency] ?? 30);
+  }
+  return {
+    durations,
+    extraDogMin: Number.isInteger(saved.extraDogMin) ? saved.extraDogMin : DEFAULT_EXTRA_DOG_MIN,
+    buffer: Number.isInteger(saved.buffer) ? saved.buffer : DEFAULT_BUFFER,
+    firstStart: saved.firstStart || null,
+    lastStart: saved.lastStart || null,
+  };
 }
 
 async function getServices() {
@@ -123,9 +151,11 @@ async function getPriceNotes() {
 }
 
 function scheduleReady(settings, serviceId) {
-  return Number.isInteger(settings.buffer) && isTime(settings.firstStart) && isTime(settings.lastStart)
-    && Number.isInteger(settings.durations?.[serviceId]);
+  return isTime(settings.firstStart) && isTime(settings.lastStart) && Number.isInteger(settings.durations?.[serviceId]);
 }
+
+const jobLength = (settings, serviceId, dogs) =>
+  settings.durations[serviceId] + settings.extraDogMin * Math.max(0, (Number(dogs) || 1) - 1);
 
 const RECURRING_DAYS = { weekly: 7, twice_weekly: 7, biweekly: 14 };
 // Bookings carry the frequency they were booked with, so editing or deleting a
@@ -148,28 +178,111 @@ function occursOn(b, date) {
   return false;
 }
 
-/** Busy windows on a date, each one already padded by her travel buffer on both sides. */
-function busyWindows(bookings, settings, date, ignoreId) {
-  const out = [];
-  for (const b of bookings) {
-    if (b.status === 'cancelled' || b.id === ignoreId || !occursOn(b, date)) continue;
-    const start = toMin(b.time);
-    const len = b.durationMin ?? settings.durations?.[b.serviceId] ?? 0;
-    out.push([start - settings.buffer, start + len + settings.buffer]);
-  }
-  return out;
+// --- drive time ---------------------------------------------------------------
+//
+// One Routes API "element" per origin/destination pair. Results are cached by
+// address pair for 30 days, so a customer's address is only looked up once per
+// neighbor. The key is capped at 300 elements/day in Google Cloud, which keeps
+// usage inside the 10,000/month free tier.
+
+const ROUTES_KEY = process.env.FSA_ROUTES_KEY || '';
+const normAddr = (a) => String(a || '').trim().toLowerCase().replace(/\s+/g, ' ');
+const driveKey = (a, b) => 'drive/' + crypto.createHash('sha256').update(normAddr(a) + '|' + normAddr(b)).digest('hex').slice(0, 40);
+const DRIVE_TTL_MS = 30 * 86400000;
+
+class AddressNotFound extends Error {}
+
+async function routeMatrix(origins, destinations) {
+  if (!ROUTES_KEY) throw new Error('FSA_ROUTES_KEY not set');
+  const res = await fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'X-Goog-Api-Key': ROUTES_KEY,
+      'X-Goog-FieldMask': 'originIndex,destinationIndex,duration,condition,status',
+    },
+    body: JSON.stringify({
+      origins: origins.map((address) => ({ waypoint: { address } })),
+      destinations: destinations.map((address) => ({ waypoint: { address } })),
+      travelMode: 'DRIVE',
+      routingPreference: 'TRAFFIC_UNAWARE',
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !Array.isArray(data)) throw new Error(`Routes API ${res.status}`);
+  return data;
 }
 
-/** Can a job of `len` minutes start at `time` on `date`? */
-function fits(date, time, len, blocks, busy) {
-  const s = toMin(time);
+/** Minutes to drive for each [from, to] pair. Throws AddressNotFound if Google can't place `mustResolve`. */
+async function driveMinutes(pairs, mustResolve) {
+  const out = new Map();
+  const missing = [];
+  await Promise.all(pairs.map(async ([a, b]) => {
+    if (normAddr(a) === normAddr(b)) { out.set(a + '|' + b, 0); return; }
+    const hit = await store().get(driveKey(a, b), { type: 'json' });
+    if (hit && Date.now() - hit.at < DRIVE_TTL_MS) out.set(a + '|' + b, hit.min);
+    else missing.push([a, b]);
+  }));
+  if (missing.length) {
+    // Group by whichever side repeats, so A->many and many->A are one call each.
+    const byOrigin = new Map();
+    const byDest = new Map();
+    for (const [a, b] of missing) {
+      byOrigin.set(a, [...(byOrigin.get(a) || []), b]);
+      byDest.set(b, [...(byDest.get(b) || []), a]);
+    }
+    const calls = byOrigin.size <= byDest.size
+      ? [...byOrigin].map(([o, ds]) => [[o], ds])
+      : [...byDest].map(([d, os]) => [os, [d]]);
+    for (const [origins, dests] of calls) {
+      let rows;
+      try {
+        rows = await routeMatrix(origins, dests);
+      } catch (e) {
+        console.error('drive time lookup failed, using fallback', e.message);
+        for (const o of origins) for (const d of dests) out.set(o + '|' + d, FALLBACK_DRIVE_MIN);
+        continue;
+      }
+      for (const r of rows) {
+        const o = origins[r.originIndex ?? 0];
+        const d = dests[r.destinationIndex ?? 0];
+        if (r.condition === 'ROUTE_EXISTS') {
+          const min = Math.ceil(parseInt(r.duration, 10) / 60);
+          out.set(o + '|' + d, min);
+          await store().setJSON(driveKey(o, d), { min, at: Date.now() });
+        } else {
+          const bad = r.status?.code === 5 && (normAddr(o) === normAddr(mustResolve) || normAddr(d) === normAddr(mustResolve));
+          if (bad) throw new AddressNotFound('We could not find that address. Check it in your profile.');
+          out.set(o + '|' + d, FALLBACK_DRIVE_MIN);
+        }
+      }
+    }
+  }
+  return (a, b) => out.get(a + '|' + b) ?? FALLBACK_DRIVE_MIN;
+}
+
+/** The other appointments she has that day (recurring ones included). */
+function jobsOn(bookings, settings, date, ignoreId) {
+  return bookings
+    .filter((b) => b.status !== 'cancelled' && b.id !== ignoreId && occursOn(b, date))
+    .map((b) => {
+      const start = toMin(b.time);
+      return { start, end: start + (b.durationMin ?? settings.durations?.[b.serviceId] ?? 30), address: b.address };
+    });
+}
+
+/** Can a job at `address` of `len` minutes start at minute `s`, given her blocks and the day's other jobs? */
+function fitsDay(date, s, len, blocks, jobs, address, drive, buffer) {
   const e = s + len;
   for (const b of blocks) {
     if (b.date !== date) continue;
     if (!b.from || !b.to) return false; // whole day off
     if (s < toMin(b.to) && toMin(b.from) < e) return false;
   }
-  return busy.every(([bs, be]) => e <= bs || s >= be);
+  return jobs.every((j) =>
+    e + drive(address, j.address) + buffer <= j.start   // finish here, drive there, buffer, before it starts
+    || s >= j.end + drive(j.address, address) + buffer, // or it ends, drive here, buffer, then start
+  );
 }
 
 function nowLocalMinutes() {
@@ -178,16 +291,17 @@ function nowLocalMinutes() {
   return toMin(t);
 }
 
-function openSlots(date, serviceId, settings, blocks, bookings) {
-  const len = settings.durations[serviceId];
-  const busy = busyWindows(bookings, settings, date);
-  // Today, nothing she couldn't drive to in time: the next start is at least one travel buffer away.
+async function openSlots(date, serviceId, settings, blocks, bookings, { address, dogs }) {
+  const len = jobLength(settings, serviceId, dogs);
+  const jobs = jobsOn(bookings, settings, date);
+  const pairs = jobs.flatMap((j) => [[address, j.address], [j.address, address]]);
+  const drive = pairs.length ? await driveMinutes(pairs, address) : () => 0;
+  // Today: nothing earlier than now plus her buffer.
   const earliest = date === todayLocal() ? nowLocalMinutes() + settings.buffer : 0;
   const slots = [];
   for (let m = toMin(settings.firstStart); m <= toMin(settings.lastStart); m += SLOT_STEP) {
     if (m < earliest) continue;
-    const t = toTime(m);
-    if (fits(date, t, len, blocks, busy)) slots.push(t);
+    if (fitsDay(date, m, len, blocks, jobs, address, drive, settings.buffer)) slots.push(toTime(m));
   }
   return slots;
 }
@@ -409,11 +523,32 @@ export default async (req, context) => {
     if (action === 'slots') {
       const date = str(input.date, 10);
       const serviceId = str(input.serviceId, 40);
+      const address = str(input.address, 300);
+      const dogs = Number.parseInt(input.dogs, 10) || 1;
       if (!isDate(date) || !(await getServices()).some((sv) => sv.id === serviceId)) return fail(400, 'Pick a service and date.');
+      if (!address) return fail(400, 'Add your address in your profile first.');
       if (date < todayLocal()) return ok({ slots: [] });
       const settings = await getSettings();
       if (!scheduleReady(settings, serviceId)) return ok({ slots: [] });
-      return ok({ slots: openSlots(date, serviceId, settings, await getBlocks(), await allBookings()) });
+      try {
+        return ok({ slots: await openSlots(date, serviceId, settings, await getBlocks(), await allBookings(), { address, dogs }) });
+      } catch (e) {
+        if (e instanceof AddressNotFound) return fail(400, e.message);
+        throw e;
+      }
+    }
+
+    if (action === 'check-address') {
+      if (await overLimit('addr', ipOf(req, context), 20, 60)) return fail(429, 'Too many tries. Please wait a bit.');
+      const address = str(input.address, 300);
+      if (!address) return fail(400, 'Enter your address.');
+      try {
+        const rows = await routeMatrix([address], [address]);
+        if (rows[0]?.condition !== 'ROUTE_EXISTS') return fail(400, 'We could not find that address. Include street, town and ZIP.');
+      } catch (e) {
+        console.error('check-address failed', e.message);
+      }
+      return ok({ ok: true });
     }
 
     if (action === 'book') {
@@ -443,7 +578,14 @@ export default async (req, context) => {
       if (!scheduleReady(settings, service.id)) return fail(409, `${service.name} is not open for booking yet.`);
       const blocks = await getBlocks();
       const taken = 'That time was just taken or is not available. Please pick another.';
-      if (!openSlots(b.date, service.id, settings, blocks, await allBookings()).includes(b.time)) return fail(409, taken);
+      let open;
+      try {
+        open = await openSlots(b.date, service.id, settings, blocks, await allBookings(), { address: b.address, dogs: b.dogs });
+      } catch (e) {
+        if (e instanceof AddressNotFound) return fail(400, e.message);
+        throw e;
+      }
+      if (!open.includes(b.time)) return fail(409, taken);
 
       const booking = {
         ...b,
@@ -451,7 +593,7 @@ export default async (req, context) => {
         serviceName: service.name,
         listCents: service.cents,
         frequency: service.frequency,
-        durationMin: settings.durations[service.id],
+        durationMin: jobLength(settings, service.id, b.dogs),
         status: 'new',
         createdAt: new Date().toISOString(),
         paySecret: crypto.randomBytes(24).toString('hex'),
@@ -463,7 +605,11 @@ export default async (req, context) => {
       // Two people tapping the same slot at the same moment both pass the check
       // above. Re-check against everything now saved; the later one backs out.
       const others = (await allBookings()).filter((x) => x.id !== booking.id && x.createdAt <= booking.createdAt);
-      if (!fits(booking.date, booking.time, booking.durationMin, blocks, busyWindows(others, settings, booking.date))) {
+      const otherJobs = jobsOn(others, settings, booking.date);
+      const recheckDrive = otherJobs.length
+        ? await driveMinutes(otherJobs.flatMap((j) => [[booking.address, j.address], [j.address, booking.address]]), booking.address)
+        : () => 0;
+      if (!fitsDay(booking.date, toMin(booking.time), booking.durationMin, blocks, otherJobs, booking.address, recheckDrive, settings.buffer)) {
         await store().delete(`booking/${booking.id}`);
         return fail(409, taken);
       }
@@ -589,9 +735,11 @@ export default async (req, context) => {
 
     if (action === 'settings') {
       const buffer = Number(input.buffer);
+      const extraDogMin = Number(input.extraDogMin);
       const firstStart = str(input.firstStart, 5);
       const lastStart = str(input.lastStart, 5);
-      if (!Number.isInteger(buffer) || buffer < 0 || buffer > 240) return fail(400, 'Travel time must be 0 to 240 minutes.');
+      if (!Number.isInteger(buffer) || buffer < 0 || buffer > 240) return fail(400, 'Buffer must be 0 to 240 minutes.');
+      if (!Number.isInteger(extraDogMin) || extraDogMin < 0 || extraDogMin > 120) return fail(400, 'Extra time per dog must be 0 to 120 minutes.');
       if (!isTime(firstStart) || !isTime(lastStart) || firstStart > lastStart) return fail(400, 'Set the earliest start before the latest start.');
       const durations = {};
       for (const sv of await getServices()) {
@@ -601,9 +749,8 @@ export default async (req, context) => {
         if (!Number.isInteger(n) || n < 5 || n > 600) return fail(400, `${sv.name}: length must be 5 to 600 minutes.`);
         durations[sv.id] = n;
       }
-      const settings = { buffer, firstStart, lastStart, durations };
-      await store().setJSON('settings', settings);
-      return ok({ settings });
+      await store().setJSON('settings', { buffer, extraDogMin, firstStart, lastStart, durations });
+      return ok({ settings: await getSettings() });
     }
 
     if (action === 'block') {

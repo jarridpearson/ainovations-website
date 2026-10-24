@@ -95,7 +95,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
   </div>
   <div class="wrap">
     <div class="msg err" id="venmoWarn" hidden></div>
-    <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set your travel time, start hours and how long each job takes.</div>
+    <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set your earliest and latest start times.</div>
     <div class="tabs">
       <button class="btn on" data-tab="bookings">Bookings</button>
       <button class="btn" data-tab="blocks">Block off time</button>
@@ -162,14 +162,19 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
         <h2>Schedule</h2>
         <form class="card-body" id="schedForm">
           <div class="field">
-            <label for="sBuffer">Travel time between appointments (minutes)</label>
+            <label for="sBuffer">Buffer added on top of the drive between appointments (minutes)</label>
             <input type="number" id="sBuffer" min="0" max="240" step="5" inputmode="numeric" required>
+            <p class="meta" style="margin:6px 0 0;color:var(--muted);font-size:13px">The app looks up the real drive time between each customer's address and the next, then adds this buffer.</p>
+          </div>
+          <div class="field">
+            <label for="sExtraDog">Extra minutes for each dog after the first</label>
+            <input type="number" id="sExtraDog" min="0" max="120" step="1" inputmode="numeric" required>
           </div>
           <div class="row2">
             <div class="field"><label for="sFirst">Earliest start</label><input type="time" id="sFirst" step="1800" required></div>
             <div class="field"><label for="sLast">Latest start</label><input type="time" id="sLast" step="1800" required></div>
           </div>
-          <label style="margin-top:6px">How long each job takes (minutes). A service left blank can't be booked.</label>
+          <label style="margin-top:6px">How long each job takes for one dog (minutes)</label>
           <div id="sDurations"></div>
           <button class="btn primary" type="submit" style="width:100%">Save</button>
           <div class="msg" id="schedMsg"></div>
@@ -254,6 +259,7 @@ function readPrices() {
 function renderSchedule() {
   const st = state.settings || {};
   $('#sBuffer').value = Number.isInteger(st.buffer) ? st.buffer : '';
+  $('#sExtraDog').value = Number.isInteger(st.extraDogMin) ? st.extraDogMin : '';
   $('#sFirst').value = st.firstStart || '';
   $('#sLast').value = st.lastStart || '';
   $('#sDurations').innerHTML = state.services.map((sv) => `
@@ -408,11 +414,11 @@ $('#schedForm').addEventListener('submit', async (e) => {
   document.querySelectorAll('[data-dur]').forEach((i) => { if (i.value !== '') durations[i.dataset.dur] = Number(i.value); });
   try {
     const data = await api('settings', {
-      buffer: Number($('#sBuffer').value), firstStart: $('#sFirst').value, lastStart: $('#sLast').value, durations,
+      buffer: Number($('#sBuffer').value), extraDogMin: Number($('#sExtraDog').value), firstStart: $('#sFirst').value, lastStart: $('#sLast').value, durations,
     });
     state.settings = data.settings;
     renderSchedule();
-    $('#schedWarn').hidden = !!Object.keys(data.settings.durations).length;
+    $('#schedWarn').hidden = !!(data.settings.firstStart && data.settings.lastStart);
     msg.className = 'msg good'; msg.textContent = 'Saved. New bookings use these times.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
 });
