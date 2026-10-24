@@ -25,8 +25,9 @@ button:disabled{opacity:.5;cursor:default}
 <div class="card">
   <h1 id="title">Link your Venmo</h1>
   <p id="detail">Loading your booking…</p>
-  <button id="venmo" hidden disabled>Link Venmo</button>
+  <button id="venmo" hidden disabled>Continue with Venmo</button>
   <div class="msg" id="msg"></div>
+  <p style="font-size:13px;margin:16px 0 0">Booking terms: if your date or time becomes unavailable for any reason (weather, schedule changes), your visit moves to the next available date and time and we email you.</p>
 </div>
 
 <script src="https://js.braintreegateway.com/web/3.97.2/js/client.min.js"></script>
@@ -49,10 +50,17 @@ async function api(action, body = {}) {
   return data;
 }
 
-function done(username) {
-  $('#title').textContent = 'Venmo linked';
-  $('#detail').textContent = `@${username} will be charged after each visit is done. You can close this page.`;
+const money = (c) => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
+let INFO = null;
+function done(res) {
   $('#venmo').hidden = true;
+  if (INFO && !INFO.recurring) {
+    $('#title').textContent = 'Paid';
+    $('#detail').textContent = `${money(res.charged ?? INFO.cents)} paid with Venmo${res.username ? ' (@' + res.username + ')' : ''}. You're all set. You can close this page.`;
+  } else {
+    $('#title').textContent = 'Venmo linked';
+    $('#detail').textContent = `Your first visit is charged when it's done, and each visit after that is charged automatically on its day. You can close this page.`;
+  }
 }
 
 (async () => {
@@ -60,9 +68,16 @@ function done(username) {
   try { info = await api('pay-info'); }
   catch (e) { $('#detail').textContent = ''; return msg(e.message, 'err'); }
 
+  INFO = info;
   const when = new Date(info.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-  $('#detail').textContent = `${info.serviceName} on ${when}. Link Venmo and you're charged after each visit is done, never before.`;
-  if (info.linked) return done('your account');
+  if (info.recurring) {
+    $('#title').textContent = 'Link your Venmo';
+    $('#detail').textContent = `${info.serviceName} starting ${when}. Your first visit is charged ${money(info.cents)} when it's done, and each visit after that is charged automatically on its day.`;
+  } else {
+    $('#title').textContent = 'Pay with Venmo';
+    $('#detail').textContent = `${info.serviceName} on ${when}. ${money(info.cents)} is charged now to finish your booking.`;
+  }
+  if (info.linked && (info.recurring || info.paid)) return done({});
   if (!info.ready) return msg('Venmo payments are not switched on yet. Your booking is in; you can pay at the visit.', 'err');
 
   try {
@@ -87,7 +102,7 @@ function done(username) {
         const payload = await venmo.tokenize();
         const res = await api('vault', { nonce: payload.nonce });
         msg('');
-        done(res.username);
+        done(res);
       } catch (e) {
         btn.disabled = false;
         msg(e.code === 'VENMO_CANCELED' || e.code === 'VENMO_APP_CANCELED' ? 'Cancelled. Tap the button to try again.' : e.message, 'err');

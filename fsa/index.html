@@ -71,6 +71,20 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .empty{padding:18px 15px;color:var(--muted)}
 
 #login{max-width:380px;margin:12vh auto 0}
+.card>h2 .spacer{flex:1 1 auto}
+.card>h2{display:flex;align-items:center;gap:6px}
+.cal-head,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-head span{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.05em}
+.cal-day{min-height:58px;border:1px solid var(--border);border-radius:8px;padding:4px;background:var(--bg-deep);color:var(--text);text-align:left;font-size:12px;display:flex;flex-direction:column;gap:2px}
+.cal-day.other{opacity:.35}
+.cal-day.today{border-color:var(--teal)}
+.cal-day.sel{background:var(--teal-dark)}
+.cal-day .n{font-weight:700}
+.cal-day .c{font-size:11px;color:var(--teal-soft)}
+.cal-day.sel .c{color:#fff}
+.pill.on-hold{color:var(--red)}
+.moveform{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.moveform input{width:auto;flex:1 1 130px}
 </style>
 </head>
 <body>
@@ -97,14 +111,31 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
     <div class="msg err" id="venmoWarn" hidden></div>
     <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set the days and hours you work.</div>
     <div class="tabs">
-      <button class="btn on" data-tab="bookings">Bookings</button>
+      <button class="btn on" data-tab="calendar">Calendar</button>
+      <button class="btn" data-tab="bookings">Bookings</button>
       <button class="btn" data-tab="blocks">Dates &amp; time off</button>
       <button class="btn" data-tab="prices">Prices</button>
       <button class="btn" data-tab="schedule">Weekly schedule</button>
       <button class="btn" data-tab="push">Send message</button>
     </div>
 
-    <div data-pane="bookings">
+    <div data-pane="calendar">
+      <div class="card">
+        <h2><span id="calTitle">Calendar</span><span class="spacer"></span>
+          <button class="btn sm" id="calPrev" aria-label="Previous month">‹</button>
+          <button class="btn sm" id="calToday">Today</button>
+          <button class="btn sm" id="calNext" aria-label="Next month">›</button>
+        </h2>
+        <div class="card-body">
+          <div class="cal-head"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="meta" id="calUpdated" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+        </div>
+      </div>
+      <div class="card"><h2 id="dayTitle">Day</h2><div id="dayList"></div></div>
+    </div>
+
+    <div data-pane="bookings" hidden>
       <div class="card"><h2>Bookings</h2><div id="bookingList"></div></div>
     </div>
 
@@ -311,15 +342,24 @@ function renderBookings() {
       <div class="meta"><a href="tel:${esc(b.phone)}" style="color:var(--teal-soft)">${esc(b.phone)}</a>${b.email ? ' · ' + esc(b.email) : ''}</div>
       <div class="meta">${esc(b.address)}</div>
       ${b.notes ? `<div class="meta">Notes: ${esc(b.notes)}</div>` : ''}
+      ${b.second ? `<div class="meta">Second weekly day: ${fmtDate(b.second.date)} · ${fmtTime(b.second.time)}</div>` : ''}
+      ${b.status === 'on-hold' ? `<div class="pay" style="color:var(--red)"><b>ON HOLD.</b> ${esc(b.holdReason || '')}</div>` : ''}
       ${paid.length ? `<div class="pay">Paid: ${paid.map((p) => `<b>${money(p.cents)}</b> ${p.kind} ${new Date(p.at).toLocaleDateString()}`).join(' · ')}</div>` : ''}
       ${failed.length ? `<div class="pay" style="color:var(--red)">Failed: ${failed.map((p) => `${money(p.cents)} ${new Date(p.at).toLocaleDateString()}`).join(' · ')}</div>` : ''}
       <div class="actions">
         <input type="number" inputmode="decimal" min="1" step="0.01" placeholder="Amount" value="${(b.listCents / 100).toFixed(2)}" aria-label="Amount">
         <button class="btn sm primary" data-act="charge" ${b.venmo ? '' : 'disabled title="Customer has not linked Venmo"'}>Charge Venmo</button>
         <button class="btn sm" data-act="cash">Got cash</button>
-        ${b.status !== 'confirmed' ? '<button class="btn sm" data-act="confirmed">Confirm</button>' : ''}
-        ${b.status !== 'cancelled' ? '<button class="btn sm danger" data-act="cancelled">Cancel</button>' : '<button class="btn sm" data-act="new">Reopen</button>'}
+        ${b.status === 'on-hold' ? '<button class="btn sm primary" data-act="confirmed">Resume plan</button>' : ''}
+        ${b.status !== 'confirmed' && b.status !== 'on-hold' && b.status !== 'cancelled' ? '<button class="btn sm" data-act="confirmed">Confirm</button>' : ''}
+        ${b.status !== 'cancelled' ? `<button class="btn sm danger" data-act="cancelled">${b.status === 'on-hold' ? 'End plan' : 'Cancel'}</button>` : '<button class="btn sm" data-act="new">Reopen</button>'}
       </div>
+      ${b.frequency && b.frequency !== 'one_time' && b.status !== 'cancelled' ? `
+      <div class="moveform">
+        <input type="date" data-plan="date" value="${b.date}" aria-label="New regular start date">
+        <input type="time" step="1800" data-plan="time" value="${b.time}" aria-label="New regular time">
+        <button class="btn sm" data-act="plan">Change regular day/time</button>
+      </div>` : ''}
       <div class="msg"></div>
     </div>`;
   }).join('');
@@ -355,10 +395,75 @@ function renderBlocks() {
     </div>`).join('');
 }
 
+// --- calendar -----------------------------------------------------------------
+const cal = { month: null, sel: null, days: {} };
+const ymd = (d) => d.toISOString().slice(0, 10);
+function monthRange(m) {
+  const first = new Date(m + '-01T12:00:00Z');
+  const start = new Date(first); start.setUTCDate(1 - first.getUTCDay());
+  const end = new Date(start); end.setUTCDate(start.getUTCDate() + 41);
+  return { first, start, end };
+}
+async function loadCalendar() {
+  const today = state.today || ymd(new Date());
+  if (!cal.month) cal.month = today.slice(0, 7);
+  if (!cal.sel) cal.sel = today;
+  const { start, end } = monthRange(cal.month);
+  const r = await api('calendar', { from: ymd(start), to: ymd(end) });
+  cal.days = r.days;
+  renderCalendar(r.today);
+}
+function renderCalendar(today) {
+  const { first, start } = monthRange(cal.month);
+  $('#calTitle').textContent = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  let html = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start); d.setUTCDate(start.getUTCDate() + i);
+    const k = ymd(d);
+    const n = (cal.days[k] || []).length;
+    html += `<button class="cal-day${k.slice(0, 7) !== cal.month ? ' other' : ''}${k === today ? ' today' : ''}${k === cal.sel ? ' sel' : ''}" data-day="${k}">
+      <span class="n">${d.getUTCDate()}</span>${n ? `<span class="c">${n} visit${n === 1 ? '' : 's'}</span>` : ''}</button>`;
+  }
+  $('#calGrid').innerHTML = html;
+  $('#calUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + ' · refreshes every 30 seconds';
+  renderDay();
+}
+function renderDay() {
+  const list = cal.days[cal.sel] || [];
+  $('#dayTitle').textContent = fmtDate(cal.sel);
+  $('#dayList').innerHTML = list.length ? list.map((e) => `
+    <div class="item" data-id="${e.bookingId}" data-orig="${e.origDate}">
+      <div class="top">
+        <span class="when">${fmtTime(e.time)}</span>
+        <span class="name">${esc(e.name)}</span>
+        ${e.recurring ? '<span class="pill">regular</span>' : ''}
+        ${e.moved ? `<span class="pill">moved${e.movedBy === 'auto' ? ' (auto)' : ''}</span>` : ''}
+        ${e.status === 'on-hold' ? '<span class="pill on-hold">on hold</span>' : ''}
+        ${e.visitStatus === 'completed' ? '<span class="pill confirmed">done</span>' : ''}
+        ${e.paid ? '<span class="pill confirmed">paid</span>' : '<span class="pill new">unpaid</span>'}
+      </div>
+      <div class="meta">${esc(e.serviceName)} · ${e.dogs} dog${e.dogs === 1 ? '' : 's'} · ${money(e.cents)}</div>
+      <div class="meta"><a href="https://maps.google.com/?q=${encodeURIComponent(e.address)}" target="_blank" rel="noopener" style="color:var(--teal-soft)">${esc(e.address)}</a></div>
+      <div class="meta"><a href="tel:${esc(e.phone)}" style="color:var(--teal-soft)">${esc(e.phone)}</a></div>
+      ${e.notes ? `<div class="meta">Notes: ${esc(e.notes)}</div>` : ''}
+      <div class="actions">
+        ${e.visitStatus !== 'completed' ? '<button class="btn sm primary" data-cal="done">Mark complete</button>' : ''}
+        <button class="btn sm" data-cal="cash">Got cash</button>
+      </div>
+      <div class="moveform">
+        <input type="date" data-mv="date" value="${e.date}" aria-label="Move to date">
+        <input type="time" step="1800" data-mv="time" value="${e.time}" aria-label="Move to time">
+        <button class="btn sm" data-cal="move">Move</button>
+      </div>
+      <div class="msg"></div>
+    </div>`).join('') : '<div class="empty">No visits this day.</div>';
+}
+
 async function load() {
   const data = await api('bookings');
   state = data;
   renderBookings();
+  loadCalendar().catch(() => {});
   renderBlocks();
   renderDateHours();
   renderSchedule();
@@ -433,9 +538,18 @@ $('#bookingList').addEventListener('click', async (e) => {
   const msg = item.querySelector('.msg');
   const cents = Math.round(parseFloat(item.querySelector('input').value) * 100);
   msg.className = 'msg'; msg.textContent = '';
+  if (act === 'plan') {
+    e.target.disabled = true;
+    try {
+      const r = await api('change-plan', { id, date: item.querySelector('[data-plan=date]').value, time: item.querySelector('[data-plan=time]').value });
+      msg.className = 'msg good'; msg.textContent = r.emailed ? 'Regular day/time changed. The customer was emailed.' : 'Changed. (Customer email could not be sent.)';
+      await load();
+    } catch (err) { e.target.disabled = false; msg.className = 'msg err'; msg.textContent = err.message; }
+    return;
+  }
   if ((act === 'charge' || act === 'cash') && !(cents > 0)) { msg.className = 'msg err'; msg.textContent = 'Enter an amount.'; return; }
   if (act === 'charge' && !confirm(`Charge ${money(cents)} to this customer's Venmo?`)) return;
-  if (act === 'cancelled' && !confirm('Cancel this booking?')) return;
+  if (act === 'cancelled' && !confirm('Cancel / end this booking? Its slot is freed.')) return;
   e.target.disabled = true;
   try {
     const action = act === 'charge' ? 'charge' : act === 'cash' ? 'mark-paid' : 'set-status';
@@ -535,6 +649,49 @@ $('#dhList').addEventListener('click', async (e) => {
   try { state.settings.dateHours = (await api('date-hours-clear', { date: d })).dateHours; renderDateHours(); }
   catch (err) { e.target.disabled = false; alert(err.message); }
 });
+
+$('#calGrid').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-day]');
+  if (!b) return;
+  cal.sel = b.dataset.day;
+  renderCalendar(state.today);
+});
+const shiftMonth = (n) => {
+  const d = new Date(cal.month + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n);
+  cal.month = ymd(d).slice(0, 7); loadCalendar();
+};
+$('#calPrev').addEventListener('click', () => shiftMonth(-1));
+$('#calNext').addEventListener('click', () => shiftMonth(1));
+$('#calToday').addEventListener('click', () => { cal.month = state.today.slice(0, 7); cal.sel = state.today; loadCalendar(); });
+$('#dayList').addEventListener('click', async (e) => {
+  const act = e.target.dataset.cal;
+  if (!act) return;
+  const item = e.target.closest('.item');
+  const msg = item.querySelector('.msg');
+  const id = item.dataset.id, origDate = item.dataset.orig;
+  msg.className = 'msg'; msg.textContent = '';
+  e.target.disabled = true;
+  try {
+    if (act === 'done') {
+      const r = await api('visit-complete', { id, origDate });
+      msg.className = r.chargeError ? 'msg err' : 'msg good';
+      msg.textContent = r.chargeError ? `Marked complete, but the payment failed: ${r.chargeError}. The plan is on hold.` : (r.charged ? 'Marked complete and charged.' : 'Marked complete.');
+    } else if (act === 'cash') {
+      const amt = prompt('Amount received ($)');
+      if (!amt) { e.target.disabled = false; return; }
+      await api('mark-paid', { id, cents: Math.round(parseFloat(amt) * 100), date: origDate });
+      msg.className = 'msg good'; msg.textContent = 'Cash recorded.';
+    } else if (act === 'move') {
+      const date = item.querySelector('[data-mv=date]').value, time = item.querySelector('[data-mv=time]').value;
+      const r = await api('move-visit', { id, origDate, date, time });
+      msg.className = 'msg good'; msg.textContent = r.emailed ? 'Moved. The customer was emailed.' : 'Moved. (Customer email could not be sent.)';
+      cal.sel = date; cal.month = date.slice(0, 7);
+    }
+    await loadCalendar();
+  } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; e.target.disabled = false; }
+});
+// Real time: her calendar refreshes itself every 30 seconds while the page is open.
+setInterval(() => { if (!$('#app').hidden && !document.hidden) loadCalendar().catch(() => {}); }, 30000);
 
 boot();
 </script>
