@@ -95,12 +95,12 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
   </div>
   <div class="wrap">
     <div class="msg err" id="venmoWarn" hidden></div>
-    <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set your earliest and latest start times.</div>
+    <div class="msg err" id="schedWarn" hidden>Nobody can book yet. Open Schedule and set the days and hours you work.</div>
     <div class="tabs">
       <button class="btn on" data-tab="bookings">Bookings</button>
-      <button class="btn" data-tab="blocks">Block off time</button>
+      <button class="btn" data-tab="blocks">Dates &amp; time off</button>
       <button class="btn" data-tab="prices">Prices</button>
-      <button class="btn" data-tab="schedule">Schedule</button>
+      <button class="btn" data-tab="schedule">Weekly schedule</button>
       <button class="btn" data-tab="push">Send message</button>
     </div>
 
@@ -110,7 +110,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 
     <div data-pane="blocks" hidden>
       <div class="card">
-        <h2>Block off time</h2>
+        <h2>Block off a day or time</h2>
         <form class="card-body" id="blockForm">
           <div class="field"><label for="bDate">Date</label><input type="date" id="bDate" required></div>
           <label class="check"><input type="checkbox" id="bAllDay" checked> All day</label>
@@ -124,6 +124,23 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
         </form>
       </div>
       <div class="card"><h2>Blocked</h2><div id="blockList"></div></div>
+
+      <div class="card">
+        <h2>Change your hours for one date</h2>
+        <form class="card-body" id="dhForm">
+          <p class="meta" style="margin:0 0 12px;color:var(--muted)">Overrides your weekly schedule for that date only. Use it to open a day you're normally closed, or work different hours.</p>
+          <div class="field"><label for="dhDate">Date</label><input type="date" id="dhDate" required></div>
+          <label class="check"><input type="radio" name="dhMode" value="hours" checked> Custom hours that day</label>
+          <label class="check"><input type="radio" name="dhMode" value="closed"> Closed that day</label>
+          <div class="row2" id="dhTimes">
+            <div class="field"><label for="dhFirst">Earliest start</label><input type="time" id="dhFirst" step="1800"></div>
+            <div class="field"><label for="dhLast">Latest start</label><input type="time" id="dhLast" step="1800"></div>
+          </div>
+          <button class="btn primary" type="submit" style="width:100%">Save this date</button>
+          <div class="msg" id="dhMsg"></div>
+        </form>
+      </div>
+      <div class="card"><h2>Date changes</h2><div id="dhList"></div></div>
     </div>
 
     <div data-pane="push" hidden>
@@ -170,10 +187,8 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
             <label for="sExtraDog">Extra minutes for each dog after the first</label>
             <input type="number" id="sExtraDog" min="0" max="120" step="1" inputmode="numeric" required>
           </div>
-          <div class="row2">
-            <div class="field"><label for="sFirst">Earliest start</label><input type="time" id="sFirst" step="1800" required></div>
-            <div class="field"><label for="sLast">Latest start</label><input type="time" id="sLast" step="1800" required></div>
-          </div>
+          <label style="margin-top:6px">Your hours (earliest and latest start time each day)</label>
+          <div id="sHours" style="margin-bottom:14px"></div>
           <label style="margin-top:6px">How long each job takes for one dog (minutes)</label>
           <div id="sDurations"></div>
           <button class="btn primary" type="submit" style="width:100%">Save</button>
@@ -260,8 +275,16 @@ function renderSchedule() {
   const st = state.settings || {};
   $('#sBuffer').value = Number.isInteger(st.buffer) ? st.buffer : '';
   $('#sExtraDog').value = Number.isInteger(st.extraDogMin) ? st.extraDogMin : '';
-  $('#sFirst').value = st.firstStart || '';
-  $('#sLast').value = st.lastStart || '';
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  $('#sHours').innerHTML = DAYS.map((name, d) => {
+    const h = (st.hours || {})[d] || {};
+    return `
+      <div class="hrs" data-day="${d}" style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px">
+        <label class="check" style="margin:0"><input type="checkbox" data-open ${h.open ? 'checked' : ''}> ${name.slice(0, 3)}</label>
+        <input type="time" step="1800" data-first value="${h.firstStart || ''}" aria-label="${name} earliest start" ${h.open ? '' : 'disabled'}>
+        <input type="time" step="1800" data-last value="${h.lastStart || ''}" aria-label="${name} latest start" ${h.open ? '' : 'disabled'}>
+      </div>`;
+  }).join('');
   $('#sDurations').innerHTML = state.services.map((sv) => `
     <div class="field" style="display:flex;align-items:center;gap:10px">
       <span style="flex:1">${esc(sv.name)}</span>
@@ -302,6 +325,20 @@ function renderBookings() {
   }).join('');
 }
 
+function renderDateHours() {
+  const dh = (state.settings && state.settings.dateHours) || {};
+  const dates = Object.keys(dh).filter((d) => d >= state.today).sort();
+  $('#dhList').innerHTML = dates.length ? dates.map((d) => `
+    <div class="item">
+      <div class="top">
+        <span class="when">${fmtDate(d)}</span>
+        <span>${dh[d].open ? `Open ${fmtTime(dh[d].firstStart)} – ${fmtTime(dh[d].lastStart)} starts` : 'Closed'}</span>
+        <span class="spacer"></span>
+        <button class="btn sm danger" data-dhclear="${d}">Remove</button>
+      </div>
+    </div>`).join('') : '<div class="empty">No date changes. Your weekly schedule applies every day.</div>';
+}
+
 function renderBlocks() {
   const el = $('#blockList');
   const upcoming = state.blocks.filter((b) => b.date >= state.today);
@@ -323,12 +360,14 @@ async function load() {
   state = data;
   renderBookings();
   renderBlocks();
+  renderDateHours();
   renderSchedule();
   renderPrices();
   renderPush();
   $('#bDate').min = state.today;
+  $('#dhDate').min = state.today;
   const st = state.settings || {};
-  const missing = !Number.isInteger(st.buffer) || !st.firstStart || !st.lastStart || !Object.keys(st.durations || {}).length;
+  const missing = !Object.values(st.hours || {}).some((h) => h.open) && !Object.values(st.dateHours || {}).some((h) => h.open);
   $('#schedWarn').hidden = !missing;
 }
 
@@ -414,11 +453,16 @@ $('#schedForm').addEventListener('submit', async (e) => {
   document.querySelectorAll('[data-dur]').forEach((i) => { if (i.value !== '') durations[i.dataset.dur] = Number(i.value); });
   try {
     const data = await api('settings', {
-      buffer: Number($('#sBuffer').value), extraDogMin: Number($('#sExtraDog').value), firstStart: $('#sFirst').value, lastStart: $('#sLast').value, durations,
+      buffer: Number($('#sBuffer').value), extraDogMin: Number($('#sExtraDog').value), durations,
+      hours: Object.fromEntries([...document.querySelectorAll('#sHours .hrs')].map((el) => [el.dataset.day, {
+        open: el.querySelector('[data-open]').checked,
+        firstStart: el.querySelector('[data-first]').value,
+        lastStart: el.querySelector('[data-last]').value,
+      }])),
     });
     state.settings = data.settings;
     renderSchedule();
-    $('#schedWarn').hidden = !!(data.settings.firstStart && data.settings.lastStart);
+    $('#schedWarn').hidden = Object.values(data.settings.hours || {}).some((h) => h.open);
     msg.className = 'msg good'; msg.textContent = 'Saved. New bookings use these times.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
 });
@@ -461,6 +505,35 @@ $('#pricesForm').addEventListener('submit', async (e) => {
     renderPrices(); renderSchedule();
     msg.className = 'msg good'; msg.textContent = 'Saved. The app shows these prices now. New services need a job length on the Schedule tab before they can be booked.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+});
+
+$('#sHours').addEventListener('change', (e) => {
+  if (!e.target.matches('[data-open]')) return;
+  const row = e.target.closest('.hrs');
+  row.querySelectorAll('input[type=time]').forEach((i) => { i.disabled = !e.target.checked; });
+});
+
+document.querySelectorAll('[name=dhMode]').forEach((r) => r.addEventListener('change', () => {
+  $('#dhTimes').hidden = document.querySelector('[name=dhMode]:checked').value === 'closed';
+}));
+$('#dhForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#dhMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  const open = document.querySelector('[name=dhMode]:checked').value === 'hours';
+  try {
+    const r = await api('date-hours', { date: $('#dhDate').value, open, firstStart: $('#dhFirst').value, lastStart: $('#dhLast').value });
+    state.settings.dateHours = r.dateHours;
+    renderDateHours();
+    msg.className = 'msg good'; msg.textContent = 'Saved. Customers see these hours for that date.';
+  } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+});
+$('#dhList').addEventListener('click', async (e) => {
+  const d = e.target.dataset.dhclear;
+  if (!d) return;
+  e.target.disabled = true;
+  try { state.settings.dateHours = (await api('date-hours-clear', { date: d })).dateHours; renderDateHours(); }
+  catch (err) { e.target.disabled = false; alert(err.message); }
 });
 
 boot();

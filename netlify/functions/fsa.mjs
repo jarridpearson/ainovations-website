@@ -110,8 +110,17 @@ async function getBlocks() {
 //   durations    minutes per service id
 //   extraDogMin  minutes added per dog after the first
 //   buffer       minutes added on top of drive time between appointments
-//   firstStart   earliest start time offered, "HH:MM"  (her hours: she sets these)
-//   lastStart    latest start time offered, "HH:MM"
+//   hours        her hours by weekday (0 = Sunday ... 6 = Saturday):
+//                { open: bool, firstStart: "HH:MM", lastStart: "HH:MM" }
+//                firstStart/lastStart are the earliest and latest START times
+//                offered that day. A closed day offers nothing. She sets these;
+//                one-off days/times off are separate blocks.
+//   dateHours    per-date changes to the weekly hours, keyed "YYYY-MM-DD":
+//                { open: bool, firstStart, lastStart } — custom hours for that
+//                date, or closed. Wins over the weekly hours for that date.
+//
+// So her schedule is: weekly hours -> date changes -> blocks (time ranges or
+// whole days off) -> other bookings + drive time.
 
 const SLOT_STEP = 30;
 const toMin = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
@@ -138,8 +147,8 @@ async function getSettings() {
     durations,
     extraDogMin: Number.isInteger(saved.extraDogMin) ? saved.extraDogMin : DEFAULT_EXTRA_DOG_MIN,
     buffer: Number.isInteger(saved.buffer) ? saved.buffer : DEFAULT_BUFFER,
-    firstStart: saved.firstStart || null,
-    lastStart: saved.lastStart || null,
+    hours: normalizeHours(saved),
+    dateHours: (await store().get('datehours', { type: 'json' })) || {},
   };
 }
 
@@ -150,8 +159,31 @@ async function getPriceNotes() {
   return (await store().get('pricenotes', { type: 'json' })) || DEFAULT_PRICE_NOTES;
 }
 
+function normalizeHours(saved) {
+  const out = {};
+  for (let d = 0; d < 7; d++) {
+    const h = saved.hours?.[d];
+    if (h) out[d] = { open: !!h.open, firstStart: isTime(h.firstStart) ? h.firstStart : null, lastStart: isTime(h.lastStart) ? h.lastStart : null };
+    // Settings saved before hours went per-day: same window every day.
+    else if (isTime(saved.firstStart) && isTime(saved.lastStart)) out[d] = { open: true, firstStart: saved.firstStart, lastStart: saved.lastStart };
+    else out[d] = { open: false, firstStart: null, lastStart: null };
+  }
+  return out;
+}
+
+const weekdayOf = (date) => new Date(date + 'T12:00:00Z').getUTCDay();
+const dayHours = (settings, date) => {
+  const h = settings.dateHours?.[date] || settings.hours[weekdayOf(date)];
+  return h?.open && isTime(h.firstStart) && isTime(h.lastStart) ? h : null;
+};
+const closedWeekdays = (settings) => [0, 1, 2, 3, 4, 5, 6].filter((d) => {
+  const h = settings.hours[d];
+  return !(h?.open && isTime(h.firstStart) && isTime(h.lastStart));
+});
+
 function scheduleReady(settings, serviceId) {
-  return isTime(settings.firstStart) && isTime(settings.lastStart) && Number.isInteger(settings.durations?.[serviceId]);
+  const anyDateOpen = Object.values(settings.dateHours || {}).some((h) => h.open);
+  return (closedWeekdays(settings).length < 7 || anyDateOpen) && Number.isInteger(settings.durations?.[serviceId]);
 }
 
 const jobLength = (settings, serviceId, dogs) =>
@@ -292,6 +324,8 @@ function nowLocalMinutes() {
 }
 
 async function openSlots(date, serviceId, settings, blocks, bookings, { address, dogs }) {
+  const hours = dayHours(settings, date);
+  if (!hours) return []; // she's closed that weekday
   const len = jobLength(settings, serviceId, dogs);
   const jobs = jobsOn(bookings, settings, date);
   const pairs = jobs.flatMap((j) => [[address, j.address], [j.address, address]]);
@@ -299,7 +333,7 @@ async function openSlots(date, serviceId, settings, blocks, bookings, { address,
   // Today: nothing earlier than now plus her buffer.
   const earliest = date === todayLocal() ? nowLocalMinutes() + settings.buffer : 0;
   const slots = [];
-  for (let m = toMin(settings.firstStart); m <= toMin(settings.lastStart); m += SLOT_STEP) {
+  for (let m = toMin(hours.firstStart); m <= toMin(hours.lastStart); m += SLOT_STEP) {
     if (m < earliest) continue;
     if (fitsDay(date, m, len, blocks, jobs, address, drive, settings.buffer)) slots.push(toTime(m));
   }
@@ -516,8 +550,13 @@ export default async (req, context) => {
       const settings = await getSettings();
       const services = (await getServices()).map((sv) => ({ ...sv, per: perLabel(sv), bookable: scheduleReady(settings, sv.id) }));
       // Whole days off only; partial blocks and other bookings come back per date from `slots`.
-      const daysOff = [...new Set((await getBlocks()).filter((b) => !b.from).map((b) => b.date))];
-      return ok({ today: todayLocal(), daysOff, services, priceNotes: await getPriceNotes() });
+      const dh = settings.dateHours || {};
+      const daysOff = [...new Set([
+        ...(await getBlocks()).filter((b) => !b.from).map((b) => b.date),
+        ...Object.keys(dh).filter((d) => !dh[d].open),
+      ])];
+      const openDates = Object.keys(dh).filter((d) => dh[d].open);
+      return ok({ today: todayLocal(), daysOff, openDates, closedWeekdays: closedWeekdays(settings), services, priceNotes: await getPriceNotes() });
     }
 
     if (action === 'slots') {
@@ -736,11 +775,20 @@ export default async (req, context) => {
     if (action === 'settings') {
       const buffer = Number(input.buffer);
       const extraDogMin = Number(input.extraDogMin);
-      const firstStart = str(input.firstStart, 5);
-      const lastStart = str(input.lastStart, 5);
+      const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const hours = {};
+      for (let d = 0; d < 7; d++) {
+        const h = input.hours?.[d] || {};
+        const open = !!h.open;
+        const firstStart = str(h.firstStart, 5) || null;
+        const lastStart = str(h.lastStart, 5) || null;
+        if (open && (!isTime(firstStart) || !isTime(lastStart) || firstStart > lastStart)) {
+          return fail(400, `${names[d]}: set the earliest start before the latest start.`);
+        }
+        hours[d] = { open, firstStart, lastStart };
+      }
       if (!Number.isInteger(buffer) || buffer < 0 || buffer > 240) return fail(400, 'Buffer must be 0 to 240 minutes.');
       if (!Number.isInteger(extraDogMin) || extraDogMin < 0 || extraDogMin > 120) return fail(400, 'Extra time per dog must be 0 to 120 minutes.');
-      if (!isTime(firstStart) || !isTime(lastStart) || firstStart > lastStart) return fail(400, 'Set the earliest start before the latest start.');
       const durations = {};
       for (const sv of await getServices()) {
         const v = input.durations?.[sv.id];
@@ -749,7 +797,7 @@ export default async (req, context) => {
         if (!Number.isInteger(n) || n < 5 || n > 600) return fail(400, `${sv.name}: length must be 5 to 600 minutes.`);
         durations[sv.id] = n;
       }
-      await store().setJSON('settings', { buffer, extraDogMin, firstStart, lastStart, durations });
+      await store().setJSON('settings', { buffer, extraDogMin, hours, durations });
       return ok({ settings: await getSettings() });
     }
 
@@ -765,6 +813,28 @@ export default async (req, context) => {
       blocks.sort((a, b) => (a.date + (a.from || '') < b.date + (b.from || '') ? -1 : 1));
       await store().setJSON('blocks', blocks);
       return ok({ blocks });
+    }
+
+    if (action === 'date-hours') {
+      const date = str(input.date, 10);
+      if (!isDate(date)) return fail(400, 'Pick a date.');
+      const open = !!input.open;
+      const firstStart = open ? str(input.firstStart, 5) : null;
+      const lastStart = open ? str(input.lastStart, 5) : null;
+      if (open && (!isTime(firstStart) || !isTime(lastStart) || firstStart > lastStart)) return fail(400, 'Set the earliest start before the latest start.');
+      const dh = (await store().get('datehours', { type: 'json' })) || {};
+      dh[date] = { open, firstStart, lastStart, note: str(input.note, 120) };
+      // Drop past dates so this never grows forever.
+      for (const d of Object.keys(dh)) if (d < todayLocal()) delete dh[d];
+      await store().setJSON('datehours', dh);
+      return ok({ dateHours: dh });
+    }
+
+    if (action === 'date-hours-clear') {
+      const dh = (await store().get('datehours', { type: 'json' })) || {};
+      delete dh[str(input.date, 10)];
+      await store().setJSON('datehours', dh);
+      return ok({ dateHours: dh });
     }
 
     if (action === 'unblock') {
