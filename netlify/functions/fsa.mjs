@@ -597,7 +597,7 @@ async function chargeVisit(b, cents, visitDate, reason) {
       `mutation C($input: ChargePaymentMethodInput!) {
          chargePaymentMethod(input: $input) { transaction { id status } }
        }`,
-      { input: { paymentMethodId: b.venmo.token, transaction: { amount: centsToAmount(cents), merchantAccountId: BT.merchantId, orderId: paymentId } } },
+      { input: { paymentMethodId: b.venmo.token, transaction: { amount: centsToAmount(cents), orderId: paymentId } } },
     );
     const t = data.chargePaymentMethod.transaction;
     const pay = { id: paymentId, kind: 'venmo', cents, at, visitDate, reason, transactionId: t.id, status: t.status };
@@ -1013,7 +1013,7 @@ export default async (req, context) => {
       if (!btConfigured()) return fail(503, 'Venmo is not set up yet.');
       const data = await bt(
         'mutation T($input: CreateClientTokenInput) { createClientToken(input: $input) { clientToken } }',
-        { input: { clientToken: { merchantAccountId: BT.merchantId } } },
+        { input: {} },
       );
       return ok({ clientToken: data.createClientToken.clientToken });
     }
@@ -1214,7 +1214,7 @@ export default async (req, context) => {
           {
             input: {
               paymentMethodId: b.venmo.token,
-              transaction: { amount: centsToAmount(cents), merchantAccountId: BT.merchantId, orderId: paymentId },
+              transaction: { amount: centsToAmount(cents), orderId: paymentId },
             },
           },
         );
