@@ -29,6 +29,7 @@ input,select,textarea{font:inherit;color:var(--text)}
 .wrap{padding:16px;max-width:860px;margin:0 auto}
 
 .btn{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:10px 14px;font-size:15px;font-weight:600}
+a.btn{display:inline-block;text-decoration:none;text-align:center}
 .btn.primary{background:var(--teal-dark);border-color:var(--teal-dark)}
 .btn.sm{padding:6px 10px;font-size:13.5px}
 .btn.danger{color:var(--red)}
@@ -352,6 +353,16 @@ function renderSchedule() {
     </div>`).join('');
 }
 
+// One tap to text or email a customer from her own phone, with the visit filled in.
+function contactLinks(name, phone, email, date, time) {
+  const first = String(name || '').split(' ')[0];
+  const when = date ? ` on ${fmtDate(date)}${time ? ' at ' + fmtTime(time) : ''}` : '';
+  const text = `Hi ${first}, this is PooPawtrol about your visit${when}: `;
+  const digits = String(phone || '').replace(/[^0-9+]/g, '');
+  return `${digits ? `<a class="btn sm" href="sms:${digits}?&body=${encodeURIComponent(text)}">Text</a>` : ''}`
+    + `${email ? `<a class="btn sm" href="mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Your PooPawtrol visit' + when)}&body=${encodeURIComponent(text)}">Email</a>` : ''}`;
+}
+
 function renderBookings() {
   const el = $('#bookingList');
   if (!state.bookings.length) { el.innerHTML = '<div class="empty">No bookings yet.</div>'; return; }
@@ -364,7 +375,8 @@ function renderBookings() {
         <span class="name">${esc(b.name)}</span>
         <span class="when">${fmtDate(b.date)} · ${fmtTime(b.time)}</span>
         <span class="pill ${b.status}">${b.status}</span>
-        ${b.venmo ? `<span class="pill venmo">Venmo @${esc(b.venmo.username)}</span>` : ''}
+        ${b.venmo ? `<span class="pill venmo">${b.venmo.method === 'card' ? esc(b.venmo.username) : 'Venmo @' + esc(b.venmo.username)}</span>` : ''}
+        ${b.payMethod === 'cash' ? '<span class="pill">pays cash</span>' : ''}
       </div>
       <div class="meta">${esc(b.serviceName)} · ${b.dogs} dog${b.dogs === 1 ? '' : 's'} · list ${money(b.listCents)}</div>
       <div class="meta"><a href="tel:${esc(b.phone)}" style="color:var(--teal-soft)">${esc(b.phone)}</a>${b.email ? ' · ' + esc(b.email) : ''}</div>
@@ -376,11 +388,12 @@ function renderBookings() {
       ${failed.length ? `<div class="pay" style="color:var(--red)">Failed: ${failed.map((p) => `${money(p.cents)} ${new Date(p.at).toLocaleDateString()}`).join(' · ')}</div>` : ''}
       <div class="actions">
         <input type="number" inputmode="decimal" min="1" step="0.01" placeholder="Amount" value="${(b.listCents / 100).toFixed(2)}" aria-label="Amount">
-        <button class="btn sm primary" data-act="charge" ${b.venmo ? '' : 'disabled title="Customer has not linked Venmo"'}>Charge Venmo</button>
+        <button class="btn sm primary" data-act="charge" ${b.venmo && b.venmo.saved !== false ? '' : 'disabled title="Customer has not saved Venmo or a card"'}>Charge ${b.venmo && b.venmo.method === 'card' ? 'card' : 'Venmo'}</button>
         <button class="btn sm" data-act="cash">Got cash</button>
         ${b.status === 'on-hold' ? '<button class="btn sm primary" data-act="confirmed">Resume plan</button>' : ''}
         ${b.status !== 'confirmed' && b.status !== 'on-hold' && b.status !== 'cancelled' ? '<button class="btn sm" data-act="confirmed">Confirm</button>' : ''}
         ${b.status !== 'cancelled' ? `<button class="btn sm danger" data-act="cancelled">${b.status === 'on-hold' ? 'End plan' : 'Cancel'}</button>` : '<button class="btn sm" data-act="new">Reopen</button>'}
+        ${contactLinks(b.name, b.phone, b.email, b.date, b.time)}
       </div>
       ${b.frequency && b.frequency !== 'one_time' && b.status !== 'cancelled' ? `
       <div class="moveform">
@@ -477,6 +490,7 @@ function renderDay() {
       <div class="actions">
         ${e.visitStatus !== 'completed' ? '<button class="btn sm primary" data-cal="done">Mark complete</button>' : ''}
         <button class="btn sm" data-cal="cash">Got cash</button>
+        ${contactLinks(e.name, e.phone, e.email, e.date, e.time)}
       </div>
       <div class="moveform">
         <input type="date" data-mv="date" value="${e.date}" aria-label="Move to date">

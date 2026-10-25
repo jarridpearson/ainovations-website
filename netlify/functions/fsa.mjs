@@ -44,6 +44,14 @@ const BT = {
   mode: process.env.BRAINTREE_MODE === 'production' ? 'production' : 'sandbox',
 };
 
+// PayPal (REST) takes Venmo too. When its keys are set it is the payment provider;
+// Braintree stays as the other connector.
+const PP = {
+  clientId: process.env.PAYPAL_CLIENT_ID || '',
+  secret: process.env.PAYPAL_CLIENT_SECRET || '',
+  api: process.env.PAYPAL_API || (process.env.PAYPAL_MODE === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com'),
+};
+
 const SESSION_COOKIE = 'fsa_session';
 const SESSION_HOURS = 24 * 14;
 
@@ -487,6 +495,83 @@ async function emailBooking(b) {
 // --- Braintree (GraphQL) ----------------------------------------------------
 
 const btConfigured = () => !!(BT.merchantId && BT.publicKey && BT.privateKey);
+const ppConfigured = () => !!(PP.clientId && PP.secret);
+const provider = () => (ppConfigured() ? 'paypal' : btConfigured() ? 'braintree' : null);
+const payReady = () => !!provider();
+
+// --- PayPal (REST) ------------------------------------------------------------
+
+let ppAuth = null; // { token, scope, exp }
+async function ppToken() {
+  if (ppAuth && ppAuth.exp > Date.now() + 60000) return ppAuth;
+  const res = await fetch(`${PP.api}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: { Authorization: 'Basic ' + Buffer.from(`${PP.clientId}:${PP.secret}`).toString('base64'), 'content-type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials',
+  });
+  const d = await res.json().catch(() => null);
+  if (!res.ok || !d?.access_token) throw new Error(d?.error_description || `PayPal sign-in failed (${res.status})`);
+  ppAuth = { token: d.access_token, scope: d.scope || '', exp: Date.now() + (d.expires_in || 3000) * 1000 };
+  return ppAuth;
+}
+
+/** Saving Venmo for later charges (plans) needs PayPal's vault permission on her app. */
+const ppCanSave = async () => (await ppToken()).scope.includes('vault/payment-tokens');
+
+async function pp(method, path, body, requestId) {
+  const { token } = await ppToken();
+  const res = await fetch(PP.api + path, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`, 'content-type': 'application/json', Prefer: 'return=representation',
+      ...(requestId ? { 'PayPal-Request-Id': requestId } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const d = await res.json().catch(() => null);
+  if (!res.ok) {
+    const issue = d?.details?.[0];
+    throw new Error(issue ? `${issue.issue}${issue.description ? ': ' + issue.description : ''}` : d?.message || `PayPal returned ${res.status}`);
+  }
+  return d;
+}
+
+const ppUnit = (b, cents, visitDate, paymentId) => ({
+  reference_id: b.id.slice(0, 36),
+  custom_id: `${b.id}|${visitDate || ''}`.slice(0, 127),
+  invoice_id: paymentId,
+  description: `${b.serviceName}${visitDate ? ' visit ' + visitDate : ''}`.slice(0, 127),
+  amount: { currency_code: 'USD', value: centsToAmount(cents) },
+});
+
+/** How a saved or used PayPal payment source is shown: Venmo user, or card brand and last 4. */
+function ppPayer(src = {}) {
+  if (src.card) return { method: 'card', username: `${src.card.brand || 'Card'} ending ${src.card.last_digits || ''}`.trim() };
+  const v = src.venmo || {};
+  return { method: 'venmo', username: v.user_name || v.email_address || '' };
+}
+
+/** Result of a capture: the captured payment, or an Error saying why it was declined. */
+function ppCaptured(order) {
+  const cap = order?.purchase_units?.[0]?.payments?.captures?.[0];
+  if (order?.status === 'COMPLETED' && cap && (cap.status === 'COMPLETED' || cap.status === 'PENDING')) return cap;
+  const why = cap?.status_details?.reason || cap?.status || order?.status || 'not completed';
+  throw new Error(`Declined (${why})`);
+}
+
+/** Charge a saved Venmo (PayPal vault token) with no customer present. */
+async function ppCharge(vaultId, b, cents, visitDate, paymentId) {
+  const source = b.venmo.method === 'card'
+    ? { card: { vault_id: vaultId, stored_credential: { payment_initiator: 'MERCHANT', payment_type: 'UNSCHEDULED', usage: 'SUBSEQUENT' } } }
+    : { venmo: { vault_id: vaultId } };
+  const order = await pp('POST', '/v2/checkout/orders', {
+    intent: 'CAPTURE',
+    payment_source: source,
+    purchase_units: [ppUnit(b, cents, visitDate, paymentId)],
+  }, paymentId);
+  const cap = ppCaptured(order);
+  return { id: cap.id, status: cap.status };
+}
 
 async function bt(query, variables) {
   const url = BT.mode === 'production'
@@ -561,8 +646,11 @@ async function bookingForPayer(id, secret) {
 
 /** What the owner page sees: everything except the payer secret and the raw vault token. */
 function ownerView(b) {
-  const { paySecret, venmo, ...rest } = b;
-  return { ...rest, venmo: venmo ? { username: venmo.username, linkedAt: venmo.linkedAt } : null };
+  const { paySecret, venmo, pushTokens, ...rest } = b;
+  return {
+    ...rest, phoneApp: !!(pushTokens || []).length,
+    venmo: venmo ? { username: venmo.username, linkedAt: venmo.linkedAt, method: venmo.method || 'venmo', saved: !!venmo.token } : null,
+  };
 }
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -581,8 +669,9 @@ async function pushTokens() {
   return rows.filter(Boolean).map((r) => r.token);
 }
 
-async function sendPush(title, body) {
-  const tokens = await pushTokens();
+const sendPush = async (title, body) => sendPushTo(await pushTokens(), title, body);
+
+async function sendPushTo(tokens, title, body) {
   let sent = 0;
   let dropped = 0;
   for (let i = 0; i < tokens.length; i += 100) {
@@ -626,12 +715,17 @@ async function getVisit(bookingId, date) {
 }
 const saveVisit = (v) => store().setJSON(visitKey(v.bookingId, v.date), v);
 
+/** Charge the booking's saved Venmo with whichever provider saved it. */
+const chargeSaved = (b, cents, visitDate, paymentId) => (b.venmo.provider === 'paypal'
+  ? ppCharge(b.venmo.token, b, cents, visitDate, paymentId)
+  : btCharge(b.venmo.token, cents, paymentId));
+
 /** Charge the booking's saved Venmo for one visit. Records the result either way. */
 async function chargeVisit(b, cents, visitDate, reason) {
   const paymentId = crypto.randomUUID();
   const at = new Date().toISOString();
   try {
-    const t = await btCharge(b.venmo.token, cents, paymentId);
+    const t = await chargeSaved(b, cents, visitDate, paymentId);
     const pay = { id: paymentId, kind: 'venmo', cents, at, visitDate, reason, transactionId: t.id, status: t.status };
     b.payments.push(pay);
     await saveBooking(b);
@@ -791,9 +885,9 @@ async function morningRun() {
   const today = todayLocal();
   const moves = await getMoves();
   const report = { moved, charged: 0, failed: 0 };
-  if (!btConfigured()) return report;
+  if (!payReady()) return report;
   for (const b of await allBookings()) {
-    if (b.status === 'cancelled' || b.status === 'on-hold' || !isRecurring(b) || !b.venmo) continue;
+    if (b.status === 'cancelled' || b.status === 'on-hold' || !isRecurring(b) || !b.venmo?.token) continue;
     for (const o of occurrences(b, today, moves)) {
       // The first visit is charged when she marks it complete; every one after that today, automatically.
       if (o.origDate === b.date || visitPaid(b, o.origDate)) continue;
@@ -964,6 +1058,7 @@ export default async (req, context) => {
         paySecret: crypto.randomBytes(24).toString('hex'),
         venmo: null,
         payments: [],
+        pushTokens: PUSH_TOKEN_RE.test(str(input.pushToken, 200)) ? [str(input.pushToken, 200)] : [],
       };
       await saveBooking(booking);
 
@@ -1001,6 +1096,12 @@ export default async (req, context) => {
       for (const it of items) {
         const b = await bookingForPayer(it?.id, it?.secret);
         if (!b) continue;
+        // This phone holds the booking, so it is where her messages to this customer go.
+        const tok = str(input.pushToken, 200);
+        if (PUSH_TOKEN_RE.test(tok) && !(b.pushTokens || []).includes(tok)) {
+          b.pushTokens = [...(b.pushTokens || []), tok].slice(-3);
+          await saveBooking(b);
+        }
         const next = [];
         for (let i = 0; i <= 62 && next.length < 3; i++) {
           const d = addDaysStr(today, i);
@@ -1034,8 +1135,10 @@ export default async (req, context) => {
       const b = await bookingForPayer(input.id, input.secret);
       if (!b) return fail(404, 'Booking not found.');
       return ok({
-        name: b.name, serviceName: b.serviceName, date: b.date, linked: !!b.venmo, ready: btConfigured(),
+        name: b.name, serviceName: b.serviceName, date: b.date, linked: !!b.venmo, ready: payReady(),
         recurring: isRecurring(b), cents: b.listCents, paid: visitPaid(b, b.date),
+        provider: provider(), paypalClientId: provider() === 'paypal' ? PP.clientId : undefined, payMethod: b.payMethod || null,
+        canSave: provider() === 'paypal' ? await ppCanSave().catch(() => false) : provider() === 'braintree',
       });
     }
 
@@ -1076,6 +1179,84 @@ export default async (req, context) => {
       return ok({ ok: true, username: pm.details.username, recurring: true });
     }
 
+    // One-time visit paid with Venmo through PayPal: the page creates the order, the
+    // customer approves it in Venmo, and the server captures it.
+    if (action === 'pp-order') {
+      const b = await bookingForPayer(input.id, input.secret);
+      if (!b) return fail(404, 'Booking not found.');
+      if (provider() !== 'paypal') return fail(503, 'Venmo is not set up yet.');
+      if (isRecurring(b)) return fail(400, 'Regular plans link Venmo instead.');
+      if (visitPaid(b, b.date)) return fail(409, 'This visit is already paid.');
+      const order = await pp('POST', '/v2/checkout/orders', {
+        intent: 'CAPTURE',
+        purchase_units: [ppUnit(b, b.listCents, b.date, crypto.randomUUID())],
+      });
+      return ok({ orderId: order.id });
+    }
+
+    if (action === 'pp-capture') {
+      const b = await bookingForPayer(input.id, input.secret);
+      if (!b) return fail(404, 'Booking not found.');
+      if (provider() !== 'paypal') return fail(503, 'Venmo is not set up yet.');
+      const orderId = str(input.orderId, 40);
+      if (!/^[A-Z0-9]{5,40}$/.test(orderId)) return fail(400, 'missing order');
+      const paymentId = crypto.randomUUID();
+      let order;
+      try {
+        order = await pp('POST', `/v2/checkout/orders/${orderId}/capture`, {}, paymentId);
+        const cap = ppCaptured(order);
+        const unit = order.purchase_units[0];
+        if (!String(unit.custom_id || '').startsWith(b.id)) return fail(400, 'That payment is for a different booking.');
+        const cents = Math.round(Number(cap.amount?.value) * 100);
+        b.venmo = b.venmo || { provider: 'paypal', token: null, ...ppPayer(order.payment_source), linkedAt: new Date().toISOString() };
+        delete b.payMethod;
+        b.payments.push({ id: paymentId, kind: 'venmo', cents, at: new Date().toISOString(), visitDate: b.date, reason: 'paid at booking', transactionId: cap.id, status: cap.status });
+        await saveBooking(b);
+        return ok({ ok: true, charged: cents, username: b.venmo.username, recurring: false });
+      } catch (e) {
+        b.payments.push({ id: paymentId, kind: 'venmo', cents: b.listCents, at: new Date().toISOString(), visitDate: b.date, reason: 'paid at booking', status: 'FAILED', error: e.message });
+        await saveBooking(b);
+        return fail(402, `The payment did not go through: ${e.message}`);
+      }
+    }
+
+    // Regular plans save Venmo (PayPal vault) so each visit can be charged on its day.
+    if (action === 'pp-setup-token') {
+      const b = await bookingForPayer(input.id, input.secret);
+      if (!b) return fail(404, 'Booking not found.');
+      if (provider() !== 'paypal') return fail(503, 'Venmo is not set up yet.');
+      if (!(await ppCanSave())) return fail(503, 'Saving Venmo for regular plans is not switched on yet. Your booking is in; you can pay at the visit.');
+      const source = input.method === 'card'
+        ? { card: { experience_context: { brand_name: 'PooPawtrol' } } }
+        : { venmo: { usage_type: 'MERCHANT', customer_type: 'CONSUMER', permit_multiple_payment_tokens: false, description: `${b.serviceName} visits` } };
+      const st = await pp('POST', '/v3/vault/setup-tokens', { payment_source: source }, crypto.randomUUID());
+      return ok({ setupToken: st.id });
+    }
+
+    if (action === 'pp-vault') {
+      const b = await bookingForPayer(input.id, input.secret);
+      if (!b) return fail(404, 'Booking not found.');
+      if (provider() !== 'paypal') return fail(503, 'Venmo is not set up yet.');
+      const setupToken = str(input.setupToken, 60);
+      if (!setupToken) return fail(400, 'missing setup token');
+      const pt = await pp('POST', '/v3/vault/payment-tokens', { payment_source: { token: { id: setupToken, type: 'SETUP_TOKEN' } } }, crypto.randomUUID());
+      if (!pt.payment_source?.venmo && !pt.payment_source?.card) return fail(400, 'Use Venmo or a card.');
+      b.venmo = { provider: 'paypal', token: pt.id, ...ppPayer(pt.payment_source), linkedAt: new Date().toISOString() };
+      delete b.payMethod;
+      await saveBooking(b);
+      return ok({ ok: true, username: b.venmo.username, recurring: true });
+    }
+
+    // The customer chose to pay cash at the visit. The booking stands; nothing is charged.
+    if (action === 'pay-cash') {
+      const b = await bookingForPayer(input.id, input.secret);
+      if (!b) return fail(404, 'Booking not found.');
+      b.payMethod = 'cash';
+      b.payMethodAt = new Date().toISOString();
+      await saveBooking(b);
+      return ok({ ok: true, cash: true });
+    }
+
     if (action === 'push-register') {
       if (await overLimit('push', ipOf(req, context), 20, 60)) return fail(429, 'Too many requests.');
       const token = str(input.token, 200);
@@ -1112,7 +1293,7 @@ export default async (req, context) => {
     if (!session) return fail(401, 'Not signed in.');
 
     const own = await ownerPass();
-    if (action === 'me') return ok({ user: session.u, mustChangePassword: !own, venmoReady: btConfigured(), venmoMode: BT.mode });
+    if (action === 'me') return ok({ user: session.u, mustChangePassword: !own, venmoReady: payReady(), venmoMode: provider() === 'paypal' ? (PP.api.includes('sandbox') ? 'sandbox' : 'live') : BT.mode });
 
     if (action === 'change-password') {
       if (await overLimit('login', ipOf(req, context), 10, 15)) return fail(429, 'Too many tries. Wait 15 minutes.');
@@ -1245,16 +1426,36 @@ export default async (req, context) => {
       return ok({ blocks });
     }
 
+    // A message to one customer: a notification on their phone (if the app is on it)
+    // and an email every time.
+    if (action === 'notify-customer') {
+      const b = await getBooking(input.id);
+      if (!b) return fail(404, 'Booking not found.');
+      const title = str(input.title, 60) || 'An update about your visit';
+      const message = str(input.message, 500);
+      if (!message) return fail(400, 'Type a message.');
+      let pushed = 0;
+      if ((b.pushTokens || []).length) {
+        const r = await sendPushTo(b.pushTokens, title, message).catch(() => ({ sent: 0 }));
+        pushed = r.sent;
+      }
+      const emailed = await emailCustomer(b, title, [`Hi ${b.name.split(' ')[0]},`, '', message, '', 'Reply to this email with any questions.']);
+      b.messages = [...(b.messages || []), { at: new Date().toISOString(), title, message, pushed, emailed }].slice(-50);
+      await saveBooking(b);
+      if (!pushed && !emailed) return fail(502, 'The message could not be sent. Try again.');
+      return ok({ pushed, emailed, booking: ownerView(b) });
+    }
+
     if (action === 'charge') {
       const b = await getBooking(input.id);
       if (!b) return fail(404, 'Booking not found.');
-      if (!b.venmo) return fail(400, 'This customer has not linked Venmo.');
-      if (!btConfigured()) return fail(503, 'Venmo is not set up yet.');
+      if (!b.venmo?.token) return fail(400, 'This customer has not saved Venmo.');
+      if (!payReady()) return fail(503, 'Venmo is not set up yet.');
       const cents = Number(input.cents);
       if (!Number.isInteger(cents) || cents < 100 || cents > 100000) return fail(400, 'Enter an amount between $1 and $1,000.');
       const paymentId = crypto.randomUUID();
       try {
-        const t = await btCharge(b.venmo.token, cents, paymentId);
+        const t = await chargeSaved(b, cents, undefined, paymentId);
         b.payments.push({ id: paymentId, kind: 'venmo', cents, at: new Date().toISOString(), transactionId: t.id, status: t.status });
         await saveBooking(b);
         return ok({ booking: ownerView(b) });
@@ -1292,7 +1493,7 @@ export default async (req, context) => {
       await saveVisit(v);
       // The first visit of a regular plan is charged when she marks it complete.
       let charge = null;
-      if (isRecurring(b) && origDate === b.date && b.venmo && btConfigured() && !visitPaid(b, origDate) && b.status !== 'on-hold') {
+      if (isRecurring(b) && origDate === b.date && b.venmo?.token && payReady() && !visitPaid(b, origDate) && b.status !== 'on-hold') {
         charge = await chargeVisit(b, b.listCents, origDate, 'first visit, on completion');
         if (!charge.ok) await holdForPayment(b, origDate, charge.error);
       }

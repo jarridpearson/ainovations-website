@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="referrer" content="no-referrer">
-<title>Link Venmo</title>
+<title>Pay for your visit</title>
 <style>
 :root{--bg:#f6f8fa;--card:#fff;--text:#14202b;--muted:#5b6b78;--venmo:#008cff;--green:#11845b;--red:#c62828;--border:#dde3e8}
 *{box-sizing:border-box}
@@ -23,9 +23,16 @@ button:disabled{opacity:.5;cursor:default}
 </head>
 <body>
 <div class="card">
-  <h1 id="title">Link your Venmo</h1>
+  <h1 id="title">Pay for your visit</h1>
   <p id="detail">Loading your booking…</p>
   <button id="venmo" hidden disabled>Continue with Venmo</button>
+  <div id="ppButtons" hidden></div>
+  <div id="ppCard" hidden></div>
+  <div id="cardFields" hidden>
+    <div id="cf-name"></div><div id="cf-number"></div><div id="cf-expiry"></div><div id="cf-cvv"></div>
+    <button id="cardSave" type="button" style="background:#14202b">Save card</button>
+  </div>
+  <button id="cash" type="button" hidden style="background:#fff;color:var(--text);border:1px solid var(--border);margin-top:10px">Pay cash at the visit</button>
   <div class="msg" id="msg"></div>
   <p style="font-size:13px;margin:16px 0 0">Booking terms: if your date or time becomes unavailable for any reason (weather, schedule changes), your visit moves to the next available date and time and we email you.</p>
 </div>
@@ -53,12 +60,15 @@ async function api(action, body = {}) {
 const money = (c) => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
 let INFO = null;
 function done(res) {
-  $('#venmo').hidden = true;
-  if (INFO && !INFO.recurring) {
+  ['#venmo', '#ppButtons', '#ppCard', '#cardFields', '#cash'].forEach((s) => { $(s).hidden = true; });
+  if (res.cash) {
+    $('#title').textContent = 'Paying cash';
+    $('#detail').textContent = `You're booked. Pay ${money(INFO.cents)} in cash at ${INFO.recurring ? 'each visit' : 'the visit'}. You can close this page.`;
+  } else if (INFO && !INFO.recurring) {
     $('#title').textContent = 'Paid';
-    $('#detail').textContent = `${money(res.charged ?? INFO.cents)} paid with Venmo${res.username ? ' (@' + res.username + ')' : ''}. You're all set. You can close this page.`;
+    $('#detail').textContent = `${money(res.charged ?? INFO.cents)} paid${res.username ? ' (' + res.username + ')' : ''}. You're all set. You can close this page.`;
   } else {
-    $('#title').textContent = 'Venmo linked';
+    $('#title').textContent = 'Payment saved';
     $('#detail').textContent = `Your first visit is charged when it's done, and each visit after that is charged automatically on its day. You can close this page.`;
   }
 }
@@ -71,14 +81,22 @@ function done(res) {
   INFO = info;
   const when = new Date(info.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   if (info.recurring) {
-    $('#title').textContent = 'Link your Venmo';
-    $('#detail').textContent = `${info.serviceName} starting ${when}. Your first visit is charged ${money(info.cents)} when it's done, and each visit after that is charged automatically on its day.`;
+    $('#title').textContent = 'How would you like to pay?';
+    $('#detail').textContent = `${info.serviceName} starting ${when}. With Venmo or a card, your first visit is charged ${money(info.cents)} when it's done, and each visit after that is charged automatically on its day. Or pay cash at each visit.`;
   } else {
-    $('#title').textContent = 'Pay with Venmo';
-    $('#detail').textContent = `${info.serviceName} on ${when}. ${money(info.cents)} is charged now to finish your booking.`;
+    $('#title').textContent = 'How would you like to pay?';
+    $('#detail').textContent = `${info.serviceName} on ${when}. Pay ${money(info.cents)} now with Venmo or a card, or pay cash at the visit.`;
   }
   if (info.linked && (info.recurring || info.paid)) return done({});
-  if (!info.ready) return msg('Venmo payments are not switched on yet. Your booking is in; you can pay at the visit.', 'err');
+  if (info.payMethod === 'cash') return done({ cash: true });
+  // Cash is always an option, and the booking stands either way.
+  $('#cash').hidden = false;
+  $('#cash').addEventListener('click', async () => {
+    $('#cash').disabled = true;
+    try { done(await api('pay-cash')); } catch (e) { $('#cash').disabled = false; msg(e.message, 'err'); }
+  });
+  if (!info.ready) return;
+  if (info.provider === 'paypal') return payWithPayPal(info);
 
   try {
     const { clientToken } = await api('client-token');
@@ -114,6 +132,85 @@ function done(res) {
     msg(e.message, 'err');
   }
 })();
+
+// PayPal's Venmo button. One-time visits pay now; regular plans save Venmo for each visit.
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('Could not load Venmo. Check your connection and try again.'));
+    document.head.appendChild(el);
+  });
+}
+
+async function payWithPayPal(info) {
+  if (info.recurring && !info.canSave) return msg('Saving Venmo or a card for regular plans is not switched on yet. Your booking is in; you can pay cash at each visit.', 'err');
+  try {
+    await loadScript(`https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(info.paypalClientId)}&components=buttons,card-fields&enable-funding=venmo&currency=USD&intent=capture`);
+  } catch (e) { return msg(e.message, 'err'); }
+  renderCard(info);
+  const opts = {
+    fundingSource: paypal.FUNDING.VENMO,
+    style: { color: 'blue', shape: 'rect', height: 48 },
+    onCancel: () => msg('Venmo was closed before paying. Tap the button to try again.', 'err'),
+    onError: (err) => msg((err && err.message) || 'Venmo could not finish. Please try again.', 'err'),
+  };
+  if (info.recurring) {
+    opts.createVaultSetupToken = async () => (await api('pp-setup-token')).setupToken;
+    opts.onApprove = async ({ vaultSetupToken }) => {
+      msg('Linking Venmo…');
+      try { const r = await api('pp-vault', { setupToken: vaultSetupToken }); msg(''); done(r); }
+      catch (e) { msg(e.message, 'err'); }
+    };
+  } else {
+    opts.createOrder = async () => (await api('pp-order')).orderId;
+    opts.onApprove = async ({ orderID }) => {
+      msg('Finishing your payment…');
+      try { const r = await api('pp-capture', { orderId: orderID }); msg(''); done(r); }
+      catch (e) { msg(e.message, 'err'); }
+    };
+  }
+  const buttons = paypal.Buttons(opts);
+  if (!buttons.isEligible()) return; // no Venmo here (e.g. a computer); card and cash still show
+  $('#ppButtons').hidden = false;
+  buttons.render('#ppButtons');
+}
+
+// Card: one-time visits pay now with PayPal's card button; plans save the card in PayPal's vault.
+function renderCard(info) {
+  if (!info.recurring) {
+    const card = paypal.Buttons({
+      fundingSource: paypal.FUNDING.CARD,
+      style: { shape: 'rect', height: 48 },
+      createOrder: async () => (await api('pp-order')).orderId,
+      onApprove: async ({ orderID }) => {
+        msg('Finishing your payment…');
+        try { const r = await api('pp-capture', { orderId: orderID }); msg(''); done(r); }
+        catch (e) { msg(e.message, 'err'); }
+      },
+      onError: (err) => msg((err && err.message) || 'The card could not be charged. Please try again.', 'err'),
+    });
+    if (!card.isEligible()) return;
+    $('#ppCard').hidden = false;
+    card.render('#ppCard');
+    return;
+  }
+  const fields = paypal.CardFields({
+    createVaultSetupToken: async () => (await api('pp-setup-token', { method: 'card' })).setupToken,
+    onApprove: async ({ vaultSetupToken }) => {
+      msg('Saving your card…');
+      try { const r = await api('pp-vault', { setupToken: vaultSetupToken }); msg(''); done(r); }
+      catch (e) { msg(e.message, 'err'); }
+    },
+    onError: (err) => msg((err && err.message) || 'The card could not be saved. Check the details and try again.', 'err'),
+  });
+  if (!fields.isEligible()) return;
+  fields.NameField().render('#cf-name');
+  fields.NumberField().render('#cf-number');
+  fields.ExpiryField().render('#cf-expiry');
+  fields.CVVField().render('#cf-cvv');
+  $('#cardFields').hidden = false;
+  $('#cardSave').addEventListener('click', () => { msg(''); fields.submit().catch(() => {}); });
+}
 </script>
 </body>
 </html>
