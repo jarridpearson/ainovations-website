@@ -504,6 +504,15 @@ async function load() {
   $('#schedWarn').hidden = !missing;
 }
 
+// The Bookings list refreshes like the calendar, but never while she is typing in it.
+async function refreshBookings() {
+  const pane = document.querySelector('[data-pane="bookings"]');
+  if (pane && pane.contains(document.activeElement) && document.activeElement.matches('input, textarea, select')) return;
+  const data = await api('bookings');
+  state.bookings = data.bookings;
+  renderBookings();
+}
+
 async function boot() {
   try {
     const me = await api('me');
@@ -546,6 +555,8 @@ $('#logout').addEventListener('click', async () => { await api('logout').catch((
 document.querySelectorAll('[data-tab]').forEach((t) => t.addEventListener('click', () => {
   document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === t));
   document.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== t.dataset.tab; });
+  if (t.dataset.tab === 'bookings') refreshBookings().catch(() => {});
+  if (t.dataset.tab === 'calendar') loadCalendar().catch(() => {});
 }));
 
 $('#bAllDay').addEventListener('change', (e) => { $('#bTimes').hidden = e.target.checked; });
@@ -735,7 +746,11 @@ $('#dayList').addEventListener('click', async (e) => {
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; e.target.disabled = false; }
 });
 // Real time: her calendar refreshes itself every 30 seconds while the page is open.
-setInterval(() => { if (!$('#app').hidden && !document.hidden) loadCalendar().catch(() => {}); }, 30000);
+setInterval(() => {
+  if ($('#app').hidden || document.hidden) return;
+  loadCalendar().catch(() => {});
+  if (!document.querySelector('[data-pane="bookings"]').hidden) refreshBookings().catch(() => {});
+}, 30000);
 
 boot();
 </script>
