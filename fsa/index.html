@@ -152,6 +152,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
         </div>
       </div>
       <div class="card"><h2 id="dayTitle">Day</h2><div id="dayList"></div></div>
+      <div class="card"><h2>Google Calendar</h2><div class="card-body" id="gcalBody"></div></div>
     </div>
 
     <div data-pane="bookings" hidden>
@@ -501,7 +502,45 @@ function renderDay() {
     </div>`).join('') : '<div class="empty">No visits this day.</div>';
 }
 
+// --- Google Calendar --------------------------------------------------------------
+const GCAL_MSG = {
+  connected: ['good', 'Google Calendar is connected. Your visits are now in the PooPawtrol calendar in Google Calendar.'],
+  cancelled: ['err', 'Google Calendar was not connected. Tap Connect Google Calendar to try again.'],
+  noaccess: ['err', 'Google Calendar was not connected: the calendar box was not ticked on the Google screen. Tap Connect Google Calendar and leave every box ticked.'],
+  expired: ['err', 'That took too long. Tap Connect Google Calendar again.'],
+  failed: ['err', 'Google Calendar could not be connected. Tap Connect Google Calendar to try again.'],
+};
+function renderGcal(st, note) {
+  const el = $('#gcalBody');
+  const msg = note ? `<div class="msg ${note[0]}">${esc(note[1])}</div>` : '';
+  if (!st.configured) { el.innerHTML = '<div class="meta">Google Calendar is not set up yet.</div>'; return; }
+  if (st.connected) {
+    el.innerHTML = `${msg}<div class="meta">Connected${st.email ? ' to <b>' + esc(st.email) + '</b>' : ''}. Every visit on this page is copied to the <b>PooPawtrol</b> calendar in your Google Calendar, and any booking, move or cancel shows up there within seconds.</div>
+      ${st.lastSync ? `<div class="meta" style="font-size:12px">Last copied ${new Date(st.lastSync).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>` : ''}
+      ${st.error ? `<div class="msg err">${esc(st.error)}</div>` : ''}
+      <div class="actions"><button class="btn sm danger" id="gcalOff">Disconnect Google Calendar</button></div>`;
+    $('#gcalOff').addEventListener('click', async (e) => {
+      if (!confirm('Disconnect Google Calendar? The PooPawtrol calendar will be removed from your Google Calendar. Your visits stay here.')) return;
+      e.target.disabled = true;
+      try { renderGcal(await api('gcal-disconnect'), ['good', 'Google Calendar is disconnected.']); } catch (err) { e.target.disabled = false; alert(err.message); }
+    });
+    return;
+  }
+  el.innerHTML = `${msg}${st.error ? `<div class="msg err">${esc(st.error)}</div>` : ''}<div class="meta">Connect once and every visit on this page is copied to your Google Calendar and kept up to date by itself.</div>
+    <div class="actions"><button class="btn sm primary" id="gcalOn">Connect Google Calendar</button></div>`;
+  $('#gcalOn').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    try { location.href = (await api('gcal-connect')).url; } catch (err) { e.target.disabled = false; alert(err.message); }
+  });
+}
+async function loadGcal() {
+  const q = new URLSearchParams(location.search).get('gcal');
+  if (q) history.replaceState(null, '', location.pathname);
+  renderGcal(await api('gcal-status'), GCAL_MSG[q]);
+}
+
 async function load() {
+  loadGcal().catch(() => {});
   const data = await api('bookings');
   state = data;
   renderBookings();

@@ -917,9 +917,245 @@ async function eveningDigest() {
   return { visits: entries.length };
 }
 
-// --- handler ----------------------------------------------------------------// --- handler ----------------------------------------------------------------
+// --- Google Calendar ------------------------------------------------------------
+// She connects her Google account once from her page. From then on every visit on
+// her calendar is mirrored into a "PooPawtrol" calendar in her Google Calendar, and
+// every change here (booking, move, cancel, paid, done) is pushed within seconds,
+// until she disconnects. Her page is the source; the Google calendar is the copy.
+
+const GCAL = {
+  clientId: process.env.GCAL_CLIENT_ID || '',
+  secret: process.env.GCAL_CLIENT_SECRET || '',
+  redirect: `${SITE}/api/fsa`,
+  scope: 'openid email https://www.googleapis.com/auth/calendar.app.created',
+};
+const money = (c) => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
+const GCAL_PAST_DAYS = 7;
+const GCAL_AHEAD_DAYS = 120;
+const gcalGet = async () => store().get('gcal/state', { type: 'json' });
+const gcalSave = (s) => store().setJSON('gcal/state', s);
+
+class GcalGone extends Error {}
+
+async function gcalToken(st) {
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: GCAL.clientId, client_secret: GCAL.secret, refresh_token: st.refreshToken, grant_type: 'refresh_token' }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (data.error === 'invalid_grant') throw new GcalGone('Google says the connection was removed. Connect again.');
+  if (!res.ok) throw new Error(`Google token ${res.status}: ${data.error_description || data.error || ''}`);
+  return data.access_token;
+}
+
+async function gapi(token, method, path, body) {
+  const res = await fetch(`https://www.googleapis.com/calendar/v3${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, ...(body ? { 'content-type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
+  return { status: res.status, data };
+}
+
+/** Google event ids allow 0-9 and a-v; a hex hash of the visit keeps each visit one event forever. */
+const gcalEventId = (bookingId, origDate) => 'pp' + crypto.createHash('sha256').update(`${bookingId}|${origDate}`).digest('hex').slice(0, 40);
+
+function addMinutes(date, time, min) {
+  const [h, m] = time.split(':').map(Number);
+  const total = h * 60 + m + min;
+  const day = addDaysStr(date, Math.floor(total / 1440));
+  const t = total % 1440;
+  return `${day}T${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}:00`;
+}
+
+async function gcalDesired() {
+  const bookings = await allBookings();
+  const byId = new Map(bookings.map((b) => [b.id, b]));
+  const moves = await getMoves();
+  const settings = await getSettings();
+  const today = todayLocal();
+  const out = new Map();
+  for (let i = -GCAL_PAST_DAYS; i <= GCAL_AHEAD_DAYS; i++) {
+    const date = addDaysStr(today, i);
+    for (const e of await dayEntries(bookings, date, moves)) {
+      const b = byId.get(e.bookingId);
+      const len = b?.durationMin ?? (settings.durations?.[b?.serviceId] != null ? jobLength(settings, b.serviceId, b.dogs) : 30);
+      const tags = [e.status === 'on-hold' ? 'ON HOLD' : '', e.visitStatus === 'completed' ? 'done' : '', e.paid ? 'paid' : 'unpaid'].filter(Boolean);
+      const ev = {
+        summary: `${e.name} · ${e.serviceName}`,
+        location: e.address,
+        description: [
+          `Phone: ${e.phone}`,
+          e.email ? `Email: ${e.email}` : '',
+          `${e.dogs} dog${e.dogs === 1 ? '' : 's'} · ${money(e.cents)} · ${tags.join(', ')}`,
+          e.recurring ? 'Regular plan' : '',
+          e.moved ? 'Moved from its usual day' : '',
+          e.notes ? `Notes: ${e.notes}` : '',
+          '',
+          `Open your page: ${SITE}/fsa/`,
+        ].filter((l, idx, a) => l || (idx > 0 && a[idx - 1])).join('\n'),
+        start: { dateTime: `${date}T${e.time}:00`, timeZone: TZ },
+        end: { dateTime: addMinutes(date, e.time, len), timeZone: TZ },
+        status: 'confirmed',
+      };
+      const h = crypto.createHash('sha256').update(JSON.stringify(ev)).digest('hex').slice(0, 32);
+      ev.extendedProperties = { private: { h } };
+      out.set(gcalEventId(e.bookingId, e.origDate), ev);
+    }
+  }
+  return out;
+}
+
+async function gcalEnsureCalendar(token, st) {
+  if (st.calendarId) return st.calendarId;
+  const r = await gapi(token, 'POST', '/calendars', { summary: 'PooPawtrol', description: `Visits from your PooPawtrol page (${SITE}/fsa/). Change them there.`, timeZone: TZ });
+  if (r.status !== 200) throw new Error(`Google calendar create ${r.status}: ${r.data?.error?.message || ''}`);
+  st.calendarId = r.data.id;
+  await gcalSave(st);
+  return st.calendarId;
+}
+
+/** Run up to `n` Google calls at a time. */
+async function inBatches(items, n, fn) {
+  for (let i = 0; i < items.length; i += n) await Promise.all(items.slice(i, i + n).map(fn));
+}
+
+async function gcalSyncOnce(st) {
+  const token = await gcalToken(st);
+  let cal = await gcalEnsureCalendar(token, st);
+  const today = todayLocal();
+  const timeMin = new Date(`${addDaysStr(today, -GCAL_PAST_DAYS - 1)}T00:00:00Z`).toISOString();
+  const timeMax = new Date(`${addDaysStr(today, GCAL_AHEAD_DAYS + 2)}T00:00:00Z`).toISOString();
+
+  const existing = new Map();
+  let pageToken = '';
+  for (;;) {
+    const q = new URLSearchParams({ timeMin, timeMax, singleEvents: 'true', maxResults: '2500', ...(pageToken ? { pageToken } : {}) });
+    const r = await gapi(token, 'GET', `/calendars/${encodeURIComponent(cal)}/events?${q}`);
+    if (r.status === 404) { // she deleted the PooPawtrol calendar in Google: make a fresh one
+      st.calendarId = '';
+      cal = await gcalEnsureCalendar(token, st);
+      existing.clear();
+      break;
+    }
+    if (r.status !== 200) throw new Error(`Google list ${r.status}: ${r.data?.error?.message || ''}`);
+    for (const ev of r.data.items || []) existing.set(ev.id, ev.extendedProperties?.private?.h || '');
+    if (!r.data.nextPageToken) break;
+    pageToken = r.data.nextPageToken;
+  }
+
+  const want = await gcalDesired();
+  const base = `/calendars/${encodeURIComponent(cal)}/events`;
+  const writes = [...want].filter(([id, ev]) => existing.get(id) !== ev.extendedProperties.private.h);
+  const removes = [...existing.keys()].filter((id) => !want.has(id));
+  let failed = 0;
+  await inBatches(writes, 6, async ([id, ev]) => {
+    let r = existing.has(id) ? await gapi(token, 'PUT', `${base}/${id}`, ev) : await gapi(token, 'POST', base, { id, ...ev });
+    if (r.status === 409) r = await gapi(token, 'PUT', `${base}/${id}`, ev); // a deleted copy still holds the id
+    if (r.status === 404) r = await gapi(token, 'POST', base, { id, ...ev });
+    if (r.status >= 300) { failed++; console.error('gcal write', id, r.status, r.data?.error?.message); }
+  });
+  await inBatches(removes, 6, async (id) => {
+    const r = await gapi(token, 'DELETE', `${base}/${id}`);
+    if (r.status >= 300 && r.status !== 404 && r.status !== 410) { failed++; console.error('gcal delete', id, r.status); }
+  });
+  return { written: writes.length, removed: removes.length, failed };
+}
+
+/** Mirror her calendar into Google. Overlapping calls fold into one run that repeats until nothing is left. */
+async function gcalSync() {
+  const st = await gcalGet();
+  if (!st?.refreshToken || !GCAL.clientId) return null;
+  const lock = await store().get('gcal/lock', { type: 'json' });
+  if (lock && lock.until > Date.now()) { await store().setJSON('gcal/dirty', { at: Date.now() }); return { queued: true }; }
+  await store().setJSON('gcal/lock', { until: Date.now() + 55000 });
+  let result = null;
+  try {
+    for (let i = 0; i < 3; i++) {
+      await store().delete('gcal/dirty');
+      result = await gcalSyncOnce(st);
+      if (!(await store().get('gcal/dirty'))) break;
+    }
+    st.lastSync = new Date().toISOString();
+    st.error = result.failed ? `${result.failed} visit${result.failed === 1 ? '' : 's'} did not copy on the last sync.` : '';
+    await gcalSave(st);
+  } catch (e) {
+    console.error('gcal sync failed', e.message);
+    st.error = e instanceof GcalGone ? e.message : 'The last sync to Google did not finish. It will try again on the next change.';
+    if (e instanceof GcalGone) st.refreshToken = '';
+    await gcalSave(st);
+  } finally {
+    await store().delete('gcal/lock');
+  }
+  return result;
+}
+
+const gcalPublic = (st) => ({
+  configured: !!(GCAL.clientId && GCAL.secret),
+  connected: !!st?.refreshToken,
+  email: st?.email || '',
+  lastSync: st?.lastSync || '',
+  error: st?.error || '',
+});
+
+/** Google sends her back here (GET /api/fsa?code=...&state=...) after she allows access. */
+async function gcalCallback(url) {
+  const back = (q) => Response.redirect(`${SITE}/fsa/?gcal=${q}`, 302);
+  const state = verify(url.searchParams.get('state'));
+  if (!state?.gcal) return back('expired');
+  if (url.searchParams.get('error') || !url.searchParams.get('code')) return back('cancelled');
+  if (!String(url.searchParams.get('scope') || '').includes('calendar.app.created')) return back('noaccess');
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ code: url.searchParams.get('code'), client_id: GCAL.clientId, client_secret: GCAL.secret, redirect_uri: GCAL.redirect, grant_type: 'authorization_code' }),
+  });
+  const tok = await res.json().catch(() => ({}));
+  if (!res.ok || !tok.refresh_token) {
+    console.error('gcal code exchange failed', res.status, tok.error, tok.error_description);
+    return back('failed');
+  }
+  let email = '';
+  try { email = JSON.parse(Buffer.from(String(tok.id_token).split('.')[1], 'base64url').toString()).email || ''; } catch { /* email is only a label */ }
+  const old = await gcalGet();
+  // Same Google account: keep writing into the calendar it already has.
+  await gcalSave({ refreshToken: tok.refresh_token, email, calendarId: old?.email === email ? old.calendarId || '' : '', connectedAt: new Date().toISOString() });
+  await store().delete('gcal/lock');
+  await gcalSync();
+  return back('connected');
+}
+
+// Owner actions that only read or only touch the Google link itself; every other
+// successful action may have changed her calendar, so it triggers a sync.
+const NO_GCAL_SYNC = new Set(['availability', 'slots', 'check-address', 'my-bookings', 'pay-info', 'client-token', 'pp-order', 'pp-setup-token',
+  'push-register', 'login', 'logout', 'me', 'change-password', 'bookings', 'calendar', 'push-send', 'notify-customer',
+  'gcal-status', 'gcal-connect', 'gcal-disconnect']);
+
+// --- handler ----------------------------------------------------------------
 
 export default async (req, context) => {
+  if (req.method === 'GET') {
+    const url = new URL(req.url);
+    if (url.searchParams.has('state') && GCAL.clientId) {
+      try { return await gcalCallback(url); } catch (e) {
+        console.error('gcal callback failed', e);
+        return Response.redirect(`${SITE}/fsa/?gcal=failed`, 302);
+      }
+    }
+    return fail(405, 'method not allowed');
+  }
+  const action = await req.clone().json().then((j) => j?.action).catch(() => null);
+  const res = await handle(req, context);
+  if (res.status === 200 && action && !NO_GCAL_SYNC.has(action)) {
+    const run = gcalSync().catch((e) => console.error('gcal sync', e.message));
+    if (context?.waitUntil) context.waitUntil(run); else await run;
+  }
+  return res;
+};
+
+async function handle(req, context) {
   if (req.method !== 'POST') return fail(405, 'method not allowed');
   let input;
   try {
@@ -1579,9 +1815,36 @@ export default async (req, context) => {
       return ok({ booking: ownerView(b) });
     }
 
+    if (action === 'gcal-status') return ok(gcalPublic(await gcalGet()));
+
+    if (action === 'gcal-connect') {
+      if (!GCAL.clientId || !GCAL.secret) return fail(503, 'Google Calendar is not set up yet.');
+      const q = new URLSearchParams({
+        client_id: GCAL.clientId, redirect_uri: GCAL.redirect, response_type: 'code', scope: GCAL.scope,
+        access_type: 'offline', prompt: 'consent', state: sign({ gcal: 1, exp: Date.now() + 15 * 60000 }),
+      });
+      return ok({ url: `https://accounts.google.com/o/oauth2/v2/auth?${q}` });
+    }
+
+    if (action === 'gcal-disconnect') {
+      const st = await gcalGet();
+      if (st?.refreshToken) {
+        // Remove the PooPawtrol calendar from her Google account, then let go of the access.
+        try {
+          const token = await gcalToken(st);
+          if (st.calendarId) await gapi(token, 'DELETE', `/calendars/${encodeURIComponent(st.calendarId)}`);
+        } catch (e) { console.error('gcal disconnect cleanup', e.message); }
+        await fetch('https://oauth2.googleapis.com/revoke', {
+          method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: st.refreshToken }),
+        }).catch(() => {});
+      }
+      await store().delete('gcal/state');
+      return ok(gcalPublic(null));
+    }
+
     return fail(400, 'unknown action');
   } catch (e) {
     console.error('fsa error', action, e);
     return fail(500, 'Something went wrong. Please try again.');
   }
-};
+}
