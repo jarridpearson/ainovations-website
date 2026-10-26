@@ -85,6 +85,12 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .cal-day.sel .c{color:#fff}
 .pill.on-hold{color:var(--red)}
 .moveform{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ph{display:inline}
+.ph summary{display:inline;cursor:pointer;color:var(--teal-soft);text-decoration:underline;list-style:none}
+.ph summary::-webkit-details-marker{display:none}
+.ph[open] .ph-menu{display:flex}
+.ph-menu{display:none;gap:8px;margin:6px 0}
+.day-head{font-weight:700;margin:10px 16px 4px;color:var(--text)}
 .moveform input{width:auto;flex:1 1 130px}
 </style>
 </head>
@@ -140,6 +146,14 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 
     <div data-pane="calendar">
       <div class="card">
+        <h2><span>Schedule</span><span class="spacer"></span>
+          <button class="btn sm" id="dayPrev" aria-label="Previous day">‹</button>
+          <button class="btn sm" id="dayToday">Today</button>
+          <button class="btn sm" id="dayNext" aria-label="Next day">›</button>
+        </h2>
+        <div id="dayList"></div>
+      </div>
+      <div class="card">
         <h2><span id="calTitle">Calendar</span><span class="spacer"></span>
           <button class="btn sm" id="calPrev" aria-label="Previous month">‹</button>
           <button class="btn sm" id="calToday">Today</button>
@@ -151,7 +165,6 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
           <div class="meta" id="calUpdated" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
         </div>
       </div>
-      <div class="card"><h2 id="dayTitle">Day</h2><div id="dayList"></div></div>
       <div class="card"><h2>Google Calendar</h2><div class="card-body" id="gcalBody"></div></div>
     </div>
 
@@ -354,6 +367,14 @@ function renderSchedule() {
     </div>`).join('');
 }
 
+// Tap a phone number to choose Call or Text; tap an email address to write to them.
+function phoneLink(phone) {
+  const digits = String(phone || '').replace(/[^0-9+]/g, '');
+  if (!digits) return esc(phone);
+  return `<details class="ph"><summary>${esc(phone)}</summary><span class="ph-menu"><a class="btn sm" href="tel:${digits}">Call</a><a class="btn sm" href="sms:${digits}">Text</a></span></details>`;
+}
+const emailLink = (email) => (email ? `<a href="mailto:${encodeURIComponent(email)}" style="color:var(--teal-soft)">${esc(email)}</a>` : '');
+
 // One tap to text or email a customer from her own phone, with the visit filled in.
 function contactLinks(name, phone, email, date, time) {
   const first = String(name || '').split(' ')[0];
@@ -380,7 +401,7 @@ function renderBookings() {
         ${b.payMethod === 'cash' ? '<span class="pill">pays cash</span>' : ''}
       </div>
       <div class="meta">${esc(b.serviceName)} · ${b.dogs} dog${b.dogs === 1 ? '' : 's'} · list ${money(b.listCents)}</div>
-      <div class="meta"><a href="tel:${esc(b.phone)}" style="color:var(--teal-soft)">${esc(b.phone)}</a>${b.email ? ' · ' + esc(b.email) : ''}</div>
+      <div class="meta">${phoneLink(b.phone)}${b.email ? ' · ' + emailLink(b.email) : ''}</div>
       <div class="meta">${esc(b.address)}</div>
       ${b.notes ? `<div class="meta">Notes: ${esc(b.notes)}</div>` : ''}
       ${b.second ? `<div class="meta">Second weekly day: ${fmtDate(b.second.date)} · ${fmtTime(b.second.time)}</div>` : ''}
@@ -451,7 +472,8 @@ async function loadCalendar() {
   if (!cal.month) cal.month = today.slice(0, 7);
   if (!cal.sel) cal.sel = today;
   const { start, end } = monthRange(cal.month);
-  const r = await api('calendar', { from: ymd(start), to: ymd(end) });
+  const next = addDay(cal.sel, 1);
+  const r = await api('calendar', { from: ymd(start), to: ymd(end) < next ? next : ymd(end) });
   cal.days = r.days;
   renderCalendar(r.today);
 }
@@ -470,10 +492,14 @@ function renderCalendar(today) {
   $('#calUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + ' · refreshes every 30 seconds';
   renderDay();
 }
+const addDay = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return ymd(x); };
 function renderDay() {
-  const list = cal.days[cal.sel] || [];
-  $('#dayTitle').textContent = fmtDate(cal.sel);
-  $('#dayList').innerHTML = list.length ? list.map((e) => `
+  const today = state.today || ymd(new Date());
+  const label = (d) => (d === today ? 'Today · ' : d === addDay(today, 1) ? 'Tomorrow · ' : '') + fmtDate(d);
+  $('#dayList').innerHTML = [cal.sel, addDay(cal.sel, 1)].map((d) => `<div class="day-head">${label(d)}</div>${dayItems(cal.days[d] || [])}`).join('');
+}
+function dayItems(list) {
+  return list.length ? list.map((e) => `
     <div class="item" data-id="${e.bookingId}" data-orig="${e.origDate}">
       <div class="top">
         <span class="when">${fmtTime(e.time)}</span>
@@ -486,7 +512,7 @@ function renderDay() {
       </div>
       <div class="meta">${esc(e.serviceName)} · ${e.dogs} dog${e.dogs === 1 ? '' : 's'} · ${money(e.cents)}</div>
       <div class="meta"><a href="https://maps.google.com/?q=${encodeURIComponent(e.address)}" target="_blank" rel="noopener" style="color:var(--teal-soft)">${esc(e.address)}</a></div>
-      <div class="meta"><a href="tel:${esc(e.phone)}" style="color:var(--teal-soft)">${esc(e.phone)}</a></div>
+      <div class="meta">${phoneLink(e.phone)}${e.email ? ' · ' + emailLink(e.email) : ''}</div>
       ${e.notes ? `<div class="meta">Notes: ${esc(e.notes)}</div>` : ''}
       <div class="actions">
         ${e.visitStatus !== 'completed' ? '<button class="btn sm primary" data-cal="done">Mark complete</button>' : ''}
@@ -762,7 +788,7 @@ $('#calGrid').addEventListener('click', (e) => {
   const b = e.target.closest('[data-day]');
   if (!b) return;
   cal.sel = b.dataset.day;
-  renderCalendar(state.today);
+  loadCalendar();
 });
 const shiftMonth = (n) => {
   const d = new Date(cal.month + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n);
@@ -771,6 +797,10 @@ const shiftMonth = (n) => {
 $('#calPrev').addEventListener('click', () => shiftMonth(-1));
 $('#calNext').addEventListener('click', () => shiftMonth(1));
 $('#calToday').addEventListener('click', () => { cal.month = state.today.slice(0, 7); cal.sel = state.today; loadCalendar(); });
+const shiftDay = (n) => { cal.sel = addDay(cal.sel, n); cal.month = cal.sel.slice(0, 7); loadCalendar(); };
+$('#dayPrev').addEventListener('click', () => shiftDay(-1));
+$('#dayNext').addEventListener('click', () => shiftDay(1));
+$('#dayToday').addEventListener('click', () => { cal.sel = state.today; cal.month = state.today.slice(0, 7); loadCalendar(); });
 $('#dayList').addEventListener('click', async (e) => {
   const act = e.target.dataset.cal;
   if (!act) return;
@@ -800,7 +830,7 @@ $('#dayList').addEventListener('click', async (e) => {
 });
 // Real time: her calendar refreshes itself every 30 seconds while the page is open.
 setInterval(() => {
-  if ($('#app').hidden || document.hidden) return;
+  if ($('#app').hidden || document.hidden || document.querySelector('.ph[open]')) return;
   loadCalendar().catch(() => {});
   if (!document.querySelector('[data-pane="bookings"]').hidden) refreshBookings().catch(() => {});
 }, 30000);

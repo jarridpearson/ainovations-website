@@ -930,7 +930,7 @@ const GCAL = {
   scope: 'openid email https://www.googleapis.com/auth/calendar.app.created',
 };
 const money = (c) => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
-const GCAL_PAST_DAYS = 7;
+const GCAL_PAST_DAYS = 60;
 const GCAL_AHEAD_DAYS = 120;
 const gcalGet = async () => store().get('gcal/state', { type: 'json' });
 const gcalSave = (s) => store().setJSON('gcal/state', s);
