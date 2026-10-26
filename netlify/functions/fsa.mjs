@@ -33,7 +33,10 @@ const ADMIN_PASS_HASH = process.env.FSA_ADMIN_PASS_HASH || ''; // scrypt$<salt h
 const SESSION_SECRET = process.env.FSA_SESSION_SECRET || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const BOOKING_TO = process.env.FSA_BOOKING_TO || '';
-const BOOKING_FROM = process.env.FSA_BOOKING_FROM || 'Booking Request <leads@ainovations.net>';
+const BOOKING_FROM = process.env.FSA_BOOKING_FROM || '';
+// Her emails never go out from an AInovations address. With no sender of her own set,
+// nothing is emailed at all.
+const EMAIL_ON = !!BOOKING_FROM && !/ainovations/i.test(BOOKING_FROM);
 const SITE = process.env.URL || 'https://ainovations.net';
 const TZ = 'America/New_York';
 
@@ -451,6 +454,7 @@ async function overLimit(bucket, ip, max, windowMinutes) {
 // --- email ------------------------------------------------------------------
 
 async function emailBooking(b) {
+  if (!EMAIL_ON) { console.log('booking email off: no PooPawtrol sender set'); return false; }
   if (!RESEND_API_KEY || !BOOKING_TO) {
     console.error('booking email skipped: RESEND_API_KEY or FSA_BOOKING_TO not set');
     return false;
@@ -740,6 +744,7 @@ async function chargeVisit(b, cents, visitDate, reason) {
 const visitPaid = (b, date) => b.payments.some((p) => p.visitDate === date && p.status !== 'FAILED');
 
 async function emailOwner(subject, lines) {
+  if (!EMAIL_ON) { console.log('owner email off: no PooPawtrol sender set'); return false; }
   if (!RESEND_API_KEY || !BOOKING_TO) {
     console.error('owner email skipped: RESEND_API_KEY or FSA_BOOKING_TO not set');
     return false;
@@ -777,6 +782,7 @@ async function dayEntries(bookings, date, moves) {
 }
 
 async function emailCustomer(b, subject, lines) {
+  if (!EMAIL_ON) { console.log('customer email off: no PooPawtrol sender set'); return false; }
   if (!RESEND_API_KEY || !b.email) {
     console.error('customer email skipped: no RESEND_API_KEY or customer email', b.id);
     return false;
