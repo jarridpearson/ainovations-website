@@ -108,7 +108,7 @@ img{max-width:100%;display:block}
 h1{margin:0 0 16px;font-size:clamp(32px,4.8vw,54px);line-height:1.06;letter-spacing:-.6px}
 h1 .accent{color:var(--pink-soft)}
 .lede{max-width:760px;margin:0 0 26px;color:var(--muted);font-size:clamp(16px,2vw,19px);line-height:1.6}
-.hero-art img{border-radius:22px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.hero-art img{display:block;width:100%;max-width:402px;height:auto;margin:0 auto;border-radius:22px;border:1px solid var(--border);box-shadow:var(--shadow)}
 
 .stores{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
 .store-chip{display:inline-flex;align-items:center;gap:11px;padding:13px 20px;border-radius:14px;border:1px dashed rgba(255,79,163,.42);background:rgba(239,0,117,.08);color:#ffd9ea;font-weight:800;font-size:15px;cursor:default}
@@ -133,15 +133,25 @@ h1 .accent{color:var(--pink-soft)}
 @media(max-width:900px){.shots{grid-template-columns:1fr 1fr}}
 @media(max-width:480px){.shots{grid-template-columns:1fr;max-width:300px;margin:0 auto}}
 .shot figure{margin:0}
-.shot img{border-radius:18px;border:1px solid var(--border);background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.45);width:100%;height:auto}
+.shot img{display:block;width:100%;max-width:402px;height:auto;margin:0 auto;border-radius:18px;border:1px solid var(--border);background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .shot figcaption{margin-top:11px;color:var(--muted);font-size:13.5px;line-height:1.5;text-align:center}
 
-.portal{display:grid;gap:18px;grid-template-columns:repeat(3,1fr);margin-top:24px}
-@media(max-width:900px){.portal{grid-template-columns:1fr;max-width:340px;margin-left:auto;margin-right:auto}}
-.portal figure{margin:0}
-.portal img{border-radius:18px;border:1px solid var(--border);background:#0b0f14;box-shadow:0 18px 50px rgba(0,0,0,.5);width:100%;height:auto}
-.portal figcaption{margin-top:11px;color:var(--muted);font-size:13.5px;line-height:1.55}
-.portal figcaption b{color:#fff;display:block;margin-bottom:3px;font-size:14.5px}
+.portal{display:grid;gap:30px;margin-top:24px;grid-template-columns:minmax(0,1fr)}
+.portal figure{margin:0;min-width:0}
+/* The portal runs in a desktop browser, so it is shown at browser width inside a
+   window frame. The frame scrolls rather than cropping: nothing is cut off, and
+   the page does not become three thousand pixels of screenshot. */
+.browser{min-width:0;max-width:100%;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0b0f14;box-shadow:0 22px 60px rgba(0,0,0,.55)}
+.browser .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#15151b;border-bottom:1px solid var(--border)}
+.browser .bar i{width:11px;height:11px;border-radius:50%;background:#3a3a44;flex:none}
+.browser .bar span{margin-left:8px;color:#8f8f9d;font-size:12px;font-weight:700;letter-spacing:.02em}
+.browser .pane{max-height:640px;overflow:auto;-webkit-overflow-scrolling:touch}
+.browser .pane img{display:block;width:100%;max-width:1280px;height:auto;margin:0 auto}
+/* On a phone, shrinking a desktop screenshot to 340px makes it unreadable.
+   Hold it at a legible width and let the frame scroll sideways instead. */
+@media(max-width:980px){.browser .pane img{min-width:900px}}
+.portal figcaption{margin-top:13px;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:900px}
+.portal figcaption b{color:#fff;display:block;margin-bottom:4px;font-size:15.5px}
 .demo-tag{display:inline-flex;align-items:center;gap:8px;margin:0 0 4px;padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.05);color:#d8d8e2;font-size:12.5px;font-weight:800}
 .built{margin-top:26px;border:1px solid var(--border);border-radius:20px;background:var(--panel);overflow:hidden}
 .built h3{margin:0;padding:18px 24px;font-size:15px;letter-spacing:.07em;text-transform:uppercase;color:var(--pink-soft);border-bottom:1px solid var(--border);background:rgba(255,255,255,.03)}
@@ -205,7 +215,7 @@ footer a:hover{text-decoration:underline}
           <p class="hero-note">The app is built and in review with Apple and Google. This page goes live with download links the day it is approved.</p>
         </div>
         <div class="hero-art">
-          <img src="/poopawtrol-assets/shots/2-home.png" alt="The PooPawtrol app home screen listing the services and prices a customer can book" width="506" height="1100" fetchpriority="high" />
+          <img src="/poopawtrol-assets/shots/2-home.png" alt="The PooPawtrol app home screen listing the services and prices a customer can book" width="1206" height="2622" fetchpriority="high" />
         </div>
       </div>
     </section>
@@ -254,19 +264,19 @@ footer a:hover{text-decoration:underline}
       <p class="section-intro">Built for iPhone and Android as a real native app — not a web page in a wrapper. It follows your phone's light or dark theme automatically.</p>
       <div class="shots">
         <div class="shot"><figure>
-          <img src="/poopawtrol-assets/shots/1-welcome.png" alt="The PooPawtrol welcome screen, where a customer enters their name, email, phone and service address" width="506" height="1100" loading="lazy" />
+          <img src="/poopawtrol-assets/shots/1-welcome.png" alt="The PooPawtrol welcome screen, where a customer enters their name, email, phone and service address" width="1206" height="2622" loading="lazy" />
           <figcaption>Set the profile up once — name, contact and service address.</figcaption>
         </figure></div>
         <div class="shot"><figure>
-          <img src="/poopawtrol-assets/shots/2-home.png" alt="The PooPawtrol services and prices screen" width="506" height="1100" loading="lazy" />
+          <img src="/poopawtrol-assets/shots/2-home.png" alt="The PooPawtrol services and prices screen" width="1206" height="2622" loading="lazy" />
           <figcaption>Every service and price in one list, with the owner's own notes underneath.</figcaption>
         </figure></div>
         <div class="shot"><figure>
-          <img src="/poopawtrol-assets/shots/3-booking.png" alt="Choosing a service, day and time in the PooPawtrol app" width="506" height="1100" loading="lazy" />
+          <img src="/poopawtrol-assets/shots/3-booking.png" alt="Choosing a service, day and time in the PooPawtrol app" width="1206" height="2622" loading="lazy" />
           <figcaption>Pick a service, then a day and a time that is genuinely open.</figcaption>
         </figure></div>
         <div class="shot"><figure>
-          <img src="/poopawtrol-assets/shots/4-dark.png" alt="The PooPawtrol app in dark mode" width="506" height="1100" loading="lazy" />
+          <img src="/poopawtrol-assets/shots/4-dark.png" alt="The PooPawtrol app in dark mode" width="1206" height="2622" loading="lazy" />
           <figcaption>Dark mode, automatically, when the phone asks for it.</figcaption>
         </figure></div>
       </div>
@@ -289,15 +299,31 @@ footer a:hover{text-decoration:underline}
       <p class="demo-tag">🔒 Shown with demo customers — no real customer data appears on this page</p>
       <div class="portal">
         <figure>
-          <img src="/poopawtrol-assets/portal/portal-schedule.png" alt="The PooPawtrol back office schedule, showing today's and tomorrow's visits with actions on each one" width="560" height="1953" loading="lazy" />
+          <div class="browser">
+            <div class="bar"><i></i><i></i><i></i><span>Owner portal — today and tomorrow</span></div>
+            <div class="pane"><img src="/poopawtrol-assets/portal/portal-schedule.png" alt="The PooPawtrol owner portal in a desktop browser, showing today's and tomorrow's visits with actions on each one" width="1280" height="2860" loading="lazy" /></div>
+          </div>
           <figcaption><b>The run, in order</b>Opens on today and tomorrow. Each visit carries the time, the customer, the service, the dog count, the address as a map link, and a tap-to-call number. Pills show at a glance what is a regular, what has been moved, what is done and what is still unpaid.</figcaption>
         </figure>
         <figure>
-          <img src="/poopawtrol-assets/portal/portal-bookings.png" alt="The PooPawtrol bookings list, including a plan placed on hold after a failed payment" width="560" height="1953" loading="lazy" />
+          <div class="browser">
+            <div class="bar"><i></i><i></i><i></i><span>Owner portal — bookings and payments</span></div>
+            <div class="pane"><img src="/poopawtrol-assets/portal/portal-bookings.png" alt="The PooPawtrol bookings list, including a plan placed on hold after a failed payment" width="1280" height="2200" loading="lazy" /></div>
+          </div>
           <figcaption><b>Every booking and every dollar</b>Charge a saved card or Venmo, record cash, confirm, cancel, or move a visit. A declined payment puts the plan on hold with the reason in plain English — and a single button to resume it once it clears.</figcaption>
         </figure>
         <figure>
-          <img src="/poopawtrol-assets/portal/portal-prices.png" alt="The PooPawtrol services and prices editor, where the owner sets her own prices and seasonal months" width="560" height="1953" loading="lazy" />
+          <div class="browser">
+            <div class="bar"><i></i><i></i><i></i><span>Owner portal — send a message to customers</span></div>
+            <div class="pane"><img src="/poopawtrol-assets/portal/portal-messages.png" alt="The PooPawtrol message composer, showing how many phones have notifications on and a log of messages already delivered" width="1280" height="1000" loading="lazy" /></div>
+          </div>
+          <figcaption><b>One message, the whole customer base</b>She writes a title and a message and it lands as a push notification on every customer phone that opted in — a weather day, a holiday schedule, a season opening, a last-minute route change. The portal tells her how many phones are reachable before she sends, and keeps a log of everything sent with the number it was delivered to.</figcaption>
+        </figure>
+        <figure>
+          <div class="browser">
+            <div class="bar"><i></i><i></i><i></i><span>Owner portal — services and prices</span></div>
+            <div class="pane"><img src="/poopawtrol-assets/portal/portal-prices.png" alt="The PooPawtrol services and prices editor, where the owner sets her own prices and seasonal months" width="1280" height="3600" loading="lazy" /></div>
+          </div>
           <figcaption><b>Her prices, her services</b>She names the services, sets the prices, picks how often each repeats, flags one "Most Popular" and limits seasonal work to the months she offers it. Saving pushes it straight to the app; bookings already taken keep the price they were booked at.</figcaption>
         </figure>
       </div>
@@ -314,7 +340,7 @@ footer a:hover{text-decoration:underline}
           <li><b>Time off that asks first</b> — block a day or a few hours and, if visits are already booked in it, the portal lists them and offers to move them all, each re-timed on one page and saved together, or to leave them alone.</li>
           <li><b>Her own hours and settings</b> — opening hours per weekday, one-off hours for a single date, job durations per service, buffer time, and extra minutes per additional dog.</li>
           <li><b>Calendar sync</b> — connect once and every visit is copied across within seconds, and stays correct when something is booked, moved or cancelled.</li>
-          <li><b>Push notifications</b> — she writes a message in the portal and it goes to every customer who opted in, with a delivery count and a log of what was sent.</li>
+          <li><b>Push notifications to the whole customer base</b> — she writes a title and a message in the portal and it goes out to every customer phone that opted in, in one send. The portal shows how many phones are reachable before she sends, reports how many it reached, and keeps a running log of every message with its delivery count.</li>
           <li><b>Four automatic emails</b> — new booking and cancellation alerts to her, a nightly list of tomorrow's visits, a night-before reminder to each customer, and a "your visit has moved" notice with the old and new times.</li>
           <li><b>A secure owner login</b> — private, forced password change on first sign-in, and a password she can change any time.</li>
           <li><b>Hosting, updates and monitoring</b> — the back end, the database, the scheduled jobs and the store releases are all ours to run. She never patches anything.</li>
@@ -330,6 +356,34 @@ footer a:hover{text-decoration:underline}
         <div class="card"><h3>Tomorrow's run, tonight</h3><p>Every evening, a list of the next day's visits goes out — the route, before it starts.</p></div>
         <div class="card"><h3>The night-before reminder</h3><p>Customers are reminded to bring pets in and make sure the yard can be reached. Fewer wasted trips, fewer awkward moments.</p></div>
         <div class="card"><h3>"Your visit has moved"</h3><p>If a time changes, the customer gets the old time and the new one in writing, automatically.</p></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="push-h">
+      <span class="kicker">Reaching customers</span>
+      <h2 id="push-h">One message, every customer, straight to the phone.</h2>
+      <p class="section-intro">The app is not only how customers reach the business — it is how the business reaches them. From the portal, the owner writes a title and a message and sends it to her entire customer base as a push notification. It arrives on the phone like any other app alert, with no mailing list to maintain, no per-message cost, and nothing to type into a third-party tool.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="ic">📣</div>
+          <h3>The whole base in one send</h3>
+          <p>Every customer who turned notifications on gets it at once. A weather day, a holiday week, a route running late, the spring season opening — the kind of news that used to mean a round of phone calls.</p>
+        </div>
+        <div class="card">
+          <div class="ic">📶</div>
+          <h3>She knows the reach before she sends</h3>
+          <p>The portal shows exactly how many customer phones are reachable right now, so she is never guessing who is going to hear about it.</p>
+        </div>
+        <div class="card">
+          <div class="ic">🧾</div>
+          <h3>A log of everything sent</h3>
+          <p>Each message is kept with its date, its text, and how many phones it actually reached — a record she can look back at rather than a message that vanishes once it is sent.</p>
+        </div>
+        <div class="card">
+          <div class="ic">🎯</div>
+          <h3>It fills the quiet weeks</h3>
+          <p>A notification to the existing base is the cheapest booking a service business can get. Season openings, a gap in next week's schedule, a promotion — announced to the people who already pay, in seconds.</p>
+        </div>
       </div>
     </section>
 
