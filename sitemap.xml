@@ -449,6 +449,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://ainovations.net/poopawtrol</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://ainovations.net/poopawtrol-privacy</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>yearly</changefreq>

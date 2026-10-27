@@ -118,6 +118,9 @@
 /reef/partner-thanks /partner-thanks 301!
 /reef/privacy /privacy 301!
 /chalkline /chalkline.html 200
+# PooPawtrol: client showcase page. The owner portal (/fsa/) and payment page
+# (/fsa-pay/) stay noindex and are never linked from here.
+/poopawtrol /poopawtrol.html 200
 /rent-a-site /rent-a-site.html 200
 /how-much-does-a-website-cost-for-a-small-business /how-much-does-a-website-cost-for-a-small-business.html 200
 /facebook-page-vs-website-for-small-business /facebook-page-vs-website-for-small-business.html 200
