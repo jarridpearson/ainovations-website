@@ -124,6 +124,27 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
   </div>
 </section>
 
+<section id="conf" class="wrap" hidden>
+  <div class="card">
+    <h2 id="confTitle">Bookings in that time</h2>
+    <div class="card-body">
+      <div id="confAsk">
+        <p class="meta" id="confText" style="margin:0 0 10px"></p>
+        <div id="confList" style="margin-bottom:12px"></div>
+        <button class="btn primary" id="confMove" type="button" style="width:100%">Move them to the next available time</button>
+        <button class="btn" id="confKeep" type="button" style="width:100%;margin-top:8px">Leave them as they are</button>
+      </div>
+      <div id="confEdit" hidden>
+        <p class="meta" style="margin:0 0 10px">Each visit shows the next open time. Change any date or time you want, then tap Save all. Each customer gets an email with their new time.</p>
+        <div id="confRows"></div>
+        <button class="btn primary" id="confSave" type="button" style="width:100%;margin-top:6px">Save all</button>
+        <button class="btn" id="confBack" type="button" style="width:100%;margin-top:8px">Back</button>
+      </div>
+      <div class="msg" id="confMsg"></div>
+    </div>
+  </div>
+</section>
+
 <section id="app" hidden>
   <div class="topbar">
     <div class="brand">Bookings</div>
@@ -286,6 +307,38 @@ function show(which) {
   $('#login').hidden = which !== 'login';
   $('#app').hidden = which !== 'app';
   $('#pw').hidden = which !== 'pw';
+  $('#conf').hidden = which !== 'conf';
+}
+
+// --- Bookings in time she just closed: she decides, nothing moves on its own ---------
+let confItems = [];
+function askConflicts(list) {
+  if (!list || !list.length) return;
+  confItems = list;
+  const n = list.length;
+  $('#confTitle').textContent = `${n} booking${n === 1 ? '' : 's'} in that time`;
+  $('#confText').textContent = `${n === 1 ? 'This booked visit falls' : 'These booked visits fall'} in the time you just closed. Move ${n === 1 ? 'it' : 'them'} to the next available time, or leave ${n === 1 ? 'it' : 'them'} as ${n === 1 ? 'it is' : 'they are'}?`;
+  $('#confList').innerHTML = list.map((c) => `<div class="meta">• <b>${esc(c.name)}</b>, ${esc(c.serviceName)}: ${fmtDate(c.date)} at ${fmtTime(c.time)}</div>`).join('');
+  $('#confRows').innerHTML = list.map((c, i) => `
+    <div class="item" data-i="${i}">
+      <div class="top"><span class="name">${esc(c.name)}</span></div>
+      <div class="meta">${esc(c.serviceName)} · now ${fmtDate(c.date)} at ${fmtTime(c.time)}</div>
+      ${c.suggestion ? '' : '<div class="meta" style="color:var(--red)">No open time in the next 30 days. Pick one.</div>'}
+      <div class="moveform">
+        <input type="date" data-cf="date" value="${c.suggestion ? c.suggestion.date : ''}" aria-label="New date for ${esc(c.name)}">
+        <input type="time" step="1800" data-cf="time" value="${c.suggestion ? c.suggestion.time : ''}" aria-label="New time for ${esc(c.name)}">
+      </div>
+    </div>`).join('');
+  $('#confAsk').hidden = false; $('#confEdit').hidden = true;
+  $('#confMsg').className = 'msg'; $('#confMsg').textContent = '';
+  [$('#confMove'), $('#confKeep'), $('#confSave'), $('#confBack')].forEach((b) => { b.disabled = false; });
+  show('conf');
+  window.scrollTo(0, 0);
+}
+async function confDone(text) {
+  show('app');
+  await load().catch(() => {});
+  if (text) alert(text);
 }
 
 function openPw(forced) {
@@ -651,6 +704,7 @@ $('#blockForm').addEventListener('submit', async (e) => {
     });
     state.blocks = data.blocks;
     renderBlocks();
+    askConflicts(data.conflicts);
     $('#bNote').value = '';
     msg.className = 'msg good'; msg.textContent = 'Blocked. Customers can no longer pick that time.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
@@ -710,6 +764,7 @@ $('#schedForm').addEventListener('submit', async (e) => {
     });
     state.settings = data.settings;
     renderSchedule();
+    askConflicts(data.conflicts);
     $('#schedWarn').hidden = Object.values(data.settings.hours || {}).some((h) => h.open);
     msg.className = 'msg good'; msg.textContent = 'Saved. New bookings use these times.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
@@ -773,6 +828,7 @@ $('#dhForm').addEventListener('submit', async (e) => {
     const r = await api('date-hours', { date: $('#dhDate').value, open, firstStart: $('#dhFirst').value, lastStart: $('#dhLast').value });
     state.settings.dateHours = r.dateHours;
     renderDateHours();
+    askConflicts(r.conflicts);
     msg.className = 'msg good'; msg.textContent = 'Saved. Customers see these hours for that date.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
 });
@@ -834,6 +890,32 @@ setInterval(() => {
   loadCalendar().catch(() => {});
   if (!document.querySelector('[data-pane="bookings"]').hidden) refreshBookings().catch(() => {});
 }, 30000);
+
+$('#confMove').addEventListener('click', () => { $('#confAsk').hidden = true; $('#confEdit').hidden = false; window.scrollTo(0, 0); });
+$('#confBack').addEventListener('click', () => { $('#confAsk').hidden = false; $('#confEdit').hidden = true; });
+$('#confKeep').addEventListener('click', async (e) => {
+  e.target.disabled = true;
+  try {
+    await api('keep-visits', { items: confItems.map((c) => ({ id: c.id, origDate: c.origDate })) });
+    await confDone();
+  } catch (err) { e.target.disabled = false; $('#confMsg').className = 'msg err'; $('#confMsg').textContent = err.message; }
+});
+$('#confSave').addEventListener('click', async (e) => {
+  const msg = $('#confMsg');
+  const items = [...document.querySelectorAll('#confRows .item')].map((row) => {
+    const c = confItems[Number(row.dataset.i)];
+    return { id: c.id, origDate: c.origDate, date: row.querySelector('[data-cf=date]').value, time: row.querySelector('[data-cf=time]').value };
+  });
+  if (items.some((it) => !it.date || !it.time)) { msg.className = 'msg err'; msg.textContent = 'Every visit needs a new date and time.'; return; }
+  e.target.disabled = true;
+  msg.className = 'msg'; msg.textContent = 'Saving…';
+  try {
+    const r = await api('move-visits', { items });
+    const moved = r.results.filter((x) => x.ok).length;
+    const emailed = r.results.filter((x) => x.emailed).length;
+    await confDone(`Moved ${moved} visit${moved === 1 ? '' : 's'}. ${emailed} customer${emailed === 1 ? ' was' : 's were'} emailed.`);
+  } catch (err) { e.target.disabled = false; msg.className = 'msg err'; msg.textContent = err.message; }
+});
 
 boot();
 </script>

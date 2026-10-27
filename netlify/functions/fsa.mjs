@@ -830,47 +830,60 @@ function slotStillOpen(settings, blocks, date, time, len) {
 const AUTO_MOVE_DAYS = 21;
 const SEARCH_DAYS = 30;
 
+// Visits she chose to leave where they are, even though that time is now closed.
+const keptKey = 'kept';
+const getKept = async () => (await store().get(keptKey, { type: 'json' })) || {};
+
 /**
- * Any visit in the next three weeks that now falls on a closed day or a blocked
- * time is moved to the next available slot (later that day, else the next open
- * day), and the customer is emailed. Runs every morning and whenever she
- * changes her hours or blocks time.
+ * Visits in the next three weeks that now fall on a closed day or blocked time.
+ * Nothing is moved here: she decides on her page whether to move them (each with a
+ * suggested next open time she can change) or leave them as they are.
  */
-async function autoMoveAll() {
+async function findConflicts() {
   const today = todayLocal();
   const settings = await getSettings();
   const blocks = await getBlocks();
   const bookings = await allBookings();
   const moves = await getMoves();
-  let moved = 0;
+  const kept = await getKept();
+  const trial = { ...moves }; // suggestions so far, so two visits are never offered the same slot
+  const out = [];
   for (let i = 0; i <= AUTO_MOVE_DAYS; i++) {
     const date = addDaysStr(today, i);
     for (const b of bookings) {
       if (!holdsSlots(b)) continue;
       for (const o of occurrences(b, date, moves)) {
-        // A visit she placed herself stays exactly where she put it.
-        if (o.moved && o.by === 'owner') continue;
+        if (kept[moveKey(b.id, o.origDate)]) continue;
         const len = b.durationMin ?? jobLength(settings, b.serviceId, b.dogs);
         if (slotStillOpen(settings, blocks, date, o.time, len)) continue;
-        if (visitPaid(b, o.origDate) && date < today) continue;
-        let target = null;
-        for (let k = 0; k <= SEARCH_DAYS && !target; k++) {
+        let suggestion = null;
+        for (let k = 0; k <= SEARCH_DAYS && !suggestion; k++) {
           const d = addDaysStr(date, k);
           const slots = await openSlots(d, b.serviceId, settings, blocks, bookings, {
-            address: b.address, dogs: b.dogs, moves, ignore: { id: b.id, origDate: o.origDate }, len, after: k === 0 ? o.time : null,
+            address: b.address, dogs: b.dogs, moves: trial, ignore: { id: b.id, origDate: o.origDate }, len, after: k === 0 ? o.time : null,
           });
-          if (slots.length) target = { date: d, time: slots[0] };
+          if (slots.length) suggestion = { date: d, time: slots[0] };
         }
-        if (!target) { console.error('auto-move: no slot found', b.id, o.origDate); continue; }
-        moves[moveKey(b.id, o.origDate)] = { ...target, by: 'auto', at: new Date().toISOString() };
-        await saveMoves(moves);
-        await notifyMoved(b, date, o.time, target,
-          'That time became unavailable, so your visit was moved to the next available time, as our booking terms explain.');
-        moved++;
+        if (suggestion) trial[moveKey(b.id, o.origDate)] = { ...suggestion, by: 'owner' };
+        out.push({ id: b.id, origDate: o.origDate, date, time: o.time, name: b.name, serviceName: b.serviceName, suggestion });
       }
     }
   }
-  return moved;
+  return out;
+}
+
+/** Move one visit she picked a new date and time for, and email the customer. */
+async function moveVisit(b, origDate, date, time, moves) {
+  const key = moveKey(b.id, origDate);
+  const fromNow = moves[key] || naturalOn(b, origDate)[0];
+  if (!fromNow) return { ok: false, error: 'Visit not found.' };
+  const fromDate = moves[key]?.date || origDate;
+  const fromTime = fromNow.time;
+  const natural = naturalOn(b, origDate)[0];
+  if (natural && natural.time === time && origDate === date) delete moves[key];
+  else moves[key] = { date, time, by: 'owner', at: new Date().toISOString() };
+  const emailed = await notifyMoved(b, fromDate, fromTime, { date, time }, 'We needed to adjust the schedule.');
+  return { ok: true, emailed };
 }
 
 async function holdForPayment(b, date, error) {
@@ -886,12 +899,11 @@ async function holdForPayment(b, date, error) {
   ]);
 }
 
-/** Every morning: move anything that no longer fits, then charge today's repeat visits. */
+/** Every morning: charge today's repeat visits. (Visits are only ever moved by her.) */
 async function morningRun() {
-  const moved = await autoMoveAll();
   const today = todayLocal();
   const moves = await getMoves();
-  const report = { moved, charged: 0, failed: 0 };
+  const report = { charged: 0, failed: 0 };
   if (!payReady()) return report;
   for (const b of await allBookings()) {
     if (b.status === 'cancelled' || b.status === 'on-hold' || !isRecurring(b) || !b.venmo?.token) continue;
@@ -1621,8 +1633,7 @@ async function handle(req, context) {
         durations[sv.id] = n;
       }
       await store().setJSON('settings', { buffer, extraDogMin, hours, durations });
-      const moved = await autoMoveAll();
-      return ok({ settings: await getSettings(), moved });
+      return ok({ settings: await getSettings(), conflicts: await findConflicts() });
     }
 
     if (action === 'block') {
@@ -1636,8 +1647,7 @@ async function handle(req, context) {
       blocks.push({ id: crypto.randomUUID(), date, from, to, note: str(input.note, 120) });
       blocks.sort((a, b) => (a.date + (a.from || '') < b.date + (b.from || '') ? -1 : 1));
       await store().setJSON('blocks', blocks);
-      const moved = await autoMoveAll();
-      return ok({ blocks, moved });
+      return ok({ blocks, conflicts: await findConflicts() });
     }
 
     if (action === 'date-hours') {
@@ -1652,8 +1662,7 @@ async function handle(req, context) {
       // Drop past dates so this never grows forever.
       for (const d of Object.keys(dh)) if (d < todayLocal()) delete dh[d];
       await store().setJSON('datehours', dh);
-      const moved = await autoMoveAll();
-      return ok({ dateHours: dh, moved });
+      return ok({ dateHours: dh, conflicts: await findConflicts() });
     }
 
     if (action === 'date-hours-clear') {
@@ -1751,17 +1760,42 @@ async function handle(req, context) {
       const time = str(input.time, 5);
       if (!b || !isDate(origDate) || !isDate(date) || !isTime(time)) return fail(400, 'Pick a new date and time.');
       const moves = await getMoves();
-      const key = moveKey(b.id, origDate);
-      const fromNow = moves[key] || naturalOn(b, origDate)[0];
-      if (!fromNow) return fail(404, 'Visit not found.');
-      const fromDate = moves[key]?.date || origDate;
-      const fromTime = fromNow.time;
-      const natural = naturalOn(b, origDate)[0];
-      if (natural && natural.time === time && origDate === date) delete moves[key];
-      else moves[key] = { date, time, by: 'owner', at: new Date().toISOString() };
+      const r = await moveVisit(b, origDate, date, time, moves);
+      if (!r.ok) return fail(404, r.error);
       await saveMoves(moves);
-      const emailed = await notifyMoved(b, fromDate, fromTime, { date, time }, 'We needed to adjust the schedule.');
-      return ok({ ok: true, emailed });
+      const kept = await getKept();
+      if (kept[moveKey(b.id, origDate)]) { delete kept[moveKey(b.id, origDate)]; await store().setJSON(keptKey, kept); }
+      return ok({ ok: true, emailed: r.emailed });
+    }
+
+    // Move several visits at once (from the "move them" page after she closes time).
+    if (action === 'move-visits') {
+      const items = Array.isArray(input.items) ? input.items.slice(0, 200) : [];
+      for (const it of items) {
+        if (!isDate(str(it.origDate, 10)) || !isDate(str(it.date, 10)) || !isTime(str(it.time, 5))) return fail(400, 'Every visit needs a new date and time.');
+      }
+      const moves = await getMoves();
+      const kept = await getKept();
+      const results = [];
+      for (const it of items) {
+        const b = await getBooking(it.id);
+        if (!b) { results.push({ id: it.id, origDate: it.origDate, ok: false, error: 'Booking not found.' }); continue; }
+        const r = await moveVisit(b, str(it.origDate, 10), str(it.date, 10), str(it.time, 5), moves);
+        delete kept[moveKey(b.id, str(it.origDate, 10))];
+        results.push({ id: it.id, origDate: it.origDate, ...r });
+      }
+      await saveMoves(moves);
+      await store().setJSON(keptKey, kept);
+      return ok({ results });
+    }
+
+    // She chose to leave these visits where they are, even though that time is closed.
+    if (action === 'keep-visits') {
+      const items = Array.isArray(input.items) ? input.items.slice(0, 200) : [];
+      const kept = await getKept();
+      for (const it of items) if (str(it.id, 80) && isDate(str(it.origDate, 10))) kept[moveKey(str(it.id, 80), str(it.origDate, 10))] = new Date().toISOString();
+      await store().setJSON(keptKey, kept);
+      return ok({ ok: true });
     }
 
     // Change a regular plan's day and/or time from now on.
