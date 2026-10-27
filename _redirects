@@ -43,6 +43,12 @@
 
 # Belt-and-suspenders: catches a stray markdown file dropped at site root
 /*.md /404.html 404!
+# Same for business documents. .gitignore should stop these ever being committed;
+# this is the second layer if one slips through. Note the same splat caveat as
+# above: /*.docx only matches single-segment paths, which is where they land.
+/*.docx /404.html 404!
+/*.xlsx /404.html 404!
+/analysis/* /404.html 404!
 
 /privacy /privacy.html 200
 /support /support.html 200

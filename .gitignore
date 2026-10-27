@@ -17,3 +17,13 @@ supabase/functions/create-organization-users-corrupted/
 CLAUDE.md
 .claude/
 .logo-backup-blue/
+
+# Business documents never belong in this repo: the publish directory is the
+# whole repo, so a committed .docx/.xlsx is downloadable at ainovations.net/<name>.
+# These live on ~/Desktop with the pricing sheet and the failure log.
+*.docx
+*.xlsx
+/analysis/
+# Working briefs dropped at the repo root. Only root-level .md is ignored, so
+# the tracked READMEs under subdirectories are unaffected.
+/*.md
