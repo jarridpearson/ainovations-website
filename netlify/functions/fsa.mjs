@@ -31,7 +31,8 @@ import crypto from 'node:crypto';
 const ADMIN_USER = (process.env.FSA_ADMIN_USER || '').trim().toLowerCase();
 const ADMIN_PASS_HASH = process.env.FSA_ADMIN_PASS_HASH || ''; // scrypt$<salt hex>$<hash hex>
 const SESSION_SECRET = process.env.FSA_SESSION_SECRET || '';
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+// Her own sending key, limited to poopawtrol.net. Never the AInovations key.
+const RESEND_API_KEY = process.env.FSA_RESEND_API_KEY || '';
 const BOOKING_TO = process.env.FSA_BOOKING_TO || '';
 const BOOKING_FROM = process.env.FSA_BOOKING_FROM || '';
 // Her emails never go out from an AInovations address. With no sender of her own set,
