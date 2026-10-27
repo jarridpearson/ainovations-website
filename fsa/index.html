@@ -251,6 +251,9 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
           <p class="meta" style="margin:0 0 12px;color:var(--muted)">Changes show in the app as soon as you save. Existing bookings keep the price and schedule they were booked with.</p>
           <div id="svcList"></div>
           <button class="btn" type="button" id="addSvc" style="width:100%;margin-bottom:16px">+ Add a service</button>
+          <div class="field"><label for="cashDisc">Cash discount per visit ($)</label>
+            <input type="number" id="cashDisc" inputmode="decimal" min="0" step="0.01" style="max-width:140px">
+            <div class="meta" id="cashDiscNote" style="font-size:13px;margin-top:4px"></div></div>
           <label>Notes under the price list (one per line)</label>
           <textarea id="priceNotes" rows="3" style="width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:10px;padding:10px 11px;margin-bottom:12px"></textarea>
           <button class="btn primary" type="submit" style="width:100%">Save prices</button>
@@ -388,6 +391,15 @@ function svcRow(sv) {
 function renderPrices() {
   $('#svcList').innerHTML = (state.services || []).map(svcRow).join('');
   $('#priceNotes').value = (state.priceNotes || []).join('\n');
+  $('#cashDisc').value = ((state.cashDiscount ?? 500) / 100).toFixed(2);
+  showCashNote();
+}
+// Customers see this line first under the price list in the app.
+function showCashNote() {
+  const c = Math.round(parseFloat($('#cashDisc').value || '0') * 100);
+  $('#cashDiscNote').textContent = c > 0
+    ? `Your listed prices are the Venmo/card prices. Customers who pay cash pay ${money(c)} less per visit, and the app shows: "There is a ${money(c)} discount per visit when you pay cash."`
+    : 'No cash discount: cash and Venmo/card customers pay the same price.';
 }
 
 function readPrices() {
@@ -453,7 +465,7 @@ function renderBookings() {
         ${b.venmo ? `<span class="pill venmo">${b.venmo.method === 'card' ? esc(b.venmo.username) : 'Venmo @' + esc(b.venmo.username)}</span>` : ''}
         ${b.payMethod === 'cash' ? '<span class="pill">pays cash</span>' : ''}
       </div>
-      <div class="meta">${esc(b.serviceName)} · ${b.dogs} dog${b.dogs === 1 ? '' : 's'} · list ${money(b.listCents)}</div>
+      <div class="meta">${esc(b.serviceName)} · ${b.dogs} dog${b.dogs === 1 ? '' : 's'} · ${b.payMethod === 'cash' ? `cash ${money(b.visitCents)} per visit (card/Venmo ${money(b.listCents)})` : `${money(b.listCents)} card/Venmo`}</div>
       <div class="meta">${phoneLink(b.phone)}${b.email ? ' · ' + emailLink(b.email) : ''}</div>
       <div class="meta">${esc(b.address)}</div>
       ${b.notes ? `<div class="meta">Notes: ${esc(b.notes)}</div>` : ''}
@@ -803,13 +815,16 @@ $('#pricesForm').addEventListener('submit', async (e) => {
   const services = readPrices();
   if (services.some((sv) => !sv.name || !(sv.cents >= 0))) { msg.className = 'msg err'; msg.textContent = 'Every service needs a name and a price.'; return; }
   try {
-    const r = await api('prices', { services, priceNotes: $('#priceNotes').value.split('\n').map((x) => x.trim()).filter(Boolean) });
-    state.services = r.services; state.priceNotes = r.priceNotes;
+    const cashDiscount = Math.round(parseFloat($('#cashDisc').value || '0') * 100);
+    if (!(cashDiscount >= 0)) { msg.className = 'msg err'; msg.textContent = 'Enter a cash discount of $0 or more.'; return; }
+    const r = await api('prices', { services, cashDiscount, priceNotes: $('#priceNotes').value.split('\n').map((x) => x.trim()).filter(Boolean) });
+    state.services = r.services; state.priceNotes = r.priceNotes; state.cashDiscount = r.cashDiscount;
     renderPrices(); renderSchedule();
     msg.className = 'msg good'; msg.textContent = 'Saved. The app shows these prices now. New services need a job length on the Schedule tab before they can be booked.';
   } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
 });
 
+$('#cashDisc').addEventListener('input', showCashNote);
 $('#sHours').addEventListener('change', (e) => {
   if (!e.target.matches('[data-open]')) return;
   const row = e.target.closest('.hrs');

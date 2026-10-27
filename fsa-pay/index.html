@@ -63,7 +63,7 @@ function done(res) {
   ['#venmo', '#ppButtons', '#ppCard', '#cardFields', '#cash'].forEach((s) => { $(s).hidden = true; });
   if (res.cash) {
     $('#title').textContent = 'Paying cash';
-    $('#detail').textContent = `You're booked. Pay ${money(INFO.cents)} in cash at ${INFO.recurring ? 'each visit' : 'the visit'}. You can close this page.`;
+    $('#detail').textContent = `You're booked. Pay ${money(INFO.cashCents ?? INFO.cents)} in cash at ${INFO.recurring ? 'each visit' : 'the visit'}. You can close this page.`;
   } else if (INFO && !INFO.recurring) {
     $('#title').textContent = 'Paid';
     $('#detail').textContent = `${money(res.charged ?? INFO.cents)} paid${res.username ? ' (' + res.username + ')' : ''}. You're all set. You can close this page.`;
@@ -82,14 +82,15 @@ function done(res) {
   const when = new Date(info.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   if (info.recurring) {
     $('#title').textContent = 'How would you like to pay?';
-    $('#detail').textContent = `${info.serviceName} starting ${when}. With Venmo or a card, your first visit is charged ${money(info.cents)} when it's done, and each visit after that is charged automatically on its day. Or pay cash at each visit.`;
+    $('#detail').textContent = `${info.serviceName} starting ${when}. With Venmo or a card, each visit is ${money(info.cents)}: your first visit is charged when it's done, and each visit after that is charged automatically on its day. Or pay cash at each visit for ${money(info.cashCents ?? info.cents)}.`;
   } else {
     $('#title').textContent = 'How would you like to pay?';
-    $('#detail').textContent = `${info.serviceName} on ${when}. Pay ${money(info.cents)} now with Venmo or a card, or pay cash at the visit.`;
+    $('#detail').textContent = `${info.serviceName} on ${when}. Pay ${money(info.cents)} now with Venmo or a card, or pay ${money(info.cashCents ?? info.cents)} cash at the visit.`;
   }
   if (info.linked && (info.recurring || info.paid)) return done({});
   if (info.payMethod === 'cash') return done({ cash: true });
   // Cash is always an option, and the booking stands either way.
+  $('#cash').textContent = `Pay ${money(info.cashCents ?? info.cents)} cash at the visit`;
   $('#cash').hidden = false;
   $('#cash').addEventListener('click', async () => {
     $('#cash').disabled = true;

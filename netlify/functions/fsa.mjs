@@ -171,6 +171,24 @@ async function getPriceNotes() {
   return (await store().get('pricenotes', { type: 'json' })) || DEFAULT_PRICE_NOTES;
 }
 
+// Two prices: her listed price is the Venmo/card price; paying cash takes this much off
+// each visit. She sets the amount on her Prices tab ($5 to start).
+const DEFAULT_CASH_DISCOUNT = 500;
+async function getCashDiscount() {
+  const v = (await store().get('cashdiscount', { type: 'json' }))?.cents;
+  return Number.isInteger(v) && v >= 0 ? v : DEFAULT_CASH_DISCOUNT;
+}
+const dollars = (c) => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
+const cashNote = (d) => (d > 0 ? `There is a ${dollars(d)} discount per visit when you pay cash.` : null);
+const cashPrice = (cents, d) => Math.max(0, cents - d);
+/** What this booking costs per visit, after the cash discount if they chose cash. */
+const visitPrice = (b, d) => (b.payMethod === 'cash' ? cashPrice(b.listCents, d) : b.listCents);
+/** Customer-facing notes: the cash discount first, then her own notes. */
+async function publicPriceNotes() {
+  const note = cashNote(await getCashDiscount());
+  return [...(note ? [note] : []), ...(await getPriceNotes())];
+}
+
 function normalizeHours(saved) {
   const out = {};
   for (let d = 0; d < 7; d++) {
@@ -650,10 +668,10 @@ async function bookingForPayer(id, secret) {
 }
 
 /** What the owner page sees: everything except the payer secret and the raw vault token. */
-function ownerView(b) {
+function ownerView(b, cashDiscount = DEFAULT_CASH_DISCOUNT) {
   const { paySecret, venmo, pushTokens, ...rest } = b;
   return {
-    ...rest, phoneApp: !!(pushTokens || []).length,
+    ...rest, phoneApp: !!(pushTokens || []).length, visitCents: visitPrice(b, cashDiscount),
     venmo: venmo ? { username: venmo.username, linkedAt: venmo.linkedAt, method: venmo.method || 'venmo', saved: !!venmo.token } : null,
   };
 }
@@ -767,6 +785,7 @@ async function emailOwner(subject, lines) {
 /** Everything on her calendar for one date, after moves. */
 async function dayEntries(bookings, date, moves) {
   const out = [];
+  const disc = await getCashDiscount();
   for (const b of bookings) {
     if (!holdsSlots(b)) continue;
     for (const o of occurrences(b, date, moves)) {
@@ -774,7 +793,7 @@ async function dayEntries(bookings, date, moves) {
       out.push({
         bookingId: b.id, origDate: o.origDate, date, time: o.time, moved: !!o.moved, movedBy: o.by || null,
         name: b.name, phone: b.phone, email: b.email, address: b.address, notes: b.notes,
-        serviceName: b.serviceName, dogs: b.dogs, recurring: isRecurring(b), status: b.status, cents: b.listCents,
+        serviceName: b.serviceName, dogs: b.dogs, recurring: isRecurring(b), status: b.status, cents: visitPrice(b, disc), payMethod: b.payMethod || null,
         visitStatus: v.status, paid: visitPaid(b, o.origDate), venmo: !!b.venmo,
       });
     }
@@ -1217,7 +1236,7 @@ async function handle(req, context) {
         ...Object.keys(dh).filter((d) => !dh[d].open),
       ])];
       const openDates = Object.keys(dh).filter((d) => dh[d].open);
-      return ok({ today: todayLocal(), daysOff, openDates, closedWeekdays: closedWeekdays(settings), services, priceNotes: await getPriceNotes() });
+      return ok({ today: todayLocal(), daysOff, openDates, closedWeekdays: closedWeekdays(settings), services, priceNotes: await publicPriceNotes() });
     }
 
     if (action === 'slots') {
@@ -1412,7 +1431,7 @@ async function handle(req, context) {
       if (!b) return fail(404, 'Booking not found.');
       return ok({
         name: b.name, serviceName: b.serviceName, date: b.date, linked: !!b.venmo, ready: payReady(),
-        recurring: isRecurring(b), cents: b.listCents, paid: visitPaid(b, b.date),
+        recurring: isRecurring(b), cents: b.listCents, cashCents: cashPrice(b.listCents, await getCashDiscount()), paid: visitPaid(b, b.date),
         provider: provider(), paypalClientId: provider() === 'paypal' ? PP.clientId : undefined, payMethod: b.payMethod || null,
         canSave: provider() === 'paypal' ? await ppCanSave().catch(() => false) : provider() === 'braintree',
       });
@@ -1586,11 +1605,12 @@ async function handle(req, context) {
     if (!own) return fail(403, 'Set your own password first.');
 
     if (action === 'bookings') {
-      const rows = (await allBookings()).map(ownerView).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+      const disc = await getCashDiscount();
+      const rows = (await allBookings()).map((b) => ownerView(b, disc)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
       const { blobs: phones } = await store().list({ prefix: 'push/' });
       const pushLog = (await store().get('pushlog', { type: 'json' })) || [];
       return ok({
-        bookings: rows, blocks: await getBlocks(), today: todayLocal(), settings: await getSettings(), services: await getServices(), priceNotes: await getPriceNotes(), frequencies: FREQUENCIES,
+        bookings: rows, blocks: await getBlocks(), today: todayLocal(), settings: await getSettings(), services: await getServices(), priceNotes: await getPriceNotes(), cashDiscount: await getCashDiscount(), frequencies: FREQUENCIES,
         pushPhones: phones.length, pushLog,
       });
     }
@@ -1623,9 +1643,16 @@ async function handle(req, context) {
       const notes = Array.isArray(input.priceNotes)
         ? input.priceNotes.map((n) => str(n, 200)).filter(Boolean).slice(0, 10)
         : await getPriceNotes();
+      let cashDiscount = await getCashDiscount();
+      if (input.cashDiscount !== undefined) {
+        const c = Number(input.cashDiscount);
+        if (!Number.isInteger(c) || c < 0 || c > 100000) return fail(400, 'Enter a cash discount of $0 or more.');
+        cashDiscount = c;
+      }
       await store().setJSON('services', services);
       await store().setJSON('pricenotes', notes);
-      return ok({ services, priceNotes: notes });
+      await store().setJSON('cashdiscount', { cents: cashDiscount });
+      return ok({ services, priceNotes: notes, cashDiscount });
     }
 
     if (action === 'settings') {
