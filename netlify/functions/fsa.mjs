@@ -933,7 +933,28 @@ async function eveningDigest() {
     : ['No visits tomorrow.', ''];
   await emailOwner(`Tomorrow, ${niceDate(tomorrow)}: ${entries.length} visit${entries.length === 1 ? '' : 's'}`,
     [`Your visits for ${niceDate(tomorrow)}:`, '', ...lines, `Calendar: ${SITE}/fsa/`]);
-  return { visits: entries.length };
+
+  // Each customer with a visit tomorrow gets a reminder to have their pets inside.
+  const byId = new Map((await allBookings()).map((b) => [b.id, b]));
+  let reminded = 0;
+  for (const e of entries) {
+    const b = byId.get(e.bookingId);
+    if (!b || b.status === 'on-hold' || b.status === 'cancelled') continue;
+    const first = String(b.name || '').split(' ')[0] || 'there';
+    const sent = await emailCustomer(b, `Reminder: your PooPawtrol visit is tomorrow, ${niceDate(tomorrow)} at ${niceTime(e.time)}`, [
+      `Hi ${first},`, '',
+      `This is a reminder that PooPawtrol is coming tomorrow, ${niceDate(tomorrow)} at ${niceTime(e.time)}, for your ${e.serviceName}.`, '',
+      'Before we arrive, please:',
+      '  - Keep your dogs and any other pets inside and secure for the whole visit.',
+      '  - Make sure we can get into the yard (gate unlocked, or the gate code in your booking notes).',
+      '',
+      'Need to change or cancel? Just reply to this email.', '',
+      'Thank you,',
+      'PooPawtrol',
+    ]);
+    if (sent) reminded++;
+  }
+  return { visits: entries.length, reminded };
 }
 
 // --- Google Calendar ------------------------------------------------------------
