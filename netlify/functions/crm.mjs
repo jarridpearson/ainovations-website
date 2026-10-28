@@ -654,6 +654,48 @@ async function handleAction(action, payload, user) {
       return { deleted: true, suppressed: !!c.stripe_customer_id };
     }
 
+    // The actions queue. Finishing an action is two things that must happen
+    // together: a permanent record that it was done, and whatever comes next.
+    // Doing them in one call is what stops the queue drifting out of step with
+    // what actually happened.
+    case 'complete_action': {
+      const { client_id, done, outcome, next_action, next_action_due } = payload;
+      if (!client_id) return { error: 'missing client_id' };
+      const [before] = await db(`crm_clients?id=eq.${client_id}&select=next_action,next_action_due,business_name`);
+      if (!before) return { error: 'client not found' };
+      const what = (done || before.next_action || '').trim();
+      if (!what) return { error: 'nothing to complete' };
+      const note = (outcome || '').trim();
+      await logActivity(client_id, 'action.done', note ? `${what} — ${note}` : what);
+      const [row] = await db(`crm_clients?id=eq.${client_id}`, {
+        method: 'PATCH',
+        body: {
+          next_action: (next_action || '').trim() || null,
+          next_action_due: (next_action_due || '').trim() || null,
+          updated_at: new Date().toISOString(),
+        },
+        prefer: 'return=representation',
+      });
+      return { client: row };
+    }
+
+    // Pushing a date is a decision too, so it is logged rather than silently
+    // rewriting the due date and losing the fact that it slipped.
+    case 'snooze_action': {
+      const { client_id, next_action_due } = payload;
+      if (!client_id || !next_action_due) return { error: 'missing client_id or next_action_due' };
+      const [before] = await db(`crm_clients?id=eq.${client_id}&select=next_action,next_action_due`);
+      if (!before) return { error: 'client not found' };
+      await logActivity(client_id, 'action.snoozed',
+        `"${before.next_action || 'action'}" moved from ${before.next_action_due || 'no date'} to ${next_action_due}`);
+      const [row] = await db(`crm_clients?id=eq.${client_id}`, {
+        method: 'PATCH',
+        body: { next_action_due, updated_at: new Date().toISOString() },
+        prefer: 'return=representation',
+      });
+      return { client: row };
+    }
+
     case 'add_note': {
       const { client_id, body } = payload;
       if (!client_id || !body?.trim()) return { error: 'missing client_id or body' };
