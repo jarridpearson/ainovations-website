@@ -858,7 +858,10 @@ function renderMoneyStats() {
     ['Deductible total', money(spent + mileageValue), ''],
     [`Processing fees ${moneyYear}`, money(feesPaid), feesPaid ? 'accent' : ''],
     ['Billable, unreimbursed', money(owed), owed ? 'accent' : ''],
-    ['Missing receipts', exp.filter((e) => !e.receipt_path).length, ''],
+    // Stripe processing fees are synced straight from the Stripe API and a fee is a
+    // deduction inside a payout, not a purchase — Stripe never issues a receipt for
+    // one. Counting them here made this tile a number that could never reach zero.
+    ['Missing receipts', exp.filter((e) => !e.receipt_path && !(e.source_ref || '').startsWith('stripe:fee:')).length, ''],
   ].map(([label, value, cls]) =>
     `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
 }
