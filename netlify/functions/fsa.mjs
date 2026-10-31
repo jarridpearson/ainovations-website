@@ -1426,6 +1426,39 @@ async function handle(req, context) {
       return ok({ ok: true });
     }
 
+    // Apple requires in-app deletion: cancel what is booked and wipe the personal
+    // details. Payment records stay for her tax records.
+    if (action === 'customer-delete') {
+      if (await overLimit('customer-delete', ipOf(req, context), 10, 60)) return fail(429, 'Too many requests.');
+      const tok = str(input.pushToken, 200);
+      if (PUSH_TOKEN_RE.test(tok)) await store().delete(pushKey(tok));
+      const items = Array.isArray(input.items) ? input.items.slice(0, 20) : [];
+      const gone = [];
+      for (const it of items) {
+        const b = await bookingForPayer(it?.id, it?.secret);
+        if (!b) continue;
+        gone.push({ name: b.name, phone: b.phone, address: b.address, serviceName: b.serviceName, date: b.date, time: b.time, active: b.status !== 'cancelled' });
+        if (b.status !== 'cancelled') {
+          b.status = 'cancelled';
+          b.cancelledAt = new Date().toISOString();
+          b.cancelledBy = 'customer';
+        }
+        Object.assign(b, { name: 'Deleted customer', phone: '', email: '', address: '', notes: '', venmo: null, pushTokens: [], paySecret: crypto.randomBytes(24).toString('hex') });
+        await saveBooking(b);
+      }
+      if (gone.length) {
+        const active = gone.filter((g) => g.active);
+        await emailOwner(`Profile deleted: ${gone[0].name}`, [
+          `${gone[0].name} deleted their profile in the app.`, '',
+          ...(active.length
+            ? ['These are cancelled. No need to go:', ...active.map((g) => `  ${g.serviceName}, was ${niceDate(g.date)} at ${niceTime(g.time)}`), '', `Address:   ${gone[0].address}`]
+            : ['They had nothing upcoming.']),
+          '', 'Their details are removed from your bookings. Payment records stay.',
+        ]);
+      }
+      return ok({ ok: true });
+    }
+
     if (action === 'pay-info') {
       const b = await bookingForPayer(input.id, input.secret);
       if (!b) return fail(404, 'Booking not found.');
