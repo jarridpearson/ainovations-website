@@ -210,6 +210,16 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
   padding:6px 13px;font-size:13px;font-weight:650;
 }
 .vbtn.on{background:var(--panel-2);color:var(--text)}
+/* inline row editing */
+.edit-cell{background:rgba(29,200,198,.07)}
+.edit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:4px 0 10px}
+.edit-grid .f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.edit-grid label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.edit-grid input,.edit-grid select{width:100%;min-width:0}
+.edit-grid .check{flex-direction:row;align-items:center;gap:8px}
+.edit-grid .check label{text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);white-space:nowrap}
+.edit-actions{display:flex;gap:8px;align-items:center;padding-bottom:4px}
+.edit-actions .spacer{flex:1}
 .ro-note{margin:0 0 16px;padding:11px 15px;border:1px solid var(--border);border-radius:12px;
   background:rgba(255,255,255,.05);color:var(--muted);font-size:13.5px;font-weight:700}
 .taxgrid{display:grid;gap:22px;grid-template-columns:1fr 1fr}
@@ -718,13 +728,32 @@ function renderTab() {
 
       <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:20px 0 8px">Fees and costs booked to this client</h3>
       <div class="scroll-x">${(feeRows.length + costRows.length) ? `<table class="tbl">
-        <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Description</th><th class="num">Amount</th></tr></thead>
-        <tbody>${feeRows.concat(costRows).map((e) => `<tr>
+        <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Description</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody>${feeRows.concat(costRows).map((e) => isEditing('clientexp', e.id) ? `<tr class="edit-cell"><td colspan="6">
+          <div class="edit-grid">
+            <div class="f"><label>Date</label><input type="date" data-cf="spent_on" value="${esc(e.spent_on || '')}"></div>
+            <div class="f"><label>Vendor</label><input data-cf="vendor" value="${esc(e.vendor || '')}"></div>
+            <div class="f"><label>Category</label><select data-cf="category">${
+              CATEGORIES.map((x) => `<option ${x === e.category ? 'selected' : ''}>${esc(x)}</option>`).join('')}${
+              CATEGORIES.includes(e.category) ? '' : `<option selected>${esc(e.category || '')}</option>`}</select></div>
+            <div class="f"><label>Amount ($)</label><input type="number" step="0.01" min="0" data-cf="amount"
+              value="${(Number(e.amount_cents || 0) / 100).toFixed(2)}"></div>
+            <div class="f" style="grid-column:1/-1"><label>Description</label><input data-cf="description" value="${esc(e.description || '')}"></div>
+          </div>
+          <div class="edit-actions">
+            <button class="btn sm primary" data-savec="${e.id}">Save changes</button>
+            <button class="btn sm ghost" data-cancelc="1">Cancel</button>
+            <span class="spacer"></span>
+            <small style="color:var(--muted)">${e.category === FEE_CATEGORY
+              ? 'This came from Stripe. An edit here is yours and the next sync will not undo it, but it will no longer match Stripe.'
+              : 'Also editable from the Expenses screen.'}</small>
+          </div></td></tr>` : `<tr>
           <td>${esc(date(e.spent_on))}</td>
           <td>${esc(e.vendor || '—')}</td>
           <td>${esc(e.category || '—')}</td>
           <td>${esc(e.description || '—')}</td>
-          <td class="num">${esc(money(e.amount_cents))}</td></tr>`).join('')}</tbody></table>`
+          <td class="num">${esc(money(e.amount_cents))}</td>
+          <td><button class="btn sm ghost" data-editc="${e.id}">Edit</button></td></tr>`).join('')}</tbody></table>`
         : '<div class="empty">Nothing booked against this client yet. Stripe fees land here on the next sync.</div>'}</div>
 
       <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px">Subscriptions</h3>
@@ -750,6 +779,36 @@ function renderTab() {
           <td>${i.hosted_invoice_url ? `<a href="${esc(i.hosted_invoice_url)}" target="_blank" rel="noopener">View</a>` : ''}</td>
         </tr>`).join('')}</tbody></table>`
         : '<div class="empty">No invoices synced.</div>'}</div>`;
+
+    b.querySelectorAll('[data-editc]').forEach((el) =>
+      el.addEventListener('click', () => startEdit('clientexp', el.dataset.editc, renderDetail)));
+    b.querySelectorAll('[data-cancelc]').forEach((el) =>
+      el.addEventListener('click', () => cancelEdit(renderDetail)));
+    b.querySelectorAll('[data-savec]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const panel = el.closest('td');
+        const val = (k) => panel.querySelector(`[data-cf="${k}"]`);
+        const dollars = Number(val('amount').value);
+        if (!val('vendor').value.trim()) return toast('Vendor is required.', true);
+        if (!Number.isFinite(dollars) || dollars <= 0) return toast('Enter an amount.', true);
+        el.disabled = true; el.textContent = 'Saving…';
+        try {
+          await api('save_expense', {
+            id: el.dataset.savec,
+            spent_on: val('spent_on').value,
+            vendor: val('vendor').value.trim(),
+            category: val('category').value,
+            amount_cents: Math.round(dollars * 100),
+            description: val('description').value.trim(),
+          });
+          editing = null;
+          toast('Charge updated.');
+          await openClient(selectedId);
+        } catch (err) {
+          el.disabled = false; el.textContent = 'Save changes';
+          toast(err.message, true);
+        }
+      }));
     return;
   }
 
@@ -1012,6 +1071,13 @@ function renderYearPicker() {
 }
 
 const mileageAmount = (t) => Math.round(Number(t.miles) * Number(t.rate_cents));
+
+// Which row is open for editing, if any: {kind:'expense'|'mileage'|'clientexp', id}.
+// Only ever one at a time — an edit panel replaces the row it belongs to.
+let editing = null;
+const isEditing = (kind, id) => editing && editing.kind === kind && editing.id === id;
+const startEdit = (kind, id, rerender) => { editing = { kind, id }; rerender(); };
+const cancelEdit = (rerender) => { editing = null; rerender(); };
 
 function renderMoneyStats() {
   const exp = moneyData.expenses;
@@ -1303,7 +1369,32 @@ function renderExpenses() {
     <div class="scroll-x">${rows.length ? `<table class="tbl">
       <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Client</th><th>Paid by</th>
         <th class="num">Amount</th><th>Receipt</th><th>Billable</th><th></th></tr></thead>
-      <tbody>${rows.map((e) => `<tr>
+      <tbody>${rows.map((e) => isEditing('expense', e.id) ? `<tr class="edit-cell"><td colspan="9">
+        <div class="edit-grid">
+          <div class="f"><label>Date</label><input type="date" data-ef="spent_on" value="${esc(e.spent_on || '')}"></div>
+          <div class="f"><label>Vendor</label><input data-ef="vendor" value="${esc(e.vendor || '')}"></div>
+          <div class="f"><label>Category</label><select data-ef="category">${
+            CATEGORIES.map((c) => `<option ${c === e.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}${
+            CATEGORIES.includes(e.category) ? '' : `<option selected>${esc(e.category || '')}</option>`}</select></div>
+          <div class="f"><label>Amount ($)</label><input type="number" step="0.01" min="0" data-ef="amount"
+            value="${(Number(e.amount_cents || 0) / 100).toFixed(2)}"></div>
+          <div class="f"><label>Paid by</label><select data-ef="payment_method">${
+            PAY_METHODS.map((p) => `<option value="${esc(p)}" ${p === (e.payment_method || '') ? 'selected' : ''}>${esc(p || '—')}</option>`).join('')}${
+            // Rows written before this list existed carry values like "Debit card".
+            // Without this the select would fall back to blank and quietly erase it.
+            (e.payment_method && !PAY_METHODS.includes(e.payment_method))
+              ? `<option value="${esc(e.payment_method)}" selected>${esc(e.payment_method)}</option>` : ''}</select></div>
+          <div class="f"><label>Client</label><select data-ef="client_id">${clientOptions(e.client_id || '')}</select></div>
+          <div class="f" style="grid-column:1/-1"><label>Description</label><input data-ef="description" value="${esc(e.description || '')}"></div>
+          <div class="f check"><input type="checkbox" id="eb-${e.id}" data-ef="billable" ${e.billable ? 'checked' : ''}><label for="eb-${e.id}">Bill to client</label></div>
+          <div class="f check"><input type="checkbox" id="er-${e.id}" data-ef="reimbursed" ${e.reimbursed ? 'checked' : ''}><label for="er-${e.id}">Reimbursed</label></div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn sm primary" data-savex="${e.id}">Save changes</button>
+          <button class="btn sm ghost" data-cancelx="1">Cancel</button>
+          <span class="spacer"></span>
+          <small style="color:var(--muted)">Receipt and deletion stay on the row — cancel first.</small>
+        </div></td></tr>` : `<tr>
         <td>${esc(date(e.spent_on))}</td>
         <td>${esc(e.vendor)}${e.description ? `<br><small style="color:var(--muted)">${esc(e.description)}</small>` : ''}</td>
         <td>${esc(e.category)}</td>
@@ -1320,7 +1411,8 @@ function renderExpenses() {
         <td>${e.billable ? (e.reimbursed
           ? '<span class="pill paid">reimbursed</span>'
           : `<button class="btn sm" data-reimb="${e.id}">Mark reimbursed</button>`) : '—'}</td>
-        <td><button class="btn sm ghost danger" data-delx="${e.id}">Delete</button></td>
+        <td><button class="btn sm ghost" data-editx="${e.id}">Edit</button>
+            <button class="btn sm ghost danger" data-delx="${e.id}">Delete</button></td>
       </tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="5">${rows.length} expense${rows.length === 1 ? '' : 's'} in ${moneyYear}
         · ${rows.filter((e) => e.receipt_path).length} of ${rows.length} with a receipt</td>
@@ -1372,6 +1464,40 @@ function renderExpenses() {
       btn.textContent = 'Add expense';
     }
   });
+
+  $('moneyBody').querySelectorAll('[data-editx]').forEach((el) =>
+    el.addEventListener('click', () => startEdit('expense', el.dataset.editx, renderMoney)));
+  $('moneyBody').querySelectorAll('[data-cancelx]').forEach((el) =>
+    el.addEventListener('click', () => cancelEdit(renderMoney)));
+  $('moneyBody').querySelectorAll('[data-savex]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      const panel = el.closest('td');
+      const val = (k) => panel.querySelector(`[data-ef="${k}"]`);
+      const dollars = Number(val('amount').value);
+      if (!val('vendor').value.trim()) return toast('Vendor is required.', true);
+      if (!Number.isFinite(dollars) || dollars <= 0) return toast('Enter an amount.', true);
+      el.disabled = true; el.textContent = 'Saving…';
+      try {
+        await api('save_expense', {
+          id: el.dataset.savex,
+          spent_on: val('spent_on').value,
+          vendor: val('vendor').value.trim(),
+          category: val('category').value,
+          amount_cents: Math.round(dollars * 100),
+          payment_method: val('payment_method').value || null,
+          client_id: val('client_id').value || null,
+          description: val('description').value.trim(),
+          billable: val('billable').checked,
+          reimbursed: val('reimbursed').checked,
+        });
+        editing = null;
+        toast('Expense updated.');
+        await loadMoney();
+      } catch (err) {
+        el.disabled = false; el.textContent = 'Save changes';
+        toast(err.message, true);
+      }
+    }));
 
   $('moneyBody').querySelectorAll('[data-delx]').forEach((el) =>
     el.addEventListener('click', async () => {
@@ -1448,7 +1574,25 @@ function renderMileage() {
     <div class="scroll-x">${rows.length ? `<table class="tbl">
       <thead><tr><th>Date</th><th>Purpose</th><th>Route</th><th>Client</th>
         <th class="num">Miles</th><th class="num">Rate</th><th class="num">Value</th><th></th></tr></thead>
-      <tbody>${rows.map((t) => `<tr>
+      <tbody>${rows.map((t) => isEditing('mileage', t.id) ? `<tr class="edit-cell"><td colspan="8">
+        <div class="edit-grid">
+          <div class="f"><label>Date</label><input type="date" data-mf="drove_on" value="${esc(t.drove_on || '')}"></div>
+          <div class="f" style="grid-column:1/-1"><label>Purpose</label><input data-mf="purpose" value="${esc(t.purpose || '')}"></div>
+          <div class="f"><label>From</label><input data-mf="from_place" value="${esc(t.from_place || '')}"></div>
+          <div class="f"><label>To</label><input data-mf="to_place" value="${esc(t.to_place || '')}"></div>
+          <div class="f"><label>Client</label><select data-mf="client_id">${clientOptions(t.client_id || '')}</select></div>
+          <div class="f"><label>Miles — total driven</label><input type="number" step="0.1" min="0" data-mf="miles"
+            value="${Number(t.miles).toFixed(1)}"></div>
+          <div class="f"><label>Rate (¢/mile)</label><input type="number" step="0.1" min="0" data-mf="rate_cents"
+            value="${Number(t.rate_cents).toFixed(1)}"></div>
+          <div class="f check"><input type="checkbox" id="mr-${t.id}" data-mf="round_trip" ${t.round_trip ? 'checked' : ''}><label for="mr-${t.id}">Round trip</label></div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn sm primary" data-savem="${t.id}">Save changes</button>
+          <button class="btn sm ghost" data-cancelm="1">Cancel</button>
+          <span class="spacer"></span>
+          <small style="color:var(--muted)">Miles is the whole trip as driven. The round-trip box is a label here, it does not double anything.</small>
+        </div></td></tr>` : `<tr>
         <td>${esc(date(t.drove_on))}</td>
         <td>${esc(t.purpose)}${t.round_trip ? '<br><small style="color:var(--muted)">round trip</small>' : ''}</td>
         <td>${esc(t.from_place || '—')} → ${esc(t.to_place || '—')}</td>
@@ -1456,7 +1600,8 @@ function renderMileage() {
         <td class="num">${Number(t.miles).toFixed(1)}</td>
         <td class="num">${Number(t.rate_cents).toFixed(1)}¢</td>
         <td class="num">${esc(money(mileageAmount(t)))}</td>
-        <td><button class="btn sm ghost danger" data-delm="${t.id}">Delete</button></td>
+        <td><button class="btn sm ghost" data-editm="${t.id}">Edit</button>
+            <button class="btn sm ghost danger" data-delm="${t.id}">Delete</button></td>
       </tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="4">${rows.length} trip${rows.length === 1 ? '' : 's'} in ${moneyYear}</td>
         <td class="num tot">${totalMiles.toFixed(1)}</td><td></td>
@@ -1488,6 +1633,43 @@ function renderMileage() {
     const r = irsRateFor($('mDate').value || todayISO());
     $('mRate').value = r.cents;
   });
+
+  $('moneyBody').querySelectorAll('[data-editm]').forEach((el) =>
+    el.addEventListener('click', () => startEdit('mileage', el.dataset.editm, renderMoney)));
+  $('moneyBody').querySelectorAll('[data-cancelm]').forEach((el) =>
+    el.addEventListener('click', () => cancelEdit(renderMoney)));
+  $('moneyBody').querySelectorAll('[data-savem]').forEach((el) =>
+    el.addEventListener('click', async () => {
+      const panel = el.closest('td');
+      const val = (k) => panel.querySelector(`[data-mf="${k}"]`);
+      const miles = Number(val('miles').value);
+      const rate = Number(val('rate_cents').value);
+      if (!val('purpose').value.trim()) return toast('Purpose is required.', true);
+      if (!Number.isFinite(miles) || miles <= 0) return toast('Enter the miles driven.', true);
+      if (!Number.isFinite(rate) || rate <= 0) return toast('Enter the rate.', true);
+      el.disabled = true; el.textContent = 'Saving…';
+      try {
+        // miles is stored as the whole trip, so it goes back exactly as typed —
+        // the round-trip flag must not double it a second time.
+        await api('save_mileage', {
+          id: el.dataset.savem,
+          drove_on: val('drove_on').value,
+          purpose: val('purpose').value.trim(),
+          from_place: val('from_place').value.trim(),
+          to_place: val('to_place').value.trim(),
+          client_id: val('client_id').value || null,
+          miles,
+          rate_cents: rate,
+          round_trip: val('round_trip').checked,
+        });
+        editing = null;
+        toast('Trip updated.');
+        await loadMoney();
+      } catch (err) {
+        el.disabled = false; el.textContent = 'Save changes';
+        toast(err.message, true);
+      }
+    }));
 
   $('moneyBody').querySelectorAll('[data-delm]').forEach((el) =>
     el.addEventListener('click', async () => {
