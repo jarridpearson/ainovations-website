@@ -57,6 +57,16 @@
 .screens figure{margin:0;min-width:0}
 .screens figcaption{margin-top:13px;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:min(900px,100%)}
 .screens figcaption b{color:#fff;display:block;margin-bottom:4px;font-size:15.5px}
+/* The screenshots hold a legible minimum width on a phone, which means the
+   frame scrolls. Say so, and make the frame reachable from the keyboard. */
+.browser .bar{gap:8px}
+.browser .bar span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot-full{flex:0 0 auto;padding:4px 10px;border:1px solid var(--border);border-radius:999px;
+  color:#cfe3f0;text-decoration:none;font-size:11.5px;font-weight:800;letter-spacing:.02em}
+.shot-full:hover,.shot-full:focus-visible{background:rgba(255,255,255,.1);color:#fff}
+.browser .pane:focus-visible{outline:3px solid var(--teal-soft);outline-offset:-3px}
+.pan-cue{display:none;margin:8px 0 0;color:var(--muted);font-size:12.5px;font-weight:700}
+@media(max-width:980px){.pan-cue{display:block}}
 .demo-tag{display:inline-flex;align-items:center;gap:8px;margin:0 0 20px;padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.05);color:#d8e6f0;font-size:12.5px;font-weight:800}
 
 html{scroll-behavior:smooth}
@@ -387,44 +397,50 @@ img{max-width:100%;display:block}
       <div class="screens">
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Customers — the list</span></div>
-            <div class="pane"><img src="/crm-assets/screens/customers.png" alt="The CRM customer list, showing each business with its status, town, monthly amount and plan" width="1280" height="626" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Customers — the list</span><a class="shot-full" href="/crm-assets/screens/customers.png" target="_blank" rel="noopener">Full size</a></div>
+            <div class="pane" tabindex="0" role="group" aria-label="The CRM customer list. Scrollable — use the arrow keys."><img src="/crm-assets/screens/customers.png" alt="The CRM customer list, showing each business with its status, town, monthly amount and plan" width="1280" height="626" loading="lazy" /></div>
           </div>
+          <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
           <figcaption><b>Everyone, on one screen</b>Status, town, what they pay and which plan, with search and a status filter above. The tiles across the top are the numbers you actually get asked for: collected to date, monthly recurring, what's outstanding and what's due.</figcaption>
         </figure>
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Customers — one record</span></div>
-            <div class="pane"><img src="/crm-assets/screens/customer-record.png" alt="A customer record in the CRM, open on the notes tab with a pinned note at the top" width="1280" height="670" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Customers — one record</span><a class="shot-full" href="/crm-assets/screens/customer-record.png" target="_blank" rel="noopener">Full size</a></div>
+            <div class="pane" tabindex="0" role="group" aria-label="A customer record in the CRM. Scrollable — use the arrow keys."><img src="/crm-assets/screens/customer-record.png" alt="A customer record in the CRM, open on the notes tab with a pinned note at the top" width="1280" height="670" loading="lazy" /></div>
           </div>
+          <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
           <figcaption><b>The record itself</b>Notes, billing, details and an activity log that writes itself. Pin the thing you keep forgetting to the top so it is the first line you see next time you open them.</figcaption>
         </figure>
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Money out — with receipts</span></div>
-            <div class="pane"><img src="/crm-assets/screens/expenses-receipts.png" alt="The CRM expense screen, showing the add-expense form and a ledger of expenses with receipts attached to each line" width="1280" height="961" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Money out — with receipts</span><a class="shot-full" href="/crm-assets/screens/expenses-receipts.png" target="_blank" rel="noopener">Full size</a></div>
+            <div class="pane" tabindex="0" role="group" aria-label="The CRM expense screen. Scrollable — use the arrow keys."><img src="/crm-assets/screens/expenses-receipts.png" alt="The CRM expense screen, showing the add-expense form and a ledger of expenses with receipts attached to each line" width="1280" height="961" loading="lazy" /></div>
           </div>
+          <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
           <figcaption><b>Money out, with the receipt on the line</b>Add it in one row — date, vendor, category, amount, how you paid, which customer it was for — and attach the photo of the receipt right there. The counter at the top tells you how many lines are still missing one, so nothing is discovered in January.</figcaption>
         </figure>
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Mileage</span></div>
-            <div class="pane"><img src="/crm-assets/screens/mileage.png" alt="The CRM mileage screen, showing trips logged with the IRS standard rate stamped on each one" width="1280" height="682" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Mileage</span><a class="shot-full" href="/crm-assets/screens/mileage.png" target="_blank" rel="noopener">Full size</a></div>
+            <div class="pane" tabindex="0" role="group" aria-label="The CRM mileage screen. Scrollable — use the arrow keys."><img src="/crm-assets/screens/mileage.png" alt="The CRM mileage screen, showing trips logged with the IRS standard rate stamped on each one" width="1280" height="682" loading="lazy" /></div>
           </div>
+          <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
           <figcaption><b>Mileage at the IRS rate</b>Where from, where to, why, and a round-trip toggle so you log it once. The rate fills in from the IRS standard rate for that trip's date and is stamped onto the trip, so a mid-year rate change can't quietly rewrite the trips you already logged.</figcaption>
         </figure>
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Margins</span></div>
-            <div class="pane"><img src="/crm-assets/screens/margins.png" alt="The CRM margins screen, showing revenue, processing fees, other costs and margin for each customer plus the business totals" width="1280" height="462" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Margins</span><a class="shot-full" href="/crm-assets/screens/margins.png" target="_blank" rel="noopener">Full size</a></div>
+            <div class="pane" tabindex="0" role="group" aria-label="The CRM margins screen. Scrollable — use the arrow keys."><img src="/crm-assets/screens/margins.png" alt="The CRM margins screen, showing revenue, processing fees, other costs and margin for each customer plus the business totals" width="1280" height="462" loading="lazy" /></div>
           </div>
+          <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
           <figcaption><b>What it was all worth</b>Revenue collected, the processor's cut, everything else you spent, and what was left — per customer and across the business. Costs that belong to no one customer are reported as shared overhead rather than quietly dropped, so the page reconciles to the expense ledger.</figcaption>
         </figure>
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Year-end totals</span></div>
-            <div class="pane"><img src="/crm-assets/screens/year-end-totals.png" alt="The CRM year-end screen, showing deductible expenses grouped by category with receipt counts, and revenue collected by customer" width="1280" height="635" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Year-end totals</span><a class="shot-full" href="/crm-assets/screens/year-end-totals.png" target="_blank" rel="noopener">Full size</a></div>
+            <div class="pane" tabindex="0" role="group" aria-label="The CRM year-end screen. Scrollable — use the arrow keys."><img src="/crm-assets/screens/year-end-totals.png" alt="The CRM year-end screen, showing deductible expenses grouped by category with receipt counts, and revenue collected by customer" width="1280" height="635" loading="lazy" /></div>
           </div>
+          <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
           <figcaption><b>January, already added up</b>Pick the tax year and the whole return is on one screen: deductible spend grouped by category with the receipt count beside each one, mileage at that year's rate added underneath, and revenue collected per customer on the date the money actually arrived. One button exports every figure on it to a spreadsheet.</figcaption>
         </figure>
       </div>
@@ -462,9 +478,10 @@ img{max-width:100%;display:block}
 
       <figure class="screens" style="margin-top:30px">
         <div class="browser">
-          <div class="bar"><i></i><i></i><i></i><span>What the accountant sees when they sign in</span></div>
-          <div class="pane"><img src="/crm-assets/screens/accountant-login.png" alt="The CRM as an accountant sees it: a read-only banner, no customers tab, and the year-end totals screen" width="1280" height="683" loading="lazy" /></div>
+          <div class="bar"><i></i><i></i><i></i><span>What the accountant sees when they sign in</span><a class="shot-full" href="/crm-assets/screens/accountant-login.png" target="_blank" rel="noopener">Full size</a></div>
+          <div class="pane" tabindex="0" role="group" aria-label="The CRM as an accountant sees it: a read-only banner. Scrollable — use the arrow keys."><img src="/crm-assets/screens/accountant-login.png" alt="The CRM as an accountant sees it: a read-only banner, no customers tab, and the year-end totals screen" width="1280" height="683" loading="lazy" /></div>
         </div>
+        <p class="pan-cue">Swipe sideways, or press Tab then the arrow keys, to see the rest of this screen.</p>
         <figcaption><b>Their login, not yours</b>They land on the year's figures. There is no Customers tab, because the notes and the activity log are not theirs to read, and every control that would change a record is gone rather than greyed out &mdash; the server refuses the write even if the button is put back. Same demo data as above.</figcaption>
       </figure>
     </section>
