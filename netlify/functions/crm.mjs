@@ -17,6 +17,23 @@ const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 const ALLOWED = (process.env.CRM_ALLOWED_EMAILS || 'jp@ainovations.net')
   .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 
+// The accountant's login. These addresses may read, and may read ONLY — every
+// write action is refused below, so a bookkeeper can pull the year's figures
+// without being able to change a record. An address on both lists keeps full
+// access; the read-only list never widens what ALLOWED already granted.
+const READ_ONLY = (process.env.CRM_READONLY_EMAILS || '')
+  .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+// Everything a read-only session is allowed to call. Anything not named here is
+// a write, and is refused — a new action is denied by default, not permitted by
+// an oversight.
+// 'client' is deliberately absent: that response carries the customer notes and
+// the activity log, and the accountant login is promised sight of neither. So is
+// 'personal', which is a private ledger and not part of the business return.
+const READ_ACTIONS = new Set([
+  'bootstrap', 'money', 'margins', 'taxyear', 'receipt_url',
+]);
+
 const JSON_HEADERS = {
   'content-type': 'application/json',
   'cache-control': 'no-store',
@@ -55,8 +72,11 @@ async function whoami(token) {
   if (!res.ok) return null;
   const user = await res.json();
   if (!user?.email) return null;
-  if (!ALLOWED.includes(user.email.toLowerCase())) return null;
-  return user;
+  const email = user.email.toLowerCase();
+  const full = ALLOWED.includes(email);
+  const readOnly = READ_ONLY.includes(email);
+  if (!full && !readOnly) return null;
+  return { ...user, readOnly: !full };
 }
 
 async function logActivity(clientId, kind, summary, extra = {}) {
@@ -497,6 +517,9 @@ function pickClientFields(input) {
 const money = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 
 async function handleAction(action, payload, user) {
+  if (user.readOnly && !READ_ACTIONS.has(action)) {
+    return { error: 'This login is read-only.' };
+  }
   switch (action) {
     case 'bootstrap': {
       const [clients, openInvoices, paidInvoices, allProspects] = await Promise.all([
@@ -521,6 +544,7 @@ async function handleAction(action, payload, user) {
         prospectCount: allProspects.filter((p) => !converted.has(p.id)).length,
         stripeConfigured: !!STRIPE_KEY,
         user: user.email,
+        readOnly: !!user.readOnly,
       };
     }
 
@@ -780,6 +804,96 @@ async function handleAction(action, payload, user) {
         clients,
         settings: Object.fromEntries(settings.map((s) => [s.key, s.value])),
         earliestExpense: years[0]?.spent_on || null,
+      };
+    }
+
+
+    // Everything an accountant asks for at the end of a tax year, added up on
+    // the server so the figure on screen and the figure in the export are the
+    // same number. Read-only: this case writes nothing.
+    case 'taxyear': {
+      const year = String(payload.year || new Date().getFullYear());
+      const from = `${year}-01-01`;
+      const to = `${year}-12-31`;
+      const [expenses, mileage, paid, clients, settings, firstExpense] = await Promise.all([
+        db(`crm_expenses?select=*&spent_on=gte.${from}&spent_on=lte.${to}&order=spent_on.desc`),
+        db(`crm_mileage?select=*&drove_on=gte.${from}&drove_on=lte.${to}&order=drove_on.desc`),
+        db(`crm_invoices?select=client_id,number,amount_paid_cents,paid_at&amount_paid_cents=gt.0`
+           + `&paid_at=gte.${from}T00:00:00&paid_at=lte.${to}T23:59:59&order=paid_at.asc`),
+        db('crm_clients?select=id,client_no,business_name&order=business_name.asc'),
+        db('crm_settings?select=*'),
+        db('crm_expenses?select=spent_on&order=spent_on.asc&limit=1'),
+      ]);
+
+      const sum = (rows, f) => rows.reduce((a, r) => a + (Number(r[f]) || 0), 0);
+
+      // Expenses grouped the way a Schedule C is filled in: by category, with
+      // the receipt count beside it so a thin category is obvious at a glance.
+      const cats = new Map();
+      for (const e of expenses) {
+        const key = e.category || 'Uncategorized';
+        const c = cats.get(key)
+          || { category: key, amountCents: 0, count: 0, receiptable: 0, withReceipt: 0 };
+        c.amountCents += e.amount_cents || 0;
+        c.count += 1;
+        // A Stripe fee is a deduction taken inside a payout, not a purchase —
+        // Stripe never issues a receipt for one. Such a line is not counted as
+        // missing a receipt, and not counted as having one either; it is simply
+        // not a line a receipt can exist for.
+        if (!(e.source_ref || '').startsWith('stripe:fee:')) {
+          c.receiptable += 1;
+          if (e.receipt_path) c.withReceipt += 1;
+        }
+        cats.set(key, c);
+      }
+      const byCategory = [...cats.values()].sort((a, b) => b.amountCents - a.amountCents);
+
+      const name = new Map(clients.map((c) => [c.id, c]));
+      const revByClient = new Map();
+      for (const i of paid) {
+        revByClient.set(i.client_id, (revByClient.get(i.client_id) || 0) + (i.amount_paid_cents || 0));
+      }
+      const byClient = [...revByClient.entries()]
+        .map(([id, revenueCents]) => ({
+          id,
+          client_no: name.get(id)?.client_no || '—',
+          business_name: name.get(id)?.business_name || 'Not linked to a customer',
+          revenueCents,
+        }))
+        .sort((a, b) => b.revenueCents - a.revenueCents);
+
+      const miles = sum(mileage, 'miles');
+      const mileageValueCents = mileage.reduce(
+        (a, m) => a + Math.round((Number(m.miles) || 0) * (Number(m.rate_cents) || 0)), 0);
+      const expenseCents = sum(expenses, 'amount_cents');
+      const feeCents = sum(expenses.filter((e) => e.category === FEE_CATEGORY), 'amount_cents');
+      const revenueCents = sum(paid, 'amount_paid_cents');
+      // Mileage is claimed at the standard rate instead of the running costs of
+      // the vehicle, so it is added to the spend rather than found inside it.
+      const deductibleCents = expenseCents + mileageValueCents;
+
+      return {
+        year: Number(year),
+        revenueCents,
+        expenseCents,
+        feeCents,
+        mileage: {
+          miles,
+          trips: mileage.length,
+          valueCents: mileageValueCents,
+          rateCents: Number((settings.find((x) => x.key === 'mileage_rate_cents') || {}).value) || null,
+        },
+        deductibleCents,
+        netCents: revenueCents - deductibleCents,
+        receipts: {
+          total: expenses.filter((e) => !(e.source_ref || '').startsWith('stripe:fee:')).length,
+          withReceipt: expenses.filter(
+            (e) => e.receipt_path && !(e.source_ref || '').startsWith('stripe:fee:')).length,
+        },
+        byCategory,
+        byClient,
+        payments: paid.length,
+        earliestExpense: firstExpense[0]?.spent_on || null,
       };
     }
 

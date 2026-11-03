@@ -210,6 +210,12 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
   padding:6px 13px;font-size:13px;font-weight:650;
 }
 .vbtn.on{background:var(--panel-2);color:var(--text)}
+.ro-note{margin:0 0 16px;padding:11px 15px;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.05);color:var(--muted);font-size:13.5px;font-weight:700}
+.taxgrid{display:grid;gap:22px;grid-template-columns:1fr 1fr}
+@media(max-width:900px){.taxgrid{grid-template-columns:1fr}}
+.taxgrid h3{margin:0 0 10px;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.taxgrid .thin{color:var(--muted);font-size:12.5px;margin:10px 0 0;line-height:1.5}
 
 .yearpick{
   background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;
@@ -270,6 +276,7 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
       <button class="vbtn on" data-view="clients">Clients</button>
       <button class="vbtn" data-view="money">Expenses</button>
       <button class="vbtn" data-view="margins">Margins</button>
+      <button class="vbtn" data-view="tax">Year-end</button>
     </div>
     <div class="spacer"></div>
     <span id="clientTools">
@@ -324,6 +331,20 @@ dialog .dlg-foot{padding:12px 16px;border-top:1px solid var(--border);display:fl
         <button class="tab" data-mtab="mileage">Mileage</button>
       </div>
       <div class="card-body" id="moneyBody"></div>
+    </div>
+  </div>
+
+  <div class="wrap hidden" id="taxView">
+    <div class="ro-note hidden" id="roNote">Read-only login. Nothing on this screen can be changed.</div>
+    <div class="stats" id="taxStats"></div>
+    <div class="card">
+      <h2>
+        <span>Year-end totals</span>
+        <span class="spacer"></span>
+        <select id="taxYear" class="yearpick"></select>
+        <button class="btn sm" id="btnTaxCsv">Export to spreadsheet</button>
+      </h2>
+      <div class="card-body" id="taxBody"></div>
     </div>
   </div>
 
@@ -474,7 +495,8 @@ async function showApp() {
 async function reload() {
   const data = await api('bootstrap');
   state = data;
-  $('whoami').textContent = data.user;
+  $('whoami').textContent = data.readOnly ? `${data.user} · read-only` : data.user;
+  if (data.readOnly) { applyReadOnly(); return; }
   if (!data.stripeConfigured) $('btnSync').title = 'STRIPE_SECRET_KEY is not set in Netlify yet.';
   renderStats();
   renderList();
@@ -1021,6 +1043,154 @@ function renderMoneyStats() {
     `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
 }
 
+
+/* ---------------- year-end totals (the accountant's screen) ---------------- */
+
+let taxData = null;
+let taxYear = new Date().getFullYear();
+
+async function loadTax() {
+  $('taxBody').innerHTML = '<div class="empty">Loading…</div>';
+  taxData = await api('taxyear', { year: taxYear });
+  const first = taxData.earliestExpense ? Number(taxData.earliestExpense.slice(0, 4)) : taxYear;
+  const years = [];
+  for (let y = new Date().getFullYear(); y >= Math.min(first, taxYear); y -= 1) years.push(y);
+  $('taxYear').innerHTML = years.map((y) =>
+    `<option value="${y}" ${y === taxYear ? 'selected' : ''}>${y}</option>`).join('');
+  renderTax();
+}
+
+function renderTax() {
+  const t = taxData;
+  const r = t.receipts;
+
+  $('taxStats').innerHTML = [
+    [`Revenue collected ${t.year}`, money(t.revenueCents), 'accent'],
+    ['Deductible total', money(t.deductibleCents), 'accent'],
+    ['Expenses', money(t.expenseCents), ''],
+    ['Mileage value', money(t.mileage.valueCents), ''],
+    ['Processing fees', money(t.feeCents), ''],
+    ['Net', money(t.netCents), ''],
+    ['Receipts on file', `${r.withReceipt} of ${r.total}`, ''],
+  ].map(([label, value, cls]) =>
+    `<div class="stat ${cls}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('');
+
+  // A category of nothing but processing fees has no line a receipt could hang
+  // off, so it reads "—" rather than a ratio that implies one is on file.
+  const ratio = (withReceipt, receiptable) =>
+    receiptable ? `${withReceipt} of ${receiptable}` : '—';
+  const catRows = t.byCategory.map((c) => `<tr>
+      <td>${esc(c.category)}</td>
+      <td class="num">${c.count}</td>
+      <td class="num">${esc(ratio(c.withReceipt, c.receiptable))}</td>
+      <td class="num">${esc(money(c.amountCents))}</td>
+    </tr>`).join('');
+  const totalLines = t.byCategory.reduce((a, c) => a + c.count, 0);
+
+  const clientRows = t.byClient.map((c) => `<tr>
+      <td>${esc(c.business_name)} <small style="color:var(--muted)">${esc(c.client_no)}</small></td>
+      <td class="num">${esc(money(c.revenueCents))}</td>
+    </tr>`).join('');
+
+  // rate_cents is already cents per mile (76 = 76¢), not dollars.
+  const rate = t.mileage.rateCents
+    ? `${t.mileage.rateCents.toFixed(1)}¢ per mile`
+    : 'the rate stamped on each trip';
+
+  $('taxBody').innerHTML = `
+    <div class="taxgrid">
+      <div>
+        <h3>Deductible expenses by category</h3>
+        <div class="scroll-x">${t.byCategory.length ? `<table class="tbl">
+          <thead><tr><th>Category</th><th class="num">Lines</th><th class="num">Receipts</th><th class="num">Amount</th></tr></thead>
+          <tbody>${catRows}</tbody>
+          <tfoot><tr style="font-weight:600;border-top:2px solid var(--border)">
+            <td>All expenses</td><td class="num">${totalLines}</td>
+            <td class="num">${esc(ratio(r.withReceipt, r.total))}</td>
+            <td class="num">${esc(money(t.expenseCents))}</td>
+          </tr>
+          <tr><td>Mileage — ${t.mileage.trips} trips, ${esc(t.mileage.miles.toLocaleString('en-US', { maximumFractionDigits: 1 }))} miles</td>
+            <td class="num">—</td><td class="num">—</td>
+            <td class="num">${esc(money(t.mileage.valueCents))}</td></tr>
+          <tr style="font-weight:700;border-top:2px solid var(--border)">
+            <td colspan="3">Deductible total</td>
+            <td class="num">${esc(money(t.deductibleCents))}</td></tr></tfoot>
+        </table>` : '<div class="empty">Nothing recorded for this year.</div>'}</div>
+        <p class="thin">Mileage is claimed at ${esc(rate)} rather than the running costs of the
+          vehicle, so it is added to the spend above rather than found inside it. Processing fees
+          are a deduction taken inside a payout, so they carry no receipt.</p>
+      </div>
+      <div>
+        <h3>Revenue collected, by customer</h3>
+        <div class="scroll-x">${t.byClient.length ? `<table class="tbl">
+          <thead><tr><th>Customer</th><th class="num">Collected</th></tr></thead>
+          <tbody>${clientRows}</tbody>
+          <tfoot><tr style="font-weight:700;border-top:2px solid var(--border)">
+            <td>All customers — ${t.payments} payments</td>
+            <td class="num">${esc(money(t.revenueCents))}</td>
+          </tr></tfoot>
+        </table>` : '<div class="empty">No payments recorded for this year.</div>'}</div>
+        <p class="thin">Counted on the date the money actually arrived, not the date the
+          invoice was raised.</p>
+      </div>
+    </div>`;
+}
+
+// One file, every figure on the screen, so the export and the page can never
+// disagree — they are built from the same object.
+function taxCsv() {
+  const t = taxData;
+  const d = (cents) => ((cents || 0) / 100).toFixed(2);
+  const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [
+    [`AInovations CRM — year-end totals ${t.year}`],
+    [],
+    ['Summary'],
+    ['Revenue collected', d(t.revenueCents)],
+    ['Expenses', d(t.expenseCents)],
+    ['Mileage value', d(t.mileage.valueCents)],
+    ['Deductible total', d(t.deductibleCents)],
+    ['Of which processing fees', d(t.feeCents)],
+    ['Net', d(t.netCents)],
+    ['Receipts on file', `${t.receipts.withReceipt} of ${t.receipts.total}`],
+    ['Miles driven', t.mileage.miles],
+    ['Trips', t.mileage.trips],
+    [],
+    ['Expenses by category'],
+    ['Category', 'Lines', 'Lines with a receipt', 'Amount'],
+    ...t.byCategory.map((c) => [c.category, c.count, c.withReceipt, d(c.amountCents)]),
+    [],
+    ['Revenue by customer'],
+    ['Customer', 'Customer no.', 'Collected'],
+    ...t.byClient.map((c) => [c.business_name, c.client_no, d(c.revenueCents)]),
+  ];
+  const csv = rows.map((r) => r.map(q).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ainovations-year-end-${t.year}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('btnTaxCsv').addEventListener('click', taxCsv);
+$('taxYear').addEventListener('change', async () => {
+  taxYear = Number($('taxYear').value);
+  await loadTax().catch((e) => toast(e.message, true));
+});
+
+/* A read-only session is the accountant's. It sees the year's figures, the
+   expense ledger and the margins — never the customer notes or activity log,
+   which is why the Clients view and every write control are removed rather
+   than merely disabled. */
+function applyReadOnly() {
+  document.getElementById('roNote').classList.remove('hidden');
+  document.getElementById('clientTools').remove();
+  document.querySelector('.vbtn[data-view="clients"]').remove();
+  document.getElementById('clientsView').remove();
+  document.querySelector('.vbtn[data-view="tax"]').click();
+}
+
 /* ---------------- margins ---------------- */
 
 let marginData = null;
@@ -1402,12 +1572,14 @@ $('fStatus').addEventListener('change', renderList);
 document.querySelectorAll('.vbtn').forEach((b) => b.addEventListener('click', async () => {
   const view = b.dataset.view;
   document.querySelectorAll('.vbtn').forEach((x) => x.classList.toggle('on', x === b));
-  $('clientsView').classList.toggle('hidden', view !== 'clients');
+  if ($('clientsView')) $('clientsView').classList.toggle('hidden', view !== 'clients');
   $('moneyView').classList.toggle('hidden', view !== 'money');
   $('marginsView').classList.toggle('hidden', view !== 'margins');
-  $('clientTools').classList.toggle('hidden', view !== 'clients');
+  $('taxView').classList.toggle('hidden', view !== 'tax');
+  if ($('clientTools')) $('clientTools').classList.toggle('hidden', view !== 'clients');
   if (view === 'money') await loadMoney().catch((e) => toast(e.message, true));
   if (view === 'margins') await loadMargins().catch((e) => toast(e.message, true));
+  if (view === 'tax') await loadTax().catch((e) => toast(e.message, true));
 }));
 
 document.querySelectorAll('[data-mtab]').forEach((b) => b.addEventListener('click', () => {

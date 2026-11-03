@@ -49,10 +49,10 @@ img{max-width:100%;display:block}
 .brand{display:inline-flex;align-items:center;width:min(300px,42vw);min-width:210px;text-decoration:none}
 .brand img{width:100%;height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 12px 30px rgba(0,0,0,.28))}
 .nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.nav-links a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
-.nav-links a:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
-.nav-links a.cta{background:var(--teal);color:#03212a}
-.nav-links a.cta:hover{background:var(--teal-soft)}
+.nav-links a,.nav-right a.cta{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
+.nav-links a:hover,.nav-right a.cta:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
+.nav-right a.cta{background:var(--teal);color:#03212a}
+.nav-right a.cta:hover{background:var(--teal-soft)}
 .hero{padding:clamp(30px,5vw,58px);border:1px solid var(--border);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:var(--shadow)}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;padding:9px 14px;border:1px solid rgba(255,209,102,.5);border-radius:999px;background:rgba(255,209,102,.1);color:#ffe3a1;font-size:13px;font-weight:900;letter-spacing:.04em}
 .eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(255,209,102,.9)}
@@ -141,6 +141,27 @@ img{max-width:100%;display:block}
 .bignum{display:block;font-size:clamp(46px,8vw,72px);font-weight:900;letter-spacing:-.05em;color:var(--gold);line-height:1;margin:0 0 6px}
 @media(max-width:960px){.included{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}.reach{grid-template-columns:1fr;gap:10px}.reach .arrow{transform:rotate(90deg)}}
 @media(max-width:640px){.inquire-form .fg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}}
+
+/* Compact phone nav: the links collapse behind a menu button instead of
+   stacking into a column that eats the whole first screen. */
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-burger{display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.06);cursor:pointer}
+.nav-burger span{display:block;width:20px;height:2px;border-radius:2px;background:currentColor;opacity:.85}
+.nav-burger:hover,.nav-burger:focus-visible{background:rgba(255,255,255,.12)}
+@media(max-width:620px){
+  .nav{position:relative;flex-wrap:wrap;row-gap:10px;column-gap:12px}
+  .brand{min-width:0;width:min(210px,46vw)}
+  .nav-right{margin-left:auto}
+  .nav-right a.cta{white-space:nowrap}
+  .nav-burger{display:inline-flex;flex:0 0 auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;
+    flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid var(--border);
+    border-radius:18px;background:#030b14;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  .nav-links[data-open="true"]{display:flex}
+  .nav-links a{justify-content:center;min-height:46px}
+}
 </style>
 <script type="application/ld+json">
 {
@@ -161,14 +182,31 @@ img{max-width:100%;display:block}
 <div class="page">
   <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="/" aria-label="AInovations home"><img src="/ainovations-logo-header.png" alt="AInovations — The AI Product Studio That Ships" /></a>
-    <div class="nav-links">
-      <a href="#problem">The problem</a>
-      <a href="#build">What we build</a>
-      <a href="#cost">Build vs rent</a>
-      <a href="#pricing">Pricing</a>
+    <div class="nav-right">
+      <div class="nav-links" id="navmenu" data-open="false">
+        <a href="#problem">The problem</a>
+        <a href="#build">What we build</a>
+        <a href="#cost">Build vs rent</a>
+        <a href="#pricing">Pricing</a>
+      </div>
       <a class="cta" href="#inquire">Get a look</a>
+      <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navmenu"><span></span><span></span><span></span></button>
     </div>
   </nav>
+<script>
+(function(){
+  var b=document.querySelector('.nav-burger'),m=document.getElementById('navmenu');
+  if(!b||!m)return;
+  function set(open){
+    m.setAttribute('data-open',open?'true':'false');
+    b.setAttribute('aria-expanded',open?'true':'false');
+    b.setAttribute('aria-label',open?'Close menu':'Open menu');
+  }
+  b.addEventListener('click',function(){set(m.getAttribute('data-open')!=='true')});
+  m.addEventListener('click',function(e){if(e.target.closest('a'))set(false)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
 
   <main id="main">
 

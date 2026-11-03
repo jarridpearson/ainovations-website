@@ -49,9 +49,13 @@
 /* Shrinking a desktop screenshot to phone width makes it unreadable. Hold it
    at a legible width and let the frame scroll sideways instead. */
 @media(max-width:980px){.browser .pane img{min-width:900px}}
-.screens{display:grid;gap:30px}
-.screens figure{margin:0}
-.screens figcaption{margin-top:13px;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:900px}
+/* A grid item defaults to min-width:auto, so without these the 900px-wide
+   screenshot stretches the figure past the viewport and the whole PAGE scrolls
+   sideways. The frame must be the thing that scrolls, not the document. */
+.screens{display:grid;gap:30px;min-width:0}
+.screens>*{min-width:0}
+.screens figure{margin:0;min-width:0}
+.screens figcaption{margin-top:13px;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:min(900px,100%)}
 .screens figcaption b{color:#fff;display:block;margin-bottom:4px;font-size:15.5px}
 .demo-tag{display:inline-flex;align-items:center;gap:8px;margin:0 0 20px;padding:7px 13px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.05);color:#d8e6f0;font-size:12.5px;font-weight:800}
 
@@ -65,10 +69,10 @@ img{max-width:100%;display:block}
 .brand{display:inline-flex;align-items:center;width:min(300px,42vw);min-width:210px;text-decoration:none}
 .brand img{width:100%;height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 12px 30px rgba(0,0,0,.28))}
 .nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.nav-links a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
-.nav-links a:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
-.nav-links a.cta{background:var(--teal);color:#03212a}
-.nav-links a.cta:hover{background:var(--teal-soft)}
+.nav-links a,.nav-right a.cta{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
+.nav-links a:hover,.nav-right a.cta:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
+.nav-right a.cta{background:var(--teal);color:#03212a}
+.nav-right a.cta:hover{background:var(--teal-soft)}
 .hero{padding:clamp(30px,5vw,58px);border:1px solid var(--border);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:var(--shadow)}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;padding:9px 14px;border:1px solid rgba(255,209,102,.5);border-radius:999px;background:rgba(255,209,102,.1);color:#ffe3a1;font-size:13px;font-weight:900;letter-spacing:.04em}
 .eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(255,209,102,.9)}
@@ -166,6 +170,27 @@ img{max-width:100%;display:block}
 .cpa{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 @media(max-width:960px){.included{grid-template-columns:1fr}.cpa{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.inquire-form .fg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}}
+
+/* Compact phone nav: the links collapse behind a menu button instead of
+   stacking into a column that eats the whole first screen. */
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-burger{display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.06);cursor:pointer}
+.nav-burger span{display:block;width:20px;height:2px;border-radius:2px;background:currentColor;opacity:.85}
+.nav-burger:hover,.nav-burger:focus-visible{background:rgba(255,255,255,.12)}
+@media(max-width:620px){
+  .nav{position:relative;flex-wrap:wrap;row-gap:10px;column-gap:12px}
+  .brand{min-width:0;width:min(210px,46vw)}
+  .nav-right{margin-left:auto}
+  .nav-right a.cta{white-space:nowrap}
+  .nav-burger{display:inline-flex;flex:0 0 auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;
+    flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid var(--border);
+    border-radius:18px;background:#030b14;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  .nav-links[data-open="true"]{display:flex}
+  .nav-links a{justify-content:center;min-height:46px}
+}
 </style>
 <script type="application/ld+json">
 {
@@ -207,14 +232,31 @@ img{max-width:100%;display:block}
 <div class="page">
   <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="/" aria-label="AInovations home"><img src="/ainovations-logo-header.png" alt="AInovations — The AI Product Studio That Ships" /></a>
-    <div class="nav-links">
-      <a href="#problem">The problem</a>
-      <a href="#tracks">What it tracks</a>
-      <a href="#cpa">Your accountant</a>
-      <a href="#pricing">Pricing</a>
+    <div class="nav-right">
+      <div class="nav-links" id="navmenu" data-open="false">
+        <a href="#problem">The problem</a>
+        <a href="#tracks">What it tracks</a>
+        <a href="#cpa">Your accountant</a>
+        <a href="#pricing">Pricing</a>
+      </div>
       <a class="cta" href="#inquire">Get a look</a>
+      <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navmenu"><span></span><span></span><span></span></button>
     </div>
   </nav>
+<script>
+(function(){
+  var b=document.querySelector('.nav-burger'),m=document.getElementById('navmenu');
+  if(!b||!m)return;
+  function set(open){
+    m.setAttribute('data-open',open?'true':'false');
+    b.setAttribute('aria-expanded',open?'true':'false');
+    b.setAttribute('aria-label',open?'Close menu':'Open menu');
+  }
+  b.addEventListener('click',function(){set(m.getAttribute('data-open')!=='true')});
+  m.addEventListener('click',function(e){if(e.target.closest('a'))set(false)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
 
   <main id="main">
 
@@ -372,10 +414,17 @@ img{max-width:100%;display:block}
         </figure>
         <figure>
           <div class="browser">
-            <div class="bar"><i></i><i></i><i></i><span>Year-end totals</span></div>
-            <div class="pane"><img src="/crm-assets/screens/year-end-totals.png" alt="The CRM margins screen, showing revenue, processing fees, other costs and margin for each customer plus the business totals" width="1280" height="462" loading="lazy" /></div>
+            <div class="bar"><i></i><i></i><i></i><span>Margins</span></div>
+            <div class="pane"><img src="/crm-assets/screens/margins.png" alt="The CRM margins screen, showing revenue, processing fees, other costs and margin for each customer plus the business totals" width="1280" height="462" loading="lazy" /></div>
           </div>
           <figcaption><b>What it was all worth</b>Revenue collected, the processor's cut, everything else you spent, and what was left — per customer and across the business. Costs that belong to no one customer are reported as shared overhead rather than quietly dropped, so the page reconciles to the expense ledger.</figcaption>
+        </figure>
+        <figure>
+          <div class="browser">
+            <div class="bar"><i></i><i></i><i></i><span>Year-end totals</span></div>
+            <div class="pane"><img src="/crm-assets/screens/year-end-totals.png" alt="The CRM year-end screen, showing deductible expenses grouped by category with receipt counts, and revenue collected by customer" width="1280" height="635" loading="lazy" /></div>
+          </div>
+          <figcaption><b>January, already added up</b>Pick the tax year and the whole return is on one screen: deductible spend grouped by category with the receipt count beside each one, mileage at that year's rate added underneath, and revenue collected per customer on the date the money actually arrived. One button exports every figure on it to a spreadsheet.</figcaption>
         </figure>
       </div>
     </section>
@@ -409,6 +458,14 @@ img{max-width:100%;display:block}
           <p class="note">Which is why handing it out costs you nothing to worry about.</p>
         </div>
       </div>
+
+      <figure class="screens" style="margin-top:30px">
+        <div class="browser">
+          <div class="bar"><i></i><i></i><i></i><span>What the accountant sees when they sign in</span></div>
+          <div class="pane"><img src="/crm-assets/screens/accountant-login.png" alt="The CRM as an accountant sees it: a read-only banner, no customers tab, and the year-end totals screen" width="1280" height="683" loading="lazy" /></div>
+        </div>
+        <figcaption><b>Their login, not yours</b>They land on the year's figures. There is no Customers tab, because the notes and the activity log are not theirs to read, and every control that would change a record is gone rather than greyed out &mdash; the server refuses the write even if the button is put back. Same demo data as above.</figcaption>
+      </figure>
     </section>
 
     <section class="section" id="build" aria-labelledby="build-h">
