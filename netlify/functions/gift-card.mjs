@@ -113,6 +113,29 @@ function cardEmail(c) {
   return { html, text, subject: `Your ${amt} Website Revamp Gift Card — ${c.code}` };
 }
 
+// A paid gift card that cannot be delivered is money taken for nothing, and the
+// policy is no refunds — so it has to reach a human, not just the function log.
+// Same Resend key the cards go out on; failure here is logged and swallowed so
+// it can never mask the original problem.
+async function alertJarrid(subject, lines) {
+  const body = lines.filter(Boolean).join('\n');
+  console.error(`GIFT CARD ALERT — ${subject}\n${body}`);
+  if (!RESEND_API_KEY) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: FROM, to: [REPLY_TO], reply_to: REPLY_TO,
+        subject: `ACTION NEEDED — ${subject}`,
+        text: `${body}\n\nThis is an automatic alert from the gift card webhook.`,
+      }),
+    });
+  } catch (err) {
+    console.error('gift card alert failed to send', err?.message);
+  }
+}
+
 async function sendCard(c, to) {
   if (!RESEND_API_KEY) {
     console.error('gift card email skipped: RESEND_API_KEY not set');
@@ -180,8 +203,19 @@ async function stripeHook(req) {
   const s = store();
   const c = CODE_RE.test(code) ? await s.get(code, { type: 'json' }) : null;
   if (!c) {
-    // Paid with no card details saved: say so loudly, but don't make Stripe retry.
-    console.error('gift card paid but no saved card', code, session.id);
+    // Paid with no card details saved. Stripe must not retry — the payment is
+    // fine, the card details are what is missing — so this is the only chance
+    // to tell anyone. The buyer has been charged and will receive nothing.
+    await alertJarrid('a gift card was paid for but no card details were saved', [
+      `Stripe session: ${session.id}`,
+      `Reference code: ${code || '(none sent)'}`,
+      `Amount paid:    ${session.amount_total != null ? '$' + (session.amount_total / 100).toFixed(2) : 'unknown'}`,
+      `Buyer email:    ${session.customer_details?.email || 'unknown'}`,
+      `Buyer name:     ${session.customer_details?.name || 'unknown'}`,
+      '',
+      'They have been charged and have no card. Contact them, build the card by',
+      'hand, and send it. Refunds are not offered, so this needs doing today.',
+    ]);
     return ok({ received: true, missingCard: code });
   }
 
@@ -198,6 +232,17 @@ async function stripeHook(req) {
       c.emailedTo = to;
       await s.setJSON(code, c);
     } else {
+      // Stripe will retry, so this may yet succeed. Tell Jarrid anyway: if the
+      // mail provider is down or the key is wrong, every retry fails too and
+      // the buyer is left paid-up with nothing.
+      await alertJarrid('a gift card was paid for but the email would not send', [
+        `Gift card code: ${code}`,
+        `Send it to:     ${to}`,
+        `Stripe session: ${session.id}`,
+        '',
+        'Stripe will retry the webhook, so this may clear on its own. If a second',
+        'alert arrives for the same code, send the card by hand.',
+      ]);
       return fail(500, 'email failed'); // Stripe retries; the card is already marked paid
     }
   }
