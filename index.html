@@ -176,6 +176,54 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
   .footer-cols{grid-template-columns:1fr}
   .svc-grid{grid-template-columns:1fr}
 }
+
+/* ---- Triforce: the three business products, with the centre void carrying
+   the custom-development line. The clip-path makes each tile a triangle, so
+   every text element gets its own max-width to approximate the slant and stay
+   off the cut edges. Below 820px a triangle is too narrow to read, so the
+   three fall back to ordinary stacked cards. ---- */
+.triforce{position:relative;width:min(960px,100%);margin:0 auto;aspect-ratio:2 / 1.732}
+.tri{position:absolute;width:50%;height:50%;text-decoration:none;
+  clip-path:polygon(50% 0%,100% 100%,0% 100%);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:0 0 4.2%;transition:filter .18s ease,transform .18s ease}
+/* Each triangle is nudged away from the centre so the void reads as a shape of
+   its own, the way a Triforce does, instead of three tiles butted together. */
+.tri-top{left:25%;top:0;--tx:0px;--ty:-9px}
+.tri-left{left:0;top:50%;--tx:-9px;--ty:9px}
+.tri-right{left:50%;top:50%;--tx:9px;--ty:9px}
+.tri{transform:translate(var(--tx),var(--ty))}
+.tri:hover,.tri:focus-visible{transform:translate(var(--tx),calc(var(--ty) - 5px));filter:brightness(1.12)}
+.tri:focus-visible{outline:3px solid var(--teal-soft);outline-offset:-6px}
+.tri-in{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;width:100%}
+.tri-badge{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;font-size:20px;
+  background:rgba(0,0,0,.28)}
+.tri-tag{max-width:44%;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:900;color:#d9ecf5;opacity:.85}
+.tri-name{max-width:58%;margin:0;font-size:clamp(17px,2.2vw,24px);font-weight:900;letter-spacing:-.02em;color:#fff;line-height:1.1}
+.tri-line{max-width:64%;font-size:clamp(12px,1.35vw,14.5px);line-height:1.45;color:#eaf4fa}
+.tri-meta{max-width:82%;font-size:clamp(10.5px,1.15vw,12.5px);color:#cfe2ee;opacity:.9}
+.tri-go{max-width:84%;font-size:clamp(11.5px,1.25vw,13.5px);font-weight:900;color:#fff}
+.tri-top{background:linear-gradient(180deg,rgba(29,200,198,.5),rgba(15,118,110,.92))}
+.tri-left{background:linear-gradient(180deg,rgba(90,162,255,.45),rgba(22,78,145,.92))}
+.tri-right{background:linear-gradient(180deg,rgba(255,209,102,.42),rgba(150,106,20,.92))}
+/* The centre of a Triforce is empty space, so this one carries no fill and no
+   link — just the line about custom work. */
+.tri-center{position:absolute;left:25%;top:50%;width:50%;height:50%;
+  clip-path:polygon(0% 0%,100% 0%,50% 100%);
+  display:flex;align-items:flex-start;justify-content:center;padding:5% 0 0}
+.tri-center p{margin:0;max-width:62%;text-align:center;font-size:clamp(12px,1.5vw,16px);
+  line-height:1.4;font-weight:800;color:var(--gold);letter-spacing:.01em}
+@media(max-width:820px){
+  .triforce{aspect-ratio:auto;display:grid;gap:16px;width:100%}
+  .tri,.tri-center{position:static;width:100%;height:auto;clip-path:none;
+    border:1px solid var(--border);border-radius:20px;padding:22px}
+  .tri{align-items:center;transform:none;--tx:0px;--ty:0px}
+  .tri:hover,.tri:focus-visible{transform:none}
+  .tri-in{gap:8px}
+  .tri-tag,.tri-name,.tri-line,.tri-meta,.tri-go{max-width:100%}
+  .tri-center{background:rgba(255,255,255,.04);padding:18px 22px}
+  .tri-center p{max-width:100%}
+}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 </style>
 <script type="application/ld+json">
@@ -282,36 +330,43 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
         <h2 id="rentals-h">We build it. We run it. You never touch it.</h2>
         <p>A website, a native app, or the software that runs your back office &mdash; built for you and kept running every month, with no build cost and no one to hire.</p>
       </div>
-      <div class="products">
-        <article class="product">
-          <div class="top">
-            <div class="badge" style="background:#0f766e">&#127760;</div>
-            <div><div class="tag">Websites</div><h3>Rent-a-Site</h3></div>
-          </div>
-          <p>No website, or one you&rsquo;re embarrassed by? We build it, you approve it, and then we keep it running and growing &mdash; hosting, monitoring, search basics and fresh content every month. The build is included and there is never a setup fee.</p>
-          <div class="meta">From $100/mo on a 3-year &middot; Build included &middot; Three plans</div>
-          <a class="go" href="/rent-a-site" onclick="gtag('event','home_hero_cta',{target:'rent-a-site'})">See Rent-a-Site plans &rarr;</a>
-        </article>
+      <div class="triforce">
+        <a class="tri tri-top" href="/rent-a-site" onclick="gtag('event','home_hero_cta',{target:'rent-a-site'})">
+          <span class="tri-in">
+            <span class="tri-badge">&#127760;</span>
+            <span class="tri-tag">Websites</span>
+            <span class="tri-name">Rent-a-Site</span>
+            <span class="tri-line">We build your website and keep it running.</span>
+            <span class="tri-meta">From $100/mo &middot; build included &middot; never a setup fee</span>
+            <span class="tri-go">See plans &rarr;</span>
+          </span>
+        </a>
 
-        <article class="product">
-          <div class="top">
-            <div class="badge" style="background:#5aa2ff">&#128241;</div>
-            <div><div class="tag">Mobile Apps</div><h3>Rent-an-App</h3></div>
-          </div>
-          <p>Your own native iPhone and Android app, in your business&rsquo;s name, on both app stores. We build it, publish it, run it and keep it updated &mdash; no developer to hire and no build bill.</p>
-          <div class="meta">From $125/mo on a 3-year &middot; iPhone &amp; Android &middot; No build cost</div>
-          <a class="go" href="https://rent-an-app.ainovations.net/" onclick="gtag('event','home_hero_cta',{target:'rent-an-app'})">See Rent-an-App plans &rarr;</a>
-        </article>
+        <a class="tri tri-left" href="https://rent-an-app.ainovations.net/" onclick="gtag('event','home_hero_cta',{target:'rent-an-app'})">
+          <span class="tri-in">
+            <span class="tri-badge">&#128241;</span>
+            <span class="tri-tag">Mobile Apps</span>
+            <span class="tri-name">Rent-an-App</span>
+            <span class="tri-line">Your own iPhone and Android app, in your name, on both stores.</span>
+            <span class="tri-meta">From $125/mo &middot; no build cost</span>
+            <span class="tri-go">See plans &rarr;</span>
+          </span>
+        </a>
 
-        <article class="product">
-          <div class="top">
-            <div class="badge" style="background:#b4881f">&#128210;</div>
-            <div><div class="tag">Business Software</div><h3>Small-Business CRM</h3></div>
-          </div>
-          <p>Your customers and your money in one place &mdash; who bought what, what came in, what went out, the processing fees, mileage, and the year-end totals your accountant asks for, with the receipt photographed and attached to the line. Set up around how you actually run before you ever log in.</p>
-          <div class="meta">From $100/mo on a 3-year &middot; Three tiers &middot; Free accountant login</div>
-          <a class="go" href="/small-business-crm" onclick="gtag('event','home_hero_cta',{target:'small-business-crm'})">See the CRM &rarr;</a>
-        </article>
+        <a class="tri tri-right" href="/small-business-crm" onclick="gtag('event','home_hero_cta',{target:'small-business-crm'})">
+          <span class="tri-in">
+            <span class="tri-badge">&#128210;</span>
+            <span class="tri-tag">Business Software</span>
+            <span class="tri-name">Small-Business CRM</span>
+            <span class="tri-line">Customers, money in, money out, mileage and year-end totals.</span>
+            <span class="tri-meta">From $100/mo &middot; free accountant login</span>
+            <span class="tri-go">See the CRM &rarr;</span>
+          </span>
+        </a>
+
+        <div class="tri-center">
+          <p>Custom programming and development available</p>
+        </div>
       </div>
     </section>
 
