@@ -41,8 +41,8 @@ a{color:inherit}img{max-width:100%;display:block}
 .brand{display:inline-flex;align-items:center;width:min(260px,52vw);min-width:190px}
 .brand img{width:100%;height:auto;object-fit:contain;object-position:left center}
 .nav-links{display:flex;gap:8px;flex-wrap:wrap}
-.nav-links a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
-.nav-links a:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
+.nav-links a,.nav-right a.cta{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
+.nav-links a:hover,.nav-right a.cta:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
 .head{text-align:center;padding:34px 0 6px}
 .kicker{margin:0 0 12px;color:var(--teal-soft);font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
 .head h1{margin:0;font-size:clamp(32px,6vw,56px);line-height:1.05;letter-spacing:-.04em}
@@ -61,6 +61,28 @@ a{color:inherit}img{max-width:100%;display:block}
 .footer a{color:#c6dbe5;text-decoration:none;font-weight:700;margin:0 8px}
 .footer a:hover{color:#fff}
 @media(max-width:720px){.grid{grid-template-columns:1fr}}
+
+/* Compact phone nav: the links collapse behind a menu button instead of
+   stacking into a column that eats the whole first screen. */
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-burger{display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.06);cursor:pointer}
+.nav-burger{color:#d9e8f1}
+.nav-burger span{display:block;width:20px;height:2px;border-radius:2px;background:#d9e8f1}
+.nav-burger:hover,.nav-burger:focus-visible{background:rgba(255,255,255,.12)}
+@media(max-width:620px){
+  .nav{position:relative;flex-wrap:wrap;row-gap:10px;column-gap:12px}
+  .brand{min-width:0;width:min(210px,46vw)}
+  .nav-right{margin-left:auto}
+  .nav-right a.cta{white-space:nowrap}
+  .nav-burger{display:inline-flex;flex:0 0 auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;
+    flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid var(--border);
+    border-radius:18px;background:#030b14;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  .nav-links[data-open="true"]{display:flex}
+  .nav-links a{justify-content:center;min-height:46px}
+}
 </style>
 <script type="application/ld+json">
 {
@@ -82,12 +104,29 @@ a{color:inherit}img{max-width:100%;display:block}
 <div class="page">
   <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="/" aria-label="Rent-an-App home"><img src="/ainovations-logo-header.png" alt="AInovations" /></a>
-    <div class="nav-links">
-      <a href="/">Rent-an-App</a>
-      <a href="/#pricing">Pricing</a>
-      <a href="https://ainovations.net/">&#8598; AInovations.net</a>
+    <div class="nav-right">
+      <div class="nav-links" id="navmenu" data-open="false">
+        <a href="/">Rent-an-App</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="https://ainovations.net/">&#8598; AInovations.net</a>
+      </div>
+      <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navmenu"><span></span><span></span><span></span></button>
     </div>
   </nav>
+<script>
+(function(){
+  var b=document.querySelector('.nav-burger'),m=document.getElementById('navmenu');
+  if(!b||!m)return;
+  function set(open){
+    m.setAttribute('data-open',open?'true':'false');
+    b.setAttribute('aria-expanded',open?'true':'false');
+    b.setAttribute('aria-label',open?'Close menu':'Open menu');
+  }
+  b.addEventListener('click',function(){set(m.getAttribute('data-open')!=='true')});
+  m.addEventListener('click',function(e){if(e.target.closest('a'))set(false)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
 
   <main>
     <div class="head">
