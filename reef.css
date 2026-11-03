@@ -167,6 +167,13 @@ img{max-width:100%;display:block}
 .related a{display:block;padding:18px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.06);text-decoration:none;color:var(--text);font-weight:700;line-height:1.4}
 .related a:hover{background:rgba(255,255,255,.12)}
 @media(max-width:640px){.related{grid-template-columns:1fr}}
+/* Three columns of prose will not fit a phone. Below 640px the table scrolls
+   inside the article instead of scrolling the whole page sideways, and the
+   cells tighten up so more of a row is visible before you have to scroll. */
+@media(max-width:640px){
+  .ptable{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ptable th,.ptable td{padding:10px 12px;font-size:14px}
+}
 
 /* Reef guides grid (on landing) */
 .guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}

@@ -115,10 +115,10 @@ img{max-width:100%;display:block}
 .contact > p{margin:16px auto 0;max-width:56ch;color:var(--muted);font-size:17px;line-height:1.6}
 .inquire-form{max-width:680px;margin:34px auto 0;padding:clamp(26px,4vw,40px);border-radius:20px;background:#fff;color:var(--ink);text-align:left;box-shadow:0 22px 54px rgba(0,0,0,.34)}
 .inquire-form .fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.inquire-form .field{display:flex;flex-direction:column;gap:6px}
+.inquire-form .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .inquire-form .field.full{grid-column:1 / -1}
 .inquire-form label{font-size:.85rem;font-weight:800;color:var(--ink)}
-.inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--light-border);border-radius:11px;background:#fbfdfe;color:var(--ink)}
+.inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--light-border);border-radius:11px;background:#fbfdfe;color:var(--ink);width:100%;min-width:0;max-width:100%}
 .inquire-form input:focus,.inquire-form textarea:focus,.inquire-form select:focus{outline:2px solid var(--teal-dark);border-color:var(--teal-dark)}
 .inquire-form textarea{min-height:130px;resize:vertical}
 .inquire-form .actions{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
