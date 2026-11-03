@@ -54,8 +54,12 @@ img{max-width:100%;display:block}
 .nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .nav-links a{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
 .nav-links a:hover,.nav-links a:focus-visible{border-color:var(--border);background:rgba(255,255,255,.06)}
-.nav-links a.cta{background:var(--teal);color:#03212a}
-.nav-links a.cta:hover{background:var(--teal-soft)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-right a.cta{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;text-decoration:none;font-size:14px;font-weight:800;background:var(--teal);color:#03212a}
+.nav-right a.cta:hover,.nav-right a.cta:focus-visible{background:var(--teal-soft)}
+.nav-burger{display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.06);cursor:pointer}
+.nav-burger span{display:block;width:20px;height:2px;border-radius:2px;background:#d9e8f1}
+.nav-burger:hover,.nav-burger:focus-visible{background:rgba(255,255,255,.12)}
 /* hero */
 .hero{padding:clamp(30px,5vw,58px);border:1px solid var(--border);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:var(--shadow)}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;padding:9px 14px;border:1px solid rgba(114,230,223,.38);border-radius:999px;background:rgba(29,200,198,.11);color:#d5fffc;font-size:13px;font-weight:900;letter-spacing:.02em}
@@ -133,7 +137,16 @@ img{max-width:100%;display:block}
   .footer-cols{grid-template-columns:1fr 1fr}
 }
 @media(max-width:620px){
-  .nav-links a:not(.cta){display:none}
+  /* brand + CTA + burger must fit one phone row; if the CTA is long the
+     whole right-hand group wraps to its own row instead of overflowing. */
+  .nav{position:relative;flex-wrap:wrap;row-gap:10px}
+  .brand{min-width:0;width:min(210px,46vw)}
+  .nav-right{margin-left:auto}
+  .nav-right a.cta{white-space:nowrap}
+  .nav-burger{display:inline-flex;flex:0 0 auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid var(--border);border-radius:18px;background:#07202b;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  .nav-links[data-open="true"]{display:flex}
+  .nav-links a{justify-content:center;min-height:46px}
   .footer-cols{grid-template-columns:1fr}
   .cap-grid{grid-template-columns:1fr}
   .inquire-form .fg{grid-template-columns:1fr}
@@ -163,13 +176,30 @@ img{max-width:100%;display:block}
 <div class="page">
   <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="/" aria-label="AInovations home"><img src="ainovations-logo-header.png" alt="AInovations — Intelligent Business Insights" /></a>
-    <div class="nav-links">
-      <a href="#work">Shipped Work</a>
-      <a href="#capabilities">What We Build</a>
-      <a href="#process">How It Works</a>
+    <div class="nav-right">
+      <div class="nav-links" id="navmenu" data-open="false">
+        <a href="#work">Shipped Work</a>
+        <a href="#capabilities">What We Build</a>
+        <a href="#process">How It Works</a>
+      </div>
       <a class="cta" href="#inquire">Start a Project</a>
+      <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navmenu"><span></span><span></span><span></span></button>
     </div>
   </nav>
+<script>
+(function(){
+  var b=document.querySelector('.nav-burger'),m=document.getElementById('navmenu');
+  if(!b||!m)return;
+  function set(open){
+    m.setAttribute('data-open',open?'true':'false');
+    b.setAttribute('aria-expanded',open?'true':'false');
+    b.setAttribute('aria-label',open?'Close menu':'Open menu');
+  }
+  b.addEventListener('click',function(){set(m.getAttribute('data-open')!=='true')});
+  m.addEventListener('click',function(e){if(e.target.closest('a'))set(false)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
 
   <main id="main">
     <!-- HERO -->
@@ -182,7 +212,7 @@ img{max-width:100%;display:block}
         <a class="btn btn-ghost" href="#work">See shipped work</a>
       </div>
       <div class="logostrip" aria-label="Where our software runs">
-        <span>Shipping on:</span><span>iOS</span><span>Android</span><span>Web</span><span>Roblox</span>
+        <span>Shipping on:</span><span>iOS</span><span>Android</span><span>Web</span>
       </div>
     </section>
 

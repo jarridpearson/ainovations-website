@@ -262,7 +262,7 @@ img{max-width:100%;display:block}
             <li class="cap">1 editor login</li>
             <li class="cap">AI Chat Agent available for +$50/month (up to 250 chats)</li>
           </ul>
-          <div class="tcta"><a href="#inquire" onclick="gtag('event','ras_cta',{placement:'tier_presence'})">Start with Presence</a></div>
+          <div class="tcta"><a href="#inquire" data-plan="Presence" onclick="gtag('event','ras_cta',{placement:'tier_presence'})">Start with Presence</a></div>
         </div>
 
         <div class="tier feature">
@@ -283,7 +283,7 @@ img{max-width:100%;display:block}
             <li class="cap">3 editor logins</li>
             <li class="cap">Up to 750 AI chats each month</li>
           </ul>
-          <div class="tcta"><a href="#inquire" onclick="gtag('event','ras_cta',{placement:'tier_growth'})">Start with Growth</a></div>
+          <div class="tcta"><a href="#inquire" data-plan="Growth" onclick="gtag('event','ras_cta',{placement:'tier_growth'})">Start with Growth</a></div>
         </div>
 
         <div class="tier">
@@ -303,7 +303,7 @@ img{max-width:100%;display:block}
             <li class="cap">Up to 100 products or services</li>
             <li class="cap">Up to 2,000 AI chats each month</li>
           </ul>
-          <div class="tcta"><a href="#inquire" onclick="gtag('event','ras_cta',{placement:'tier_commerce'})">Start with Commerce</a></div>
+          <div class="tcta"><a href="#inquire" data-plan="Commerce" onclick="gtag('event','ras_cta',{placement:'tier_commerce'})">Start with Commerce</a></div>
         </div>
 
       </div>
@@ -422,6 +422,25 @@ img{max-width:100%;display:block}
       </form>
     </section>
   </main>
+<script>
+/* Carry the clicked plan into the inquiry form — the three tier buttons all
+   point at #inquire, so without this the plan select stays on "Not sure yet". */
+(function(){
+  var sel=document.getElementById('plan');
+  if(!sel)return;
+  function pick(name){
+    for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].text.indexOf(name)===0){sel.selectedIndex=i;return}
+    }
+  }
+  var links=document.querySelectorAll('a[data-plan]');
+  for(var i=0;i<links.length;i++){
+    links[i].addEventListener('click',(function(a){
+      return function(){pick(a.getAttribute('data-plan'))};
+    })(links[i]));
+  }
+})();
+</script>
 
   <footer class="footer">
     <div class="footer-cols">

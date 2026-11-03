@@ -6,7 +6,7 @@
 
 export const KB = `
 # ABOUT AINOVATIONS
-AInovations LLC is an AI product studio — it designs, builds, and ships its own AI-powered apps (productivity, consumer, gaming) and applies that same craft to custom software for businesses. It owns the whole stack — design, AI, mobile, web, backend — under one roof, with no agency hand-offs. Its software ships on iOS, Android, Web, and Roblox. Service area: the United States (plus local Central New York on-site service; Chalkline also serves Canada).
+AInovations LLC is an AI product studio — it designs, builds, and ships its own AI-powered apps (productivity, consumer, gaming) and applies that same craft to custom software for businesses. It owns the whole stack — design, AI, mobile, web, backend — under one roof, with no agency hand-offs. Its software ships on iOS, Android, and Web. Service area: the United States (plus local Central New York on-site service; Chalkline also serves Canada).
 Contact: jp@ainovations.net (or support@ainovations.net). AInovations usually replies within one business day — state the reply time ONLY that way. Never promise a same-day or same-evening reply, a reply tonight, after-hours contact, a rush, or that someone's request will be prioritized. No public phone number is published.
 
 PRICING — APPLIES TO EVERY PRODUCT. The published price is the price. ALWAYS LEAD WITH THE 3-YEAR RATE on any product that has one — say it first, then give the 1-year rate as the alternative. Every rate a visitor may be told is printed in this document; quote those and nothing else.
@@ -139,7 +139,7 @@ A rule that matters for every one of these trades: they are usually BOOKED SOLID
 # BUILD & OWN — one-time-fee custom builds (you own it outright)
 Besides the monthly Rent programs, AInovations also builds sites and apps as a one-time project you fully own — no monthly rent. This is the "Hire Us" path:
 - You work directly with the developer who built AInovations' own products (Everward, TankMate, Chalkline) — no agency layers or markup.
-- What they build: custom websites and web apps/portals; native mobile apps (iOS/Android); backends/databases; payments & subscriptions (Stripe/RevenueCat); AI features & automation; and custom Roblox games (game design, animation, progression, monetization).
+- What they build: custom websites and web apps/portals; native mobile apps (iOS/Android); backends/databases; payments & subscriptions (Stripe/RevenueCat); and AI features & automation.
 - Process: free scoping call → a fixed written quote and scope before any work starts → build with weekly demos. You own ALL code, accounts, and app store listings — no lock-in.
 - Price: a one-time project fee, quoted after the free scoping call (no fixed public price — it depends on scope). Start at /hire or email jp@ainovations.net.
 - Rent vs. own, quick rule: want it handled for a low flat monthly fee → Rent-a-Site / Rent-an-App. Want to pay once and own it outright → Build & own (Hire Us).
@@ -232,9 +232,9 @@ Custom automations, integrations, and AI-assisted internal tools built around th
 ## TANKMATE — AI copilot for any aquarium (FREE to start)
 - Snap a photo for an AI health check, scan a fish in-store before you buy, identify species, and track every tank's parameters/health. Supports 7 tank types (reef/saltwater, saltwater fish-only, freshwater, African cichlid, planted, shrimp/nano, axolotl). Free to start; TankMate Pro unlocks more AI diagnoses and unlimited tanks. iPhone/iPad/Android. Learn more: /tankmate
 
-## ROBLOX GAMES (keep this brief — do NOT spend the conversation on game details)
-- AInovations designs and builds Roblox games — that's a custom build capability (see "Build & own"). It also has its own free family-made games ("Kick a Donut", "Snack Bandits") and a free browser game "Cow Flicker".
-- If a visitor wants to talk about or play the actual games, just point them to /roblox-games (or https://cowflicker.ainovations.net/) and move on — don't spend chat turns on game details.
+## GAMES (keep this brief — do NOT spend the conversation on game details)
+- AInovations has one free browser game, "Cow Flicker".
+- If a visitor wants to talk about or play it, just point them to https://cowflicker.ainovations.net/ and move on — don't spend chat turns on game details.
 
 ## TOWNCRIER (a CLIENT — do NOT act as its support or explain it in detail)
 - Towncrier is an AInovations client. If someone asks about Towncrier, briefly say Towncrier is an AInovations client and for more info they should go to gettowncrier.com. Do not answer detailed Towncrier questions or spend chat turns on it.
@@ -287,7 +287,7 @@ Custom automations, integrations, and AI-assisted internal tools built around th
 - Restaurant on Toast that wants its own app for loyalty, notifications, and memberships (ordering built in via its Toast online ordering) → /restaurants (Regulars $75/mo on 3-year or $100/mo on 1-year; Members $175 or $200; Group $250 or $300; no setup on 3-year, $500 on 1-year).
 - Small business drowning in spreadsheets, receipts and a January scramble / wants customers and bookkeeping in one place / asks for a CRM or something to track customers and money → the small business CRM, and send them to /small-business-crm (three tiers — Essentials $100/mo, Tailored $200/mo, Built-for-you $300/mo, all on a 3-year with no setup fee; 1-year is $125/$250/$350 plus a $500 setup; 10, 15 and 25 users; their accountant gets a free read-only login that doesn't use a seat on any tier).
 - Wants automation / internal AI tools → Custom AI Solutions (scoping call).
-- Aquarium hobbyist → TankMate (free). Wants a Roblox game built → Build & own; wants to play ours → /roblox-games.
+- Aquarium hobbyist → TankMate (free).
 - A local service business that takes bookings and drives to the customer (dog waste removal, lawn care, cleaning, pet services, mobile detailing and the like) that wants its own app → Rent-an-App, and show them /poopawtrol as a finished example of exactly that build.
 - Payroll / HR / benefits / employee onboarding / HCM conversion / learning & development / talent acquisition → we don't do that; refer to a trusted HR vendor such as PuzzleHR (puzzlehr.com).
 `.trim();

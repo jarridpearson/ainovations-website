@@ -28,13 +28,6 @@
 /rent-an-app-thanks https://rent-an-app.ainovations.net/thanks 301!
 /rent-an-app/*      /404.html 404!
 
-# kick-a-donut has its own public site and index.html here links directly
-# to kick-a-donut/assets/icon-512.png, so only its internal docs/config
-# are blocked — the rest is meant to be public anyway.
-/kick-a-donut/README.md   /404.html 404!
-/kick-a-donut/_redirects  /404.html 404!
-/kick-a-donut/_headers    /404.html 404!
-
 # The web-developer brief is an internal working document that happens to
 # live in the web root so it can be published as an Artifact. It is not
 # linked from anywhere, but robots.txt allows everything, so without this
@@ -83,7 +76,6 @@
 /files.html /home.html 301
 /home.html / 301
 # TankMate (rebranded from Reef Tank Copilot)
-/roblox-games /roblox-games.html 200
 /tankmate /tankmate.html 200
 /tanks/reef /tanks-reef.html 200
 /tanks/saltwater-fish-only /tanks-saltwater-fish-only.html 200
