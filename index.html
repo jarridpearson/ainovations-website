@@ -37,6 +37,7 @@
   --text:#f7fbff; --muted:#b8cad7; --teal:#1dc8c6; --teal-dark:#078c92; --teal-soft:#72e6df;
   --blue:#46a6ff; --border:rgba(255,255,255,.13); --shadow:0 28px 80px rgba(0,0,0,.38);
   --light:#f5f7f8; --ink:#071c2f; --light-muted:#5b6b78; --light-border:#d7dee2;
+  --gold:#ffd166;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -210,9 +211,19 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
    link — just the line about custom work. */
 .tri-center{position:absolute;left:25%;top:50%;width:50%;height:50%;
   clip-path:polygon(0% 0%,100% 0%,50% 100%);
-  display:flex;align-items:flex-start;justify-content:center;padding:5% 0 0}
-.tri-center p{margin:0;max-width:62%;text-align:center;font-size:clamp(12px,1.5vw,16px);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:10px;padding:4% 0 0;text-align:center}
+/* The void narrows as it goes down, so each line is capped tighter than the
+   one above it. */
+.tri-center p{margin:0;max-width:64%;font-size:clamp(12px,1.5vw,16px);
   line-height:1.4;font-weight:800;color:var(--gold);letter-spacing:.01em}
+.tri-c-cta{display:inline-flex;align-items:center;max-width:58%;min-height:36px;padding:0 16px;
+  border-radius:999px;background:var(--gold);color:#241a00;text-decoration:none;
+  font-size:clamp(11px,1.15vw,13px);font-weight:900;white-space:nowrap}
+.tri-c-cta:hover,.tri-c-cta:focus-visible{background:#ffdf92}
+.tri-c-mail{max-width:52%;font-size:clamp(10.5px,1.1vw,12.5px);font-weight:800;
+  color:#d6e7f2;text-decoration:none;white-space:nowrap}
+.tri-c-mail:hover,.tri-c-mail:focus-visible{color:#fff;text-decoration:underline}
 @media(max-width:820px){
   .triforce{aspect-ratio:auto;display:grid;gap:16px;width:100%}
   .tri,.tri-center{position:static;width:100%;height:auto;clip-path:none;
@@ -221,8 +232,8 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
   .tri:hover,.tri:focus-visible{transform:none}
   .tri-in{gap:8px}
   .tri-tag,.tri-name,.tri-line,.tri-meta,.tri-go{max-width:100%}
-  .tri-center{background:rgba(255,255,255,.04);padding:18px 22px}
-  .tri-center p{max-width:100%}
+  .tri-center{background:rgba(255,255,255,.04);padding:20px 22px;gap:12px}
+  .tri-center p,.tri-c-cta,.tri-c-mail{max-width:100%}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 </style>
@@ -366,6 +377,8 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
 
         <div class="tri-center">
           <p>Custom programming and development available</p>
+          <a class="tri-c-cta" href="/hire#inquire">Start a project inquiry &rarr;</a>
+          <a class="tri-c-mail" href="mailto:jp@ainovations.net">jp@ainovations.net</a>
         </div>
       </div>
     </section>
@@ -374,8 +387,8 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
     <section class="section" id="products" aria-labelledby="products-h">
       <div class="section-head">
         <p class="kicker">Built by AInovations</p>
-        <h2 id="products-h">Five products. Five very different audiences. One team.</h2>
-        <p>Each one runs on its own site — proof we can take an idea from concept to a real, published app, for ourselves and for clients.</p>
+        <h2 id="products-h">Some of what we&rsquo;ve shipped.</h2>
+        <p>Real, published products &mdash; ours and our clients&rsquo; &mdash; each one taken from an idea to something people actually use, and still running.</p>
       </div>
       <div class="products">
         <article class="product">
@@ -426,6 +439,16 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
           <p>The contractor's operating system: quotes, invoices, jobs, scheduling, crew time, and getting paid — with no platform cut and no GPS tracking. Built with a working framing &amp; siding contractor.</p>
           <div class="meta">iPhone · iPad · Android · Web · Built and shipping</div>
           <a class="go" href="/chalkline#acquire">Inquire about buying →</a>
+        </article>
+
+        <article class="product">
+          <div class="top">
+            <div class="badge" style="background:#b4881f">&#128210;</div>
+            <div><div class="tag">Business Software</div><h3>Small-Business CRM</h3></div>
+          </div>
+          <p>Your customers and your money in one place &mdash; who bought what, what came in, what went out, the processing fees, mileage, and the year-end totals your accountant asks for, with the receipt photographed and attached to the line. Set up around how you actually run before you ever log in.</p>
+          <div class="meta">Web &middot; Three tiers &middot; Free read-only accountant login</div>
+          <a class="go" href="/small-business-crm">See the CRM &rarr;</a>
         </article>
       </div>
     </section>
