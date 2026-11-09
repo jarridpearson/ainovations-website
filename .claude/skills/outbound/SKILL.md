@@ -139,12 +139,50 @@ no "I was just browsing your website and was blown away."
 Structure:
 - One line naming the **specific** thing you observed about *their* business.
 - One line on what it costs them (a customer who looked at 9PM and found nothing).
-- The offer in one sentence: a managed site built and run for them, at the plan's rate read
-  fresh out of kb.mjs, with the term named and the build included. Quote the plan that
-  actually fits — do not undersell the plan to make the number look smaller, and do not
-  upsell past what their problem needs.
-- One low-friction ask ("want me to send a mockup?" beats "book a call").
-- Signature: Jarrid, AInovations, ainovations.net.
+- Name the specific fix to THEIR site, then the offer in one sentence: a managed site built and
+  run for them, at the plan's rate read fresh out of kb.mjs, with the term named and the build
+  included. Quote the plan that actually fits — do not undersell the plan to make the number look
+  smaller, and do not upsell past what their problem needs. The build being included IS the
+  concession; nothing else is given away.
+- One low-friction ask, and it is ALWAYS an email reply. Say it in words — "email me back" or
+  "reply to this email". Never "just reply" on its own, never "get in touch", never "give me a
+  call", never a phone number, never a calendar link. This is an email channel; 250 inbound phone
+  calls is not the outcome we want.
+- **NEVER offer free work of any kind** — no free mock-up, no sample page, no free audit, no
+  "I'll build you something to look at". That is hundreds of unpaid hours against revenue that
+  may never come, and it is banned. Sell the thing we actually sell; let them email back if they
+  want it.
+- **Signature: his real Outlook signature, verbatim, on EVERY draft.** Graph-created drafts do NOT
+  pick it up automatically — it has to be written into the body. It is:
+
+      Thanks,
+
+      Jarrid Pearson
+      Founder & Lead Programmer
+
+      📞 315-222-8853
+      ✉️ jp@ainovations.net
+      🌐 ainovations.net
+
+      The AI Product Studio That Ships
+      Follow AInovations LLC on LinkedIn: https://www.linkedin.com/company/ainovations-llc/
+
+  The signature also carries the **AInovations logo image** between the title and the phone line
+  (`ainovations-logo-header.png`, 360x173, in the repo root). A signature without the logo is not
+  his signature.
+
+  Never invent a shorter one. If it ever needs re-checking, pull the latest reply he typed himself
+  from Sent Items and copy it off that.
+
+- **The Outlook/Graph connector CANNOT carry an image.** `outlook_update_draft` and
+  `outlook_create_draft` run the body through an HTML allowlist that hard-rejects `<img>`,
+  `style=`, `class=` and everything else needed for a real signature. Tested, not assumed.
+  So a batch that needs the logo is NOT built as Graph drafts. Build local `.eml` files instead:
+  one per prospect, `X-Unsent: 1` header (that is what makes Outlook open it as an editable,
+  sendable draft), `multipart/alternative` -> [`text/plain`, `multipart/related` -> [`text/html`,
+  `image/png` with `cid:ainlogo`]]. Drop them in a folder on his Desktop; he drags the folder into
+  Outlook Drafts once. Python `email.message.EmailMessage` + `add_alternative(subtype='html')` +
+  `add_related(png, 'image','png', cid='<ainlogo>', disposition='inline')` produces exactly that.
 
 Never send the same body twice. The observation line must be unique per prospect.
 
@@ -165,3 +203,30 @@ re-add that business.
 Cold email must include a real physical mailing address and a working opt-out. Sending domain
 is a **separate** lookalike domain (not ainovations.net), warmed 2-3 weeks before volume,
 with SPF/DKIM/DMARC configured in Resend.
+
+## THE VERIFICATION GATE — NO SEND WITHOUT A LIVE CHECK (25 Oct 2026)
+
+On 25 Oct a cold email went to United Seattle claiming unitedseattle.com was "a placeholder
+page, not a website." It is a full live site. Vadim Korin replied calling the pitch
+"a phishing email written by a malfunctioning chatbot." A re-check of the remaining queue
+found **62 of 103** carried a claim that was no longer true.
+
+**Before ANY cold email is sent, in the same session as the send:**
+
+1. Load the domain the email names. Not the Google listing, not the old run file — the site.
+2. Check it against what that specific email asserts:
+   - "is a placeholder" / "lands on a parking page" / "dead end" -> only valid if the page is
+     parked, errors, or has under ~1,200 characters of real text.
+   - "no mobile setting" / "on a phone" -> only valid if there is **no** `viewport` meta tag.
+3. If the claim does not hold, the prospect is **DROPPED**. Not reworded, not re-pitched on a
+   different angle. Dropped.
+4. If the email names no domain (only "their Google listing"), it cannot be verified from the
+   email — **HOLD it**, never send on faith.
+
+**Qualification evidence expires.** The 254-draft batch was qualified on 14 Oct and sent from
+25 Oct. Eleven days was enough for dozens of those businesses to put up a site. Never send on
+evidence gathered in an earlier session.
+
+Verdicts for the current queue live in
+`~/Desktop/AInovations-Prospect-Reverification-2026-10-25.xlsx` and in the send ledger's
+`Re-verified 25 Oct` column. Rows marked DO NOT SEND or HOLD never go out.
