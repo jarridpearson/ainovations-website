@@ -18,6 +18,12 @@
   to = "/.netlify/functions/gift-card"
   status = 200
 
+# TechSuggest tips: builds the Stripe Checkout Session for the chosen amount.
+[[redirects]]
+  from = "/api/tip"
+  to = "/.netlify/functions/tip"
+  status = 200
+
 # Internal CRM back office.
 [[redirects]]
   from = "/api/crm"
