@@ -383,6 +383,22 @@ background:radial-gradient(circle at 10% 0%,rgba(255,209,102,.13),transparent 40
     .gc-band .gc-go{flex:0 0 auto;display:inline-flex;align-items:center;min-height:48px;padding:0 20px;border-radius:14px;background:linear-gradient(180deg,#ffd982,#ffc94d);color:#3a2a00;font-weight:900;font-size:16px;box-shadow:0 5px 0 #b8860b}
     </style>
 
+    <!-- TECHSUGGEST — free buying advice, same band treatment as the gift card -->
+    <a class="ts-band" href="/techsuggest" onclick="gtag('event','home_ts_band',{})">
+      <span class="ts-tag">NEW &middot; FREE</span>
+      <span class="ts-text"><strong>Buying tech and not sure what you actually need?</strong> TechSuggest sends you a <span class="ts-hl">Good / Better / Best</span> pick within 24 hours &mdash; no commission, no pressure.</span>
+      <span class="ts-go">See TechSuggest &rarr;</span>
+    </a>
+    <style>
+    .ts-band{display:flex;align-items:center;gap:14px 20px;flex-wrap:wrap;margin:18px 0 0;padding:18px 24px;border:2px solid rgba(94,234,212,.55);border-radius:20px;background:linear-gradient(135deg,rgba(94,234,212,.18),rgba(94,234,212,.06));color:#fff;text-decoration:none;box-shadow:0 14px 40px rgba(0,0,0,.28);transition:transform .15s ease,border-color .15s ease}
+    .ts-band:hover{transform:translateY(-2px);border-color:#5eead4}
+    .ts-band .ts-tag{flex:0 0 auto;padding:6px 12px;border-radius:999px;background:#5eead4;color:#06343a;font-size:12px;font-weight:900;letter-spacing:.06em}
+    .ts-band .ts-text{flex:1 1 320px;min-width:0;font-size:clamp(16px,1.9vw,19px);line-height:1.45;color:#e9f2f7}
+    .ts-band .ts-text strong{color:#fff}
+    .ts-band .ts-hl{color:#5eead4;font-weight:900}
+    .ts-band .ts-go{flex:0 0 auto;display:inline-flex;align-items:center;min-height:48px;padding:0 20px;border-radius:14px;background:linear-gradient(180deg,#7ef3dd,#44d6c0);color:#06343a;font-weight:900;font-size:16px;box-shadow:0 5px 0 #15837a}
+    </style>
+
     <!-- PRODUCTS -->
     <section class="section" id="products" aria-labelledby="products-h">
       <div class="section-head">

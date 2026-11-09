@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SSSRNSG9P2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SSSRNSG9P2');
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thanks &mdash; TechSuggest Request Received</title>
+<meta name="robots" content="noindex,follow" />
+<link rel="canonical" href="https://ainovations.net/techsuggest" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/seo-pages.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" style="display:flex;align-items:center;gap:10px"><img src="/ainovations-logo-header.png" alt="AInovations" style="height:32px;width:auto;display:block" /><span>TechSuggest</span></a>
+    <nav class="header-links" aria-label="Primary navigation">
+      <a href="/rent-a-site">Rent-a-Site</a>
+      <a href="/guides">Guides</a>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Request received</p>
+        <h1>Thanks &mdash; we&rsquo;ve got it.</h1>
+        <p class="hero-lead">You&rsquo;re on the early list. TechSuggest opens next week, and your Good / Better / Best recommendation comes back from <strong>jp@ainovations.net</strong> within 24 hours of that. It costs nothing, and we take no commission on whatever you end up buying.</p>
+        <div class="hero-actions">
+          <a class="primary-button" href="/techsuggest">Back to TechSuggest</a>
+          <a class="secondary-button" href="/guides">Read the straight-answer guides</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">
+    <a href="/">AInovations</a>
+    <a href="/techsuggest">TechSuggest</a>
+    <a href="/rent-a-site">Rent-a-Site</a>
+    <a href="mailto:jp@ainovations.net">Contact</a>
+    <span>&copy; 2026 AInovations LLC</span>
+  </footer>
+  <script src="/chatbot.js" defer></script>
+<script>
+/* GA4 conversion. Netlify only redirects here after a successful form POST,
+   so reaching this page is a real lead, not a button click. */
+(function () {
+  var MAP = {
+    '/churches-thanks': 'churches',
+    '/hire-thanks': 'hire',
+    '/marquee-thanks': 'marquee',
+    '/referral-partner-thanks': 'referral-partners',
+    '/restaurants-thanks': 'restaurants',
+    '/techsuggest-thanks': 'techsuggest',
+    '/partner-thanks': 'tankmate-partners',
+    '/tankmate-partner-thanks': 'tankmate-partners'
+  };
+  var path = location.pathname.replace(/\.html$/, '').replace(/(.)\/$/, '$1') || '/';
+  var form = MAP[path];
+  if (!form) {
+    /* /rent-a-site-thanks is shared by eight landing pages, so name the
+       lead after the page the visitor actually submitted from. */
+    form = 'rent-a-site';
+    try {
+      var r = new URL(document.referrer).pathname
+        .replace(/\.html$/, '').replace(/^\//, '').replace(/\/$/, '');
+      if (r) form = r;
+    } catch (e) {}
+  }
+  /* A refresh or a bookmarked visit must not count a second lead. */
+  var once = 'ain_lead_' + path;
+  try { if (sessionStorage.getItem(once)) return; sessionStorage.setItem(once, '1'); } catch (e) {}
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'generate_lead', { form_source: form, page_path: path });
+  }
+})();
+</script>
+</body>
+</html>
