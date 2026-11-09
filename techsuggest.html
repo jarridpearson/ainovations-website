@@ -14,7 +14,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TechSuggest &mdash; Free Tech Buying Advice from AInovations</title>
 <meta name="description" content="Tell us what you need. Within 24 hours you get a Good / Better / Best recommendation, why each one fits, and links to the lowest prices we can find. No cost, no commission, no pressure." />
-<meta name="theme-color" content="#071a1c" />
+<meta name="theme-color" content="#071c2f" />
 <link rel="canonical" href="https://ainovations.net/techsuggest" />
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
@@ -31,41 +31,153 @@
 <meta name="twitter:description" content="A Good / Better / Best recommendation for whatever you're buying, within 24 hours. No cost, no commission, no pressure." />
 <meta name="twitter:image" content="https://ainovations.net/ainovationslogo.png" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
-
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/seo-pages.css" />
 <style>
-  .ts-flag{display:inline-flex;align-items:center;gap:10px;margin:0 0 18px;padding:8px 16px;border-radius:999px;background:rgba(94,234,212,.14);border:1px solid rgba(94,234,212,.4);color:#5eead4;font-size:.85rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
-  .steps4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:46px}
-  .steps4 .step{padding:26px;border:1px solid var(--border);border-radius:19px;background:var(--white)}
-  .steps4 .n{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--teal);color:#fff;font-weight:900;font-size:1.05rem;margin-bottom:16px}
-  .steps4 h3{margin:0;font-size:1.15rem}
-  .steps4 p{margin:12px 0 0;color:var(--muted);line-height:1.7}
-  .gbb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:40px}
-  .gbb .tier{padding:28px;border:1px solid var(--border);border-radius:19px;background:var(--white)}
-  .gbb .tier h3{margin:0 0 10px;font-size:1.3rem;color:var(--deep)}
-  .gbb .tier p{margin:0;color:var(--muted);line-height:1.7}
-  .no-list{max-width:1000px}
-  .inquire-form{max-width:680px;margin:8px auto 0;padding:clamp(26px,4vw,40px);border-radius:20px;background:var(--white);color:var(--dark);text-align:left;box-shadow:0 22px 54px rgba(0,0,0,.34)}
-  .inquire-form .fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .inquire-form .field{display:flex;flex-direction:column;gap:6px}
-  .inquire-form .field.full{grid-column:1 / -1}
-  .inquire-form label{font-size:.85rem;font-weight:800;color:var(--dark)}
-  .inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:#fbfdfe;color:var(--dark)}
-  .inquire-form input:focus,.inquire-form textarea:focus,.inquire-form select:focus{outline:2px solid var(--teal);border-color:var(--teal)}
-  .inquire-form textarea{min-height:120px;resize:vertical}
-  .inquire-form .actions{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-  .inquire-form .submit{min-height:54px;padding:0 28px;border:0;border-radius:14px;background:var(--teal);color:#fff;font-weight:900;font-size:1rem;cursor:pointer}
-  .inquire-form .submit:hover{background:var(--deep)}
-  .inquire-form .note{color:var(--muted);font-size:.85rem;line-height:1.5}
-  .fine{max-width:760px;margin:26px auto 0;color:rgba(255,255,255,.6);font-size:.86rem;line-height:1.65}
-  @media(max-width:1000px){.steps4{grid-template-columns:1fr 1fr}}
-  @media(max-width:900px){.gbb{grid-template-columns:1fr}}
-  @media(max-width:700px){.steps4{grid-template-columns:1fr}.inquire-form .fg{grid-template-columns:1fr}}
-</style>
+:root{
+  --bg:#05121f; --bg-deep:#030b14; --panel:rgba(255,255,255,.06);
+  --text:#f7fbff; --muted:#b8cad7; --teal:#1dc8c6; --teal-dark:#078c92; --teal-soft:#72e6df;
+  --gold:#ffd166; --border:rgba(255,255,255,.13); --shadow:0 28px 80px rgba(0,0,0,.38);
+  --ink:#071c2f; --light-muted:#5b6b78; --light-border:#d7dee2;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;overflow-x:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,Helvetica,sans-serif;color:var(--text);
+  background:radial-gradient(circle at 12% 4%,rgba(29,200,198,.2),transparent 26%),radial-gradient(circle at 86% 12%,rgba(255,209,102,.08),transparent 24%),linear-gradient(180deg,#09263b 0%,var(--bg) 46%,var(--bg-deep) 100%);}
+a{color:inherit}
+img{max-width:100%;display:block}
+.page{width:min(1180px,calc(100% - 40px));margin:0 auto}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:20px 0}
+.brand{display:inline-flex;align-items:center;width:min(300px,42vw);min-width:210px;text-decoration:none}
+.brand img{width:100%;height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 12px 30px rgba(0,0,0,.28))}
+.nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nav-links a,.nav-right a.cta{display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border:1px solid transparent;border-radius:999px;color:#d9e8f1;text-decoration:none;font-size:14px;font-weight:800}
+.nav-links a:hover,.nav-right a.cta:hover{border-color:var(--border);background:rgba(255,255,255,.06)}
+.nav-right a.cta{background:var(--teal);color:#03212a}
+.nav-right a.cta:hover{background:var(--teal-soft)}
+.hero{padding:clamp(30px,5vw,58px);border:1px solid var(--border);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:var(--shadow)}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;padding:9px 14px;border:1px solid rgba(255,209,102,.5);border-radius:999px;background:rgba(255,209,102,.1);color:#ffe3a1;font-size:13px;font-weight:900;letter-spacing:.04em}
+.eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(255,209,102,.9)}
+.hero h1{max-width:22ch;margin:0;font-size:clamp(36px,5.6vw,64px);line-height:1.05;letter-spacing:-.045em}
+.hero h1 .accent{color:var(--teal-soft)}
+.hero h1 .gold{color:var(--gold)}
+.hero p.lede{max-width:62ch;margin:20px 0 0;color:var(--muted);font-size:clamp(16px,2vw,19px);line-height:1.6}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border-radius:14px;font-weight:850;font-size:17px;text-decoration:none;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+.btn-gold{background:linear-gradient(180deg,#ffd982,#ffc94d);color:#3a2a00;box-shadow:0 6px 0 #b8860b}
+.btn-gold:hover{filter:brightness(1.05);transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--border);background:rgba(255,255,255,.045);color:#fff}
+.btn-ghost:hover{border-color:var(--teal-soft);transform:translateY(-2px)}
+.hero-points{display:flex;gap:10px 22px;flex-wrap:wrap;margin-top:26px;color:#cfe3ec;font-size:14px;font-weight:700}
+.hero-points span::before{content:"✓";margin-right:8px;color:var(--teal-soft);font-weight:900}
+.price-hero{margin-top:34px;display:inline-flex;flex-wrap:wrap;max-width:100%;align-items:baseline;gap:14px;padding:18px 28px;border:2px solid rgba(255,209,102,.5);border-radius:20px;background:rgba(255,209,102,.08)}
+.price-hero .amt{font-size:clamp(40px,6vw,64px);font-weight:900;letter-spacing:-.04em;color:var(--gold)}
+.price-hero .per{font-size:18px;font-weight:800;color:var(--muted)}
+.price-hero .flat{font-size:15px;font-weight:750;color:#e9dfc3}
+.section{margin-top:90px}
+.section-head{max-width:840px;margin-bottom:38px}
+.kicker{margin:0 0 12px;color:var(--teal-soft);font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.kicker.gold{color:var(--gold)}
+.section-head h2{margin:0;font-size:clamp(28px,4vw,44px);line-height:1.08;letter-spacing:-.035em}
+.section-head p{margin:16px 0 0;color:var(--muted);font-size:17px;line-height:1.65}
+.included{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.inc-card{padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
+.inc-card h3{margin:0;font-size:21px;letter-spacing:-.02em}
+.inc-card h3 .tag{display:inline-block;margin-left:10px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;letter-spacing:.05em;vertical-align:middle}
+.inc-card h3 .tag.teal{background:rgba(29,200,198,.16);color:var(--teal-soft)}
+.inc-card h3 .tag.gold{background:rgba(255,209,102,.14);color:var(--gold)}
+.inc-card ul{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.inc-card li{position:relative;padding-left:26px;color:#dcebf2;font-size:15.5px;line-height:1.55}
+.inc-card li::before{content:"✓";position:absolute;left:0;color:var(--teal-soft);font-weight:900}
+.inc-card p.note{margin:16px 0 0;color:#9fb3bf;font-size:13.5px;line-height:1.6}
+.faq{display:grid;gap:12px;max-width:860px}
+.faq details{border:1px solid var(--border);border-radius:16px;background:var(--panel);overflow:hidden}
+.faq summary{padding:20px 22px;cursor:pointer;font-weight:850;font-size:16.5px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:22px;color:var(--teal-soft);font-weight:900;flex:0 0 auto}
+.faq details[open] summary::after{content:"–"}
+.faq .a{padding:0 22px 20px;color:var(--muted);font-size:15.5px;line-height:1.65}
+.contact{margin-top:90px;padding:clamp(34px,6vw,66px);border-radius:32px;text-align:center;border:1px solid rgba(255,209,102,.35);background:radial-gradient(circle at 80% 10%,rgba(255,209,102,.12),transparent 34%),rgba(255,255,255,.04)}
+.contact h2{margin:0;font-size:clamp(30px,4.6vw,48px);letter-spacing:-.04em}
+.contact > p{margin:16px auto 0;max-width:56ch;color:var(--muted);font-size:17px;line-height:1.6}
+.inquire-form{max-width:680px;margin:34px auto 0;padding:clamp(26px,4vw,40px);border-radius:20px;background:#fff;color:var(--ink);text-align:left;box-shadow:0 22px 54px rgba(0,0,0,.34)}
+.inquire-form .fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.inquire-form .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.inquire-form .field.full{grid-column:1 / -1}
+.inquire-form label{font-size:.85rem;font-weight:800;color:var(--ink)}
+.inquire-form input,.inquire-form textarea,.inquire-form select{font-family:inherit;font-size:1rem;padding:12px 14px;border:1px solid var(--light-border);border-radius:11px;background:#fbfdfe;color:var(--ink);width:100%;max-width:100%;min-width:0}
+.inquire-form input:focus,.inquire-form textarea:focus,.inquire-form select:focus{outline:2px solid var(--teal-dark);border-color:var(--teal-dark)}
+.inquire-form textarea{min-height:130px;resize:vertical}
+.inquire-form .actions{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.inquire-form .submit{min-height:54px;padding:0 28px;border:0;border-radius:14px;background:var(--teal-dark);color:#fff;font-weight:900;font-size:1rem;cursor:pointer}
+.inquire-form .submit:hover{background:#0aa3a9}
+.inquire-form .note{color:var(--light-muted);font-size:.85rem;line-height:1.5}
+.inquire-form .note a{color:var(--teal-dark);font-weight:800}
+.footer{margin-top:100px;padding:44px 0 60px;border-top:1px solid var(--border)}
+.footer-cols{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:30px}
+.footer h5{margin:0 0 12px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#8ea6b5}
+.footer a{display:block;margin:8px 0;color:#c6dbe5;text-decoration:none;font-size:14.5px;font-weight:700}
+.footer a:hover{color:#fff}
+.footer .about{margin:0;color:#8da6b4;font-size:14px;line-height:1.6;max-width:34ch}
+.footer-bottom{margin-top:34px;color:#78909d;font-size:13px;line-height:1.7}
+.proof{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.pcard{padding:26px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
+.pcard h3{margin:0 0 8px;font-size:19px;letter-spacing:-.02em}
+.pcard p{margin:0;color:var(--muted);font-size:15px;line-height:1.6}
+.pcard .who{display:inline-block;margin-bottom:12px;padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:900;letter-spacing:.05em;background:rgba(29,200,198,.16);color:var(--teal-soft)}
+.bad{border-color:rgba(255,95,95,.36);background:rgba(255,95,95,.06)}
+.bad .who{background:rgba(255,95,95,.16);color:#ff9b9b}
+.bignum{display:block;font-size:clamp(46px,8vw,72px);font-weight:900;letter-spacing:-.05em;color:#ff9b9b;line-height:1;margin:0 0 6px}
+.price-band{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+.pb{position:relative;display:flex;flex-direction:column;padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
+.pb.feature{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.06)}
+.pb .tbadge{position:absolute;top:-11px;left:28px;padding:4px 12px;border-radius:999px;background:var(--gold);color:#05121f;font-size:11.5px;font-weight:900;letter-spacing:.06em}
+.pb h3{margin:0;font-size:22px;letter-spacing:-.02em}
+.pb .tfor{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+.pb .thero{margin:20px 0 0;display:flex;align-items:baseline;gap:8px}
+.pb .thero .amt{font-size:42px;font-weight:900;letter-spacing:-.04em;color:var(--gold)}
+.pb .thero .per{font-size:15px;font-weight:800;color:var(--muted)}
+.pb .tlist{margin:6px 0 0;color:#9fb3bf;font-size:13.5px;line-height:1.5}
+.pb ul{margin:18px 0 0;padding:0;list-style:none;display:grid;gap:9px}
+.pb li{position:relative;padding-left:24px;color:#dcebf2;font-size:14.5px;line-height:1.5}
+.pb li::before{content:"✓";position:absolute;left:0;color:var(--teal-soft);font-weight:900}
+@media(max-width:960px){.included{grid-template-columns:1fr}.proof{grid-template-columns:1fr}.price-band{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.inquire-form .fg{grid-template-columns:1fr}.footer-cols{grid-template-columns:1fr}}
 
+/* Compact phone nav: the links collapse behind a menu button instead of
+   stacking into a column that eats the whole first screen. */
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-burger{display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.06);cursor:pointer}
+.nav-burger{color:#d9e8f1}
+.nav-burger span{display:block;width:20px;height:2px;border-radius:2px;background:#d9e8f1}
+.nav-burger:hover,.nav-burger:focus-visible{background:rgba(255,255,255,.12)}
+@media(max-width:620px){
+  .nav{position:relative;flex-wrap:wrap;row-gap:10px;column-gap:12px}
+  .brand{min-width:0;width:min(210px,46vw)}
+  .nav-right{margin-left:auto}
+  .nav-right a.cta{white-space:nowrap}
+  .nav-burger{display:inline-flex;flex:0 0 auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;
+    flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid var(--border);
+    border-radius:18px;background:#030b14;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  .nav-links[data-open="true"]{display:flex}
+  .nav-links a{justify-content:center;min-height:46px}
+}
+</style>
+<style>
+/* TechSuggest only: the numbered step cards and the three option cards,
+   built from the same tokens as every other page. */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.stepc{padding:26px;border:1px solid var(--border);border-radius:22px;background:var(--panel)}
+.stepc .n{display:inline-grid;place-items:center;width:42px;height:42px;margin-bottom:16px;border-radius:12px;background:rgba(29,200,198,.16);color:var(--teal-soft);font-size:18px;font-weight:900}
+.stepc h3{margin:0;font-size:18.5px;letter-spacing:-.02em}
+.stepc p{margin:12px 0 0;color:var(--muted);font-size:15px;line-height:1.6}
+.free-note{margin-top:34px;display:inline-flex;flex-wrap:wrap;max-width:100%;align-items:baseline;gap:14px;padding:18px 28px;border:2px solid rgba(29,200,198,.45);border-radius:20px;background:rgba(29,200,198,.08)}
+.free-note .amt{font-size:clamp(40px,6vw,64px);font-weight:900;letter-spacing:-.04em;color:var(--teal-soft)}
+.free-note .flat{font-size:15px;font-weight:750;color:#cfe9e7}
+@media(max-width:960px){.steps{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.steps{grid-template-columns:1fr}}
+</style>
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
@@ -81,167 +193,224 @@
 </script>
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="/" style="display:flex;align-items:center;gap:10px"><img src="/ainovations-logo-header.png" alt="AInovations" style="height:32px;width:auto;display:block" /><span>TechSuggest</span></a>
-    <nav class="header-links" aria-label="Primary navigation">
-      <a href="/rent-a-site">Rent-a-Site</a>
-      <a href="/guides">Guides</a>
-      <a class="header-primary" href="#request">Get a recommendation</a>
-    </nav>
-  </header>
-
-  <main>
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-inner">
-        <p class="ts-flag">New &middot; Free &middot; Launching next week</p>
-        <h1>Buying tech shouldn&rsquo;t feel like a gamble.</h1>
-        <p class="hero-lead">
-          TechSuggest is a free service from AInovations. Tell us what you need and what you&rsquo;re working with. Within 24 hours you get a Good / Better / Best recommendation, a plain explanation of which one actually fits you and why, and links to the lowest prices we can find.
-        </p>
-        <div class="hero-actions">
-          <a class="primary-button" href="#request" onclick="gtag('event','techsuggest_cta',{placement:'hero'})">Get on the early list</a>
-          <a class="secondary-button" href="#how">See how it works</a>
-        </div>
+<div class="page">
+  <nav class="nav" aria-label="Main navigation">
+    <a class="brand" href="/" aria-label="AInovations home"><img src="/ainovations-logo-header.png" alt="AInovations &mdash; The AI Product Studio That Ships" /></a>
+    <div class="nav-right">
+      <div class="nav-links" id="navmenu" data-open="false">
+        <a href="#problem">The problem</a>
+        <a href="#how">How it works</a>
+        <a href="#cost">What it costs</a>
+        <a href="/guides">Guides</a>
+        <a href="/rent-a-site">Rent-a-Site</a>
       </div>
-    </section>
+      <a class="cta" href="#request">Get a recommendation</a>
+      <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navmenu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+<script>
+(function(){
+  var b=document.querySelector('.nav-burger'),m=document.getElementById('navmenu');
+  if(!b||!m)return;
+  function set(open){
+    m.setAttribute('data-open',open?'true':'false');
+    b.setAttribute('aria-expanded',open?'true':'false');
+    b.setAttribute('aria-label',open?'Close menu':'Open menu');
+  }
+  b.addEventListener('click',function(){set(m.getAttribute('data-open')!=='true')});
+  m.addEventListener('click',function(e){if(e.target.closest('a'))set(false)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
+
+  <main id="main">
+
+    <header class="hero">
+      <span class="eyebrow">NEW &middot; FREE &middot; NOW OPEN</span>
+      <h1>Buying tech shouldn&rsquo;t feel like <span class="gold">a gamble.</span></h1>
+      <p class="lede">TechSuggest is a free service from AInovations. Tell us what you need and what you&rsquo;re working with. Within 24 hours you get a Good / Better / Best recommendation, a plain explanation of which one actually fits you and why, and links to the lowest prices we can find.</p>
+      <div class="free-note">
+        <span class="amt">Free</span><span class="flat">No cost to ask &middot; we take no commission from anyone you buy from &middot; nothing to install, no appointment</span>
+      </div>
+      <div class="hero-cta">
+        <a class="btn btn-gold" href="#request" onclick="gtag('event','techsuggest_cta',{placement:'hero'})">Get my recommendation &rarr;</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+      <div class="hero-points">
+        <span>An answer inside 24 hours</span>
+        <span>Three real options, not a category</span>
+        <span>Nobody chases you afterward</span>
+      </div>
+    </header>
 
     <!-- THE PROBLEM -->
-    <section class="section section-white" id="problem">
-      <div class="section-inner">
-        <div class="section-heading">
-          <h2>Most of the time, it is a gamble.</h2>
-          <p>Not because the gear is bad. Because almost everywhere you can buy it, somebody else&rsquo;s interest sits between you and the right answer.</p>
-        </div>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Big-box floor staff</h3>
-            <p>Often undertrained, and pointed at the upsell. You came in for a laptop that opens email and leave with a machine built for video editing you will never do.</p>
-          </div>
-          <div class="card">
-            <h3>Commission-based stores</h3>
-            <p>When the person advising you is paid on what you buy, the advice bends toward whatever pays them most. That is not dishonesty &mdash; it is just how the incentive works.</p>
-          </div>
-          <div class="card">
-            <h3>Shopping online alone</h3>
-            <p>Endless spec sheets, contradictory roundups and reviews you can&rsquo;t tell are real. You end up guessing, and the guess is usually expensive.</p>
-          </div>
-          <div class="card">
-            <h3>And the honest part</h3>
-            <p>Most people don&rsquo;t know what they actually need &mdash; there is no reason they should. So they overpay for things they will never use, or underbuy and replace it in a year.</p>
-          </div>
-        </div>
+    <section class="section" id="problem">
+      <div class="section-head">
+        <p class="kicker">Why it feels like a gamble</p>
+        <h2>Almost everywhere you can buy it, somebody else&rsquo;s interest sits between you and the right answer.</h2>
+        <p>Not because the gear is bad. Because of who is doing the advising, and what they get out of it.</p>
+      </div>
+      <div class="proof">
+        <article class="pcard bad">
+          <span class="who">BIG-BOX STORES</span>
+          <h3>Undertrained staff, pointed at the upsell</h3>
+          <p>You came in for a laptop that opens email and leave with a machine built for video editing you are never going to do.</p>
+        </article>
+        <article class="pcard bad">
+          <span class="who">COMMISSION FLOORS</span>
+          <h3>The advice bends toward what pays</h3>
+          <p>When the person advising you is paid on what you buy, the recommendation follows the commission. That is not dishonesty &mdash; it is just how the incentive works.</p>
+        </article>
+        <article class="pcard bad">
+          <span class="who">SHOPPING ALONE ONLINE</span>
+          <h3>Endless specs and reviews you can&rsquo;t trust</h3>
+          <p>Contradictory roundups, padded spec sheets and reviews you can&rsquo;t tell are real. You end up guessing, and the guess is usually expensive.</p>
+        </article>
+        <article class="pcard">
+          <span class="who">AND THE HONEST PART</span>
+          <h3>Most people don&rsquo;t know what they actually need</h3>
+          <p>There is no reason they should. So they overpay for things they will never use, or underbuy and replace the whole thing in a year.</p>
+        </article>
       </div>
     </section>
 
     <!-- HOW IT WORKS -->
-    <section class="section section-soft" id="how">
-      <div class="section-inner">
-        <div class="section-heading">
-          <h2>How TechSuggest works.</h2>
-          <p>Four steps. No appointment, no sales call, nothing to install.</p>
-        </div>
-        <div class="steps4">
-          <div class="step">
-            <div class="n">1</div>
-            <h3>Fill out a simple form</h3>
-            <p>What you&rsquo;re buying, what you&rsquo;ll use it for, and roughly what you want to spend. Plain questions, no jargon.</p>
-          </div>
-          <div class="step">
-            <div class="n">2</div>
-            <h3>We come back within 24 hours</h3>
-            <p>You get a Good, a Better and a Best option &mdash; real products you can go buy today, not categories.</p>
-          </div>
-          <div class="step">
-            <div class="n">3</div>
-            <h3>You see which one fits, and why</h3>
-            <p>We say which of the three we&rsquo;d pick for your situation and explain the reasoning, including when the cheapest one is the right call.</p>
-          </div>
-          <div class="step">
-            <div class="n">4</div>
-            <h3>You get links to the best prices</h3>
-            <p>Links to the lowest prices we can find for each option, so you&rsquo;re not hunting for the deal after you&rsquo;ve made the decision.</p>
-          </div>
-        </div>
+    <section class="section" id="how">
+      <div class="section-head">
+        <p class="kicker gold">How TechSuggest works</p>
+        <h2>Four steps, and none of them is a sales call.</h2>
+        <p>No appointment, nothing to install, and no one turning up on your doorstep.</p>
+      </div>
+      <div class="steps">
+        <article class="stepc">
+          <div class="n">1</div>
+          <h3>Fill out a simple form</h3>
+          <p>What you&rsquo;re buying, what you&rsquo;ll use it for, and roughly what you want to spend. Plain questions, no jargon.</p>
+        </article>
+        <article class="stepc">
+          <div class="n">2</div>
+          <h3>We come back within 24 hours</h3>
+          <p>A Good, a Better and a Best option &mdash; real products you can go buy today, not categories to go research.</p>
+        </article>
+        <article class="stepc">
+          <div class="n">3</div>
+          <h3>You see which one fits, and why</h3>
+          <p>We say which of the three we&rsquo;d pick for your situation and explain the reasoning, including when the cheapest one is the right call.</p>
+        </article>
+        <article class="stepc">
+          <div class="n">4</div>
+          <h3>You get links to the best prices</h3>
+          <p>Links to the lowest prices we can find for each option, so you&rsquo;re not hunting for the deal after the decision is already made.</p>
+        </article>
       </div>
     </section>
 
     <!-- GOOD / BETTER / BEST -->
-    <section class="section section-white">
-      <div class="section-inner">
-        <div class="section-heading">
-          <h2>Good, Better, Best &mdash; and which is which for you.</h2>
-          <p>Three real options, so you can see the trade-off instead of taking one recommendation on faith.</p>
-        </div>
-        <div class="gbb">
-          <div class="tier">
-            <h3>Good</h3>
-            <p>The least you can spend and still have it do the job properly. Often this is the one we tell you to buy.</p>
-          </div>
-          <div class="tier">
-            <h3>Better</h3>
-            <p>The middle option, and what the extra money actually buys you &mdash; stated in terms of what you&rsquo;ll notice, not specifications.</p>
-          </div>
-          <div class="tier">
-            <h3>Best</h3>
-            <p>The one that makes sense if the work genuinely demands it, with an honest note about when it does not.</p>
-          </div>
-        </div>
+    <section class="section">
+      <div class="section-head">
+        <p class="kicker">What comes back</p>
+        <h2>Good, Better, Best &mdash; and which one is yours.</h2>
+        <p>Three real options, so you can see the trade-off instead of taking a single recommendation on faith.</p>
+      </div>
+      <div class="price-band">
+        <article class="pb">
+          <h3>Good</h3>
+          <p class="tfor">The least you can spend and still have it do the job properly.</p>
+          <ul>
+            <li>A real product, in stock, with a link</li>
+            <li>What it does well for your use</li>
+            <li>Where it runs out of room later</li>
+          </ul>
+        </article>
+        <article class="pb feature">
+          <span class="tbadge">OFTEN THE PICK</span>
+          <h3>Better</h3>
+          <p class="tfor">The middle option, and what the extra money actually buys you.</p>
+          <ul>
+            <li>Stated in what you&rsquo;ll notice, not specifications</li>
+            <li>Whether the step up is worth it for you</li>
+            <li>How much longer it stays good enough</li>
+          </ul>
+        </article>
+        <article class="pb">
+          <h3>Best</h3>
+          <p class="tfor">The one that makes sense if the work genuinely demands it.</p>
+          <ul>
+            <li>What has to be true to justify it</li>
+            <li>An honest note on when it is overkill</li>
+            <li>No pressure to reach for it</li>
+          </ul>
+        </article>
       </div>
     </section>
 
     <!-- WHAT IT COSTS -->
-    <section class="section section-soft">
-      <div class="section-inner">
-        <div class="section-heading">
-          <h2>No cost. No commission. No pressure.</h2>
-          <p>There is no catch to explain, so here it is in full.</p>
-        </div>
-        <ul class="bullet-list no-list">
-          <li>
-            <strong>It is free</strong>
-            <span>TechSuggest costs nothing. There is no plan to upgrade to, and no part of it that becomes paid later for the person asking.</span>
-          </li>
-          <li>
-            <strong>We are not paid by anyone you buy from</strong>
-            <span>We take no commission and no kickback from any manufacturer or retailer. Nobody pays to be the recommendation, so the recommendation is just the recommendation.</span>
-          </li>
-          <li>
-            <strong>We don&rsquo;t sell the hardware</strong>
-            <span>You buy wherever the price is best. We have nothing to move and no inventory to clear, which is exactly why the advice can be straight.</span>
-          </li>
-          <li>
-            <strong>Nobody chases you afterward</strong>
-            <span>You get your recommendation. That is the end of it unless you come back and ask for something else.</span>
-          </li>
-        </ul>
+    <section class="section" id="cost">
+      <div class="section-head">
+        <p class="kicker gold">What it costs</p>
+        <h2>No cost. No commission. No pressure.</h2>
+        <p>There is no catch to explain, so here it is in full.</p>
+      </div>
+      <div class="included">
+        <article class="inc-card">
+          <h3>It is free <span class="tag teal">NO CATCH</span></h3>
+          <ul>
+            <li>TechSuggest costs nothing to use</li>
+            <li>There is no plan to upgrade to</li>
+            <li>No part of it becomes paid later for the person asking</li>
+          </ul>
+        </article>
+        <article class="inc-card">
+          <h3>Nobody pays us for the answer <span class="tag gold">NO COMMISSION</span></h3>
+          <ul>
+            <li>No commission or kickback from any manufacturer or retailer</li>
+            <li>Nobody pays to be the recommendation</li>
+            <li>So the recommendation is just the recommendation</li>
+          </ul>
+        </article>
+        <article class="inc-card">
+          <h3>We don&rsquo;t sell the hardware</h3>
+          <ul>
+            <li>You buy wherever the price is best</li>
+            <li>We have nothing to move and no inventory to clear</li>
+            <li>Which is exactly why the advice can be straight</li>
+          </ul>
+        </article>
+        <article class="inc-card">
+          <h3>Nobody chases you afterward</h3>
+          <ul>
+            <li>You get your recommendation</li>
+            <li>That is the end of it unless you ask for something else</li>
+            <li>No follow-up sequence, no calls</li>
+          </ul>
+        </article>
       </div>
     </section>
 
     <!-- WHO IT IS FOR -->
-    <section class="section section-white">
-      <div class="section-inner">
-        <div class="section-heading">
-          <h2>Who it&rsquo;s for.</h2>
-          <p>Anybody about to spend money on technology and not certain they&rsquo;re spending it well.</p>
-        </div>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Small businesses outfitting a team</h3>
-            <p>Laptops, monitors, printers, a point-of-sale setup, the shop computer that finally died. Buy once, buy right, and know what each person actually needs before you order five of the wrong thing.</p>
-          </div>
-          <div class="card">
-            <h3>People who just need it to work</h3>
-            <p>A laptop for school, a tablet for a parent, a phone that isn&rsquo;t a downgrade, a TV that doesn&rsquo;t need a manual. You don&rsquo;t have to learn the whole category to avoid being taken advantage of.</p>
-          </div>
-        </div>
+    <section class="section">
+      <div class="section-head">
+        <p class="kicker">Who it&rsquo;s for</p>
+        <h2>Anybody about to spend money on technology and not sure they&rsquo;re spending it well.</h2>
+      </div>
+      <div class="proof">
+        <article class="pcard">
+          <span class="who">SMALL BUSINESS</span>
+          <h3>Outfitting a team</h3>
+          <p>Laptops, monitors, printers, a point-of-sale setup, the shop computer that finally died. Buy once, buy right, and know what each person actually needs before you order five of the wrong thing.</p>
+        </article>
+        <article class="pcard">
+          <span class="who">EVERYBODY ELSE</span>
+          <h3>You just need it to work</h3>
+          <p>A laptop for school, a tablet for a parent, a phone that isn&rsquo;t a downgrade, a TV that doesn&rsquo;t need a manual. You shouldn&rsquo;t have to learn a whole category to avoid being taken advantage of.</p>
+        </article>
       </div>
     </section>
 
     <!-- CTA + FORM -->
-    <section class="final-cta" id="request">
-      <h2>Launching next week. Get on the early list.</h2>
-      <p>Tell us what you&rsquo;re looking at. We&rsquo;ll come back with your Good / Better / Best as soon as TechSuggest opens next week &mdash; early list first.</p>
+    <section class="contact" id="request">
+      <h2>Tell us what you&rsquo;re buying.</h2>
+      <p>Answer the questions below and your Good / Better / Best comes back within 24 hours, with links to the lowest prices we can find. It costs nothing.</p>
       <form class="inquire-form" name="techsuggest-request" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/techsuggest-thanks">
         <input type="hidden" name="form-name" value="techsuggest-request" />
         <p hidden><label>Don't fill this out: <input name="bot-field" /></label></p>
@@ -258,20 +427,47 @@
           <span class="note">Free, and we take no commission on anything you buy.</span>
         </div>
       </form>
-      <p class="fine">TechSuggest is advice, not a purchase or a warranty. We recommend what we would buy in your position from what is available when you ask; prices and stock move, and the final decision is yours.</p>
     </section>
+
   </main>
 
   <footer class="footer">
-    <a href="/">AInovations</a>
-    <a href="/techsuggest">TechSuggest</a>
-    <a href="/rent-a-site">Rent-a-Site</a>
-    <a href="/guides">Guides</a>
-    <a href="mailto:jp@ainovations.net">Contact</a>
-    <a href="/privacy">Privacy</a>
-    <a href="/terms">Terms</a>
-    <span>&copy; 2026 AInovations LLC</span>
+    <div class="footer-cols">
+      <div>
+        <h5>AInovations</h5>
+        <p class="about">An AI product studio. We build our own software, and we build and run websites and apps for businesses nationwide.</p>
+      </div>
+      <div>
+        <h5>Rent-a-Site</h5>
+        <a href="/rent-a-site">Plans &amp; pricing</a>
+        <a href="/well-water">Wells &amp; water treatment</a>
+        <a href="/auto-body">Body shops &amp; towing</a>
+        <a href="/site-services">Septic, digging &amp; rentals</a>
+        <a href="/marinas">Marinas &amp; boatyards</a>
+        <a href="/game-stores">Game stores</a>
+        <a href="/creators">Creators</a>
+        <a href="/rental-yards">Equipment rental yards</a>
+        <a href="/churches">Churches</a>
+      </div>
+      <div>
+        <h5>Straight answers</h5>
+        <a href="/how-much-does-a-website-cost-for-a-small-business">What a website really costs</a>
+        <a href="/facebook-page-vs-website-for-small-business">Is a Facebook page enough?</a>
+        <a href="/what-is-a-managed-website">What "managed" should include</a>
+        <a href="/guides">All website guides</a>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <a href="/">Home</a>
+        <a href="/hire">Hire us</a>
+        <a href="/service-areas">Service areas</a>
+        <a href="/support">Support</a>
+      </div>
+    </div>
+    <p class="footer-bottom">© 2026 AInovations LLC. Serving Onondaga, Oswego, Madison, Oneida, Jefferson and Lewis counties — and anywhere else that'll have us.<br />We don't promise Google rankings. We do tell you what things cost.</p>
   </footer>
+</div>
+  <script src="/chatbot.js" defer></script>
   <script>
     // Submit to Netlify Forms, then always land on the thank-you page (no dead-end).
     (function(){
@@ -287,6 +483,5 @@
       });
     })();
   </script>
-  <script src="/chatbot.js" defer></script>
 </body>
 </html>
