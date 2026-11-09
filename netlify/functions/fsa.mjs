@@ -284,6 +284,39 @@ const DRIVE_TTL_MS = 30 * 86400000;
 
 class AddressNotFound extends Error {}
 
+// She only serves homes in Oswego County, NY (county FIPS 36-075). The Census geocoder
+// gives the county for a full street address; when it can't match one (common for rural
+// routes) the ZIP has to be one of the county's own post offices.
+const OUTSIDE_AREA = 'Sorry, PooPawtrol only serves homes in Oswego County, NY. Enter your full address: street, town and ZIP.';
+const OSWEGO_COUNTY_ZIPS = new Set([
+  '13028', '13036', '13042', '13044', '13069', '13074', '13076', '13083', '13093', '13103', '13107', '13114', '13115',
+  '13121', '13126', '13131', '13132', '13135', '13142', '13144', '13145', '13167', '13302', '13426', '13437', '13493',
+]);
+const areaCache = new Map();
+
+async function inServiceArea(address) {
+  const key = normAddr(address);
+  if (areaCache.has(key)) return areaCache.get(key);
+  let inside = null;
+  try {
+    const url = 'https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress?' + new URLSearchParams({
+      address, benchmark: 'Public_AR_Current', vintage: 'Current_Current', layers: 'Counties', format: 'json',
+    });
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const county = (await res.json())?.result?.addressMatches?.[0]?.geographies?.Counties?.[0];
+    if (county) inside = county.STATE === '36' && county.COUNTY === '075';
+  } catch (e) {
+    console.error('county lookup failed', e.message);
+  }
+  if (inside === null) {
+    const zips = key.match(/\b\d{5}\b/g) || [];
+    const otherState = /,\s*(?!ny\b|new york\b)[a-z]{2}\b\s*\d{5}/.test(key);
+    inside = !otherState && OSWEGO_COUNTY_ZIPS.has(zips[zips.length - 1]);
+  }
+  areaCache.set(key, inside);
+  return inside;
+}
+
 async function routeMatrix(origins, destinations) {
   if (!ROUTES_KEY) throw new Error('FSA_ROUTES_KEY not set');
   const res = await fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
@@ -1246,6 +1279,7 @@ async function handle(req, context) {
       const dogs = Number.parseInt(input.dogs, 10) || 1;
       if (!isDate(date) || !(await getServices()).some((sv) => sv.id === serviceId)) return fail(400, 'Pick a service and date.');
       if (!address) return fail(400, 'Add your address in your profile first.');
+      if (!(await inServiceArea(address))) return fail(400, OUTSIDE_AREA);
       if (date < todayLocal()) return ok({ slots: [] });
       const settings = await getSettings();
       if (!scheduleReady(settings, serviceId)) return ok({ slots: [] });
@@ -1261,6 +1295,7 @@ async function handle(req, context) {
       if (await overLimit('addr', ipOf(req, context), 20, 60)) return fail(429, 'Too many tries. Please wait a bit.');
       const address = str(input.address, 300);
       if (!address) return fail(400, 'Enter your address.');
+      if (!(await inServiceArea(address))) return fail(400, OUTSIDE_AREA);
       try {
         const rows = await routeMatrix([address], [address]);
         if (rows[0]?.condition !== 'ROUTE_EXISTS') return fail(400, 'We could not find that address. Include street, town and ZIP.');
@@ -1286,6 +1321,7 @@ async function handle(req, context) {
         notes: str(input.notes, 1000),
       };
       if (!b.name || !b.phone || !b.address || !b.email) return fail(400, 'Name, email, phone and address are required.');
+      if (!(await inServiceArea(b.address))) return fail(400, OUTSIDE_AREA);
       if (!Number.isInteger(b.dogs) || b.dogs < 1 || b.dogs > 20) return fail(400, 'Enter how many dogs.');
       if (!isDate(b.date) || !isTime(b.time)) return fail(400, 'Pick a date and time.');
       if (b.date < todayLocal()) return fail(400, 'That date has passed.');
