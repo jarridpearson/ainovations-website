@@ -50,6 +50,7 @@
       <a href="/tankmate">The App</a>
       <a href="#how">How it works</a>
       <a href="#benefits">Why partner</a>
+      <a href="#pricing">Pricing</a>
       <a class="cta" href="#apply">Become a partner</a>
     </div>
   </nav>
@@ -74,7 +75,7 @@
         <p>Each user sees one recommended local partner for their area. When there's no partner nearby yet, TankMate shows nearby vendors as a fallback — and invites shops to claim the area.</p>
       </div>
       <div class="steps">
-        <div class="step"><div class="n">1</div><h3>Apply</h3><p>Tell us about your store and the area you serve using the form below.</p></div>
+        <div class="step"><div class="n">1</div><h3>Apply &amp; pick a plan</h3><p>Tell us about your store and the area you serve, and choose monthly or annual for your location.</p></div>
         <div class="step"><div class="n">2</div><h3>Get featured</h3><p>We set you as the recommended local partner for nearby TankMate users.</p></div>
         <div class="step"><div class="n">3</div><h3>Receive qualified traffic</h3><p>Local aquarists find you at the high-intent moment they're ready to buy.</p></div>
       </div>
@@ -92,10 +93,43 @@
       </div>
     </section>
 
+    <section class="section" id="pricing" aria-labelledby="price-h">
+      <div class="section-head">
+        <span class="kicker">Membership</span>
+        <h2 id="price-h">One partner per area. Claim yours.</h2>
+        <p>Preferred partnership is a paid membership — that's what keeps it exclusive. One committed local store per area, not a name in a crowded list. Pick the plan that fits, per location.</p>
+      </div>
+      <div class="pricing">
+        <div class="plan free">
+          <span class="tag">Flexible</span>
+          <h3>Monthly</h3>
+          <p class="price">$49.99 <small>/ month per location</small></p>
+          <p class="sub">Month to month. Cancel anytime.</p>
+          <ul>
+            <li>The one recommended store for aquarists in your area</li>
+            <li>Shown at the high-intent moment they're ready to buy</li>
+            <li>Billed monthly, per store location</li>
+          </ul>
+        </div>
+        <div class="plan pro">
+          <span class="tag">Best value</span>
+          <h3>Annual</h3>
+          <p class="price">$399.99 <small>/ year per location</small></p>
+          <p class="sub">Over 30% off the monthly rate — save more than $199 a year.</p>
+          <ul>
+            <li>Everything in Monthly</li>
+            <li>Locks in your area for a full year</li>
+            <li>Best rate — more than $199 off versus paying monthly</li>
+          </ul>
+        </div>
+      </div>
+      <p class="fineprint">Pricing is per store location. Apply below and we'll confirm your area is open, then get you set up on the plan you choose.</p>
+    </section>
+
     <section class="section" id="apply" aria-labelledby="apply-h">
       <div class="form-wrap">
         <h2 id="apply-h">Become a preferred partner</h2>
-        <p class="sub">Tell us about your store. We'll follow up about becoming the recommended local partner for your area. This is an interest form — no payment, no commitment.</p>
+        <p class="sub">Tell us about your store and which plan you want — $49.99/month or $399.99/year per location. We'll confirm your area is open and get you set up. No charge until you're confirmed.</p>
         <form name="tankmate-partner" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/partner-thanks">
           <input type="hidden" name="form-name" value="tankmate-partner" />
           <p hidden><label>Don't fill this out: <input name="bot-field" /></label></p>
@@ -106,7 +140,7 @@
             <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" autocomplete="tel" /></div>
             <div class="field full"><label for="area">Store location / service area *</label><input id="area" name="service_area" type="text" required placeholder="City, state, ZIP, or the area you serve" /></div>
             <div class="field full"><label for="website">Website</label><input id="website" name="website" type="url" placeholder="https://" /></div>
-            <div class="field full"><label for="message">Anything else?</label><textarea id="message" name="message" placeholder="Tell us about your store and the area you'd like to claim."></textarea></div>
+            <div class="field full"><label for="message">Anything else?</label><textarea id="message" name="message" placeholder="Tell us about your store, the area you'd like to claim, and whether you want the monthly or annual plan."></textarea></div>
           </div>
           <div class="form-actions">
             <button class="btn btn-coral" type="submit" onclick="tmTrack('partner_lead_submit',{page:'partners'})">Submit application</button>
