@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- HeyCatch analytics (TankMate) — https://heycatch.ai -->
+<script type="module">
+  import { analytics } from '/vendor/heycatch-sdk-0.7.0.js';
+  analytics.init({
+    projectKey: 'hck_pk_rYaVY8F0CF-ljCtnFEtYRQs8cpWKE1Mg',
+    install: { framework: 'web', agent: 'claude-code' },
+  });
+</script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SSSRNSG9P2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SSSRNSG9P2');
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Why We Back the Little Guy | TankMate</title>
+<meta name="description" content="One night, four stores, two basic tank questions. Three big-box chains gave answers ranging from useless to dangerous; one local shop got it right in under a minute. Why TankMate partners with independent fish shops." />
+<meta name="keywords" content="local fish store vs petco, best aquarium store advice, fishkeeping advice, aquarium store, cycling a new tank, raising KH hardness" />
+<meta name="theme-color" content="#0a2a3d" />
+<link rel="canonical" href="https://ainovations.net/blog/why-we-back-local-fish-shops" />
+<link rel="icon" type="image/png" href="/tankmate-assets/icon-512.png" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="TankMate" />
+<meta property="og:title" content="Why We Back the Little Guy" />
+<meta property="og:description" content="One night, four stores, two basic tank questions — and why TankMate partners with local shops, not big chains." />
+<meta property="og:url" content="https://ainovations.net/blog/why-we-back-local-fish-shops" />
+<meta property="og:image" content="https://ainovations.net/tankmate-assets/feature-graphic.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Why We Back the Little Guy" />
+<meta name="twitter:description" content="One night, four stores, two basic tank questions. Only one store's answers wouldn't have risked the fish." />
+<meta name="twitter:image" content="https://ainovations.net/tankmate-assets/feature-graphic.png" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<link rel="stylesheet" href="/reef.css" />
+<style>
+  /* Field-report verdict cards — built on the shared TankMate tokens */
+  .stops{display:flex;flex-direction:column;gap:16px;margin:10px 0 4px}
+  .stop{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.05)}
+  .stop-head{display:flex;align-items:center;gap:13px;padding:15px 18px;border-bottom:1px solid var(--line)}
+  .stop-num{font-weight:900;width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;background:rgba(255,255,255,.08);color:var(--muted);font-size:15px}
+  .stop-num.win{background:rgba(30,126,72,.22);color:var(--green-soft)}
+  .stop-head .m{flex:1;min-width:0}
+  .stop-head .store{font-weight:800;letter-spacing:-.01em;font-size:16px}
+  .stop-head .place{display:block;font-size:13px;color:var(--muted);font-weight:600}
+  .verdict{flex:none;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;border:1px solid}
+  .verdict.bad{color:#ffb8a3;background:rgba(226,102,74,.14);border-color:rgba(226,102,74,.5)}
+  .verdict.good{color:#aef0c5;background:rgba(30,126,72,.2);border-color:rgba(94,201,122,.5)}
+  .stop-body{padding:16px 18px;display:flex;flex-direction:column;gap:13px}
+  .xch{display:grid;grid-template-columns:82px 1fr;gap:3px 14px}
+  .xch .lab{font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--teal-soft);padding-top:3px}
+  .xch p{margin:0;color:var(--text);font-size:15px;line-height:1.55}
+  .truth{border-radius:12px;padding:13px 15px;font-size:14.5px;line-height:1.55;color:var(--text)}
+  .truth.bad{background:rgba(226,102,74,.1);border:1px solid rgba(226,102,74,.28)}
+  .truth.good{background:rgba(30,126,72,.12);border:1px solid rgba(94,201,122,.3)}
+  .truth b{color:#fff}
+  .truth .app{display:block;margin-top:6px;color:var(--muted);font-size:13.5px}
+  .truth .app strong{color:var(--teal-soft)}
+  .flag{font-weight:800;white-space:nowrap;font-size:14px}
+  .flag.bad{color:#ff9e85}
+  .flag.good{color:var(--green-soft)}
+  blockquote.pull{margin:30px auto;max-width:760px;padding:4px 0 4px 22px;border-left:3px solid var(--teal-soft);font-size:clamp(20px,3vw,27px);line-height:1.3;letter-spacing:-.015em;color:#fff;font-weight:600}
+  blockquote.pull cite{display:block;margin-top:12px;font-size:13.5px;font-style:normal;color:var(--muted);font-weight:700;letter-spacing:.02em}
+  .thanks{max-width:760px;margin:26px auto 0;padding:20px 22px;border-radius:18px;background:rgba(30,126,72,.12);border:1px solid rgba(94,201,122,.35)}
+  .thanks .t{font-weight:800;color:var(--green-soft);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+  .thanks p{margin:0;color:var(--text);line-height:1.6}
+  @media(max-width:560px){.xch{grid-template-columns:1fr;gap:2px}.xch .lab{padding-top:9px}}
+</style>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org","@type":"Article",
+  "headline":"Why We Back the Little Guy",
+  "description":"One night, four stores, two basic tank questions — and why TankMate partners with independent fish shops instead of big-box chains.",
+  "image":"https://ainovations.net/tankmate-assets/feature-graphic.png",
+  "datePublished":"2026-11-11",
+  "author":{"@type":"Organization","name":"TankMate","url":"https://ainovations.net/tankmate"},
+  "publisher":{"@type":"Organization","name":"AInovations LLC","url":"https://ainovations.net/"},
+  "mainEntityOfPage":"https://ainovations.net/blog/why-we-back-local-fish-shops"
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+  <nav class="nav" aria-label="Main navigation">
+    <a class="brand" href="/tankmate"><img src="/tankmate-assets/icon-512.png" alt="TankMate logo" /><b>TankMate</b></a>
+    <div class="nav-links">
+      <a href="/tankmate">The App</a>
+      <a href="/blog">Guides</a>
+      <a href="/partners">For Stores</a>
+      <a class="cta" href="/tankmate">Get the App</a>
+    </div>
+  </nav>
+</div>
+
+<main id="main">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="kicker">From the Field</span>
+      <h1>Why We Back the Little Guy</h1>
+      <p class="lead">One night. Four stores. Two basic questions. Only one store's answers wouldn't have risked the fish.</p>
+    </div>
+
+    <article class="article prose">
+      <p class="meta">TankMate · Field report · 4 min read</p>
+
+      <p>TankMate partners with independent fish shops, not the big-box chains. People ask us why. So we ran a simple test: we walked into four stores in one night with real tank questions and wrote down exactly what we were told. <strong>Three chains sent us home with advice that ranges from useless to dangerous. One local shop got it right in under a minute.</strong> Here is what happened.</p>
+
+      <h2>Four stops, one honest scorecard</h2>
+      <p>Two ordinary questions, the kind any new fishkeeper asks: <strong>how to raise a tank's hardness (KH)</strong>, and <strong>how long to wait before adding fish to a brand-new tank</strong>. We asked the first at both Petcos and the second at PetSmart and the local shop. Everything below is what the staff actually said, with the correct answer next to it, and what TankMate returned when we asked it the same thing on the spot.</p>
+
+      <div class="stops">
+
+        <div class="stop">
+          <div class="stop-head">
+            <span class="stop-num">1</span>
+            <span class="m"><span class="store">Petco</span><span class="place">Big-box chain · Stop one</span></span>
+            <span class="verdict bad">Didn't know</span>
+          </div>
+          <div class="stop-body">
+            <div class="xch"><span class="lab">We asked</span><p>How do I raise the hardness in my tank — specifically the KH?</p></div>
+            <div class="xch"><span class="lab">We heard</span><p>Two staff, including the one introduced as their fish expert, said they didn't know how. The first told us he didn't even know what KH was. After a quick search on her phone, the expert read back an answer — the same one TankMate had already given us.</p></div>
+            <div class="truth bad"><b>KH is carbonate hardness</b> — the water's buffering, what keeps pH stable. It's day-one knowledge on a floor that sells fish.
+              <span class="app"><strong>TankMate said:</strong> raise KH with a carbonate buffer or crushed coral, with target numbers for the fish in question.</span></div>
+          </div>
+        </div>
+
+        <div class="stop">
+          <div class="stop-head">
+            <span class="stop-num">2</span>
+            <span class="m"><span class="store">Petco</span><span class="place">Big-box chain · Stop two</span></span>
+            <span class="verdict bad">Wrong product</span>
+          </div>
+          <div class="stop-body">
+            <div class="xch"><span class="lab">We asked</span><p>Same question — how do I bring the hardness up?</p></div>
+            <div class="xch"><span class="lab">We heard</span><p>We were told to buy a water-conditioning product. When we searched it in the app and on Google, both said the same thing: it has no effect on hardness at all. When we pointed that out, the reply was, "Well, you should just get fish that like softer water."</p></div>
+            <div class="truth bad"><b>A water conditioner removes chlorine. It does not change hardness.</b> Selling it as a hardness fix is wrong, and "pick different fish" dodges the question we came in with.
+              <span class="app"><strong>TankMate said:</strong> that product won't move GH or KH — use a mineral or carbonate supplement dosed to a target, not a dechlorinator.</span></div>
+          </div>
+        </div>
+
+        <div class="stop">
+          <div class="stop-head">
+            <span class="stop-num">3</span>
+            <span class="m"><span class="store">PetSmart</span><span class="place">Big-box chain · Stop three</span></span>
+            <span class="verdict bad">Dangerous advice</span>
+          </div>
+          <div class="stop-body">
+            <div class="xch"><span class="lab">We asked</span><p>Brand-new tank, fresh water, hardness reading 0 and 0. How long should I wait before adding fish?</p></div>
+            <div class="xch"><span class="lab">We heard</span><p>"As early as 24 hours after the fresh water goes in." We asked about the bacteria. They said the bacteria grow right when the fish need them, and 24 hours is the standard rule for a new aquarium. We didn't buy fish — we gave a short lesson on cycling and showed what the app said. The reply: "Well, we recommend 24 hours and have really good luck with it."</p></div>
+            <div class="truth bad"><b>This is how new fish die.</b> A new tank has no nitrifying bacteria yet. They take weeks to establish, not a day. Add fish at 24 hours and ammonia and nitrite climb with nothing to process them — new-tank syndrome. Hardness and KH reading 0 is its own warning: no buffer, so pH can crash.
+              <span class="app"><strong>TankMate said:</strong> cycle the tank first, build the biological filter, and wait weeks — not hours — before adding livestock.</span></div>
+          </div>
+        </div>
+
+        <div class="stop">
+          <div class="stop-head">
+            <span class="stop-num win">★</span>
+            <span class="m"><span class="store">Ack's Exotic Pets</span><span class="place">Independent shop · Cicero, NY</span></span>
+            <span class="verdict good">Right call</span>
+          </div>
+          <div class="stop-body">
+            <div class="xch"><span class="lab">We asked</span><p>Same new-tank question: how long before I can add life?</p></div>
+            <div class="xch"><span class="lab">We heard</span><p>Instantly, they flagged the hardness as a problem and said it needed to come up for the fish we were considering. They guided us to a proper hardness fix — one that matched a TankMate recommendation. Then they told us to wait two to four weeks on a brand-new tank to grow the biological system that keeps it healthy, and walked us through what to do and when.</p></div>
+            <div class="truth good"><b>Correct on every point</b> — and no agenda behind it. The only money made was the hardness fix we actually needed. No unnecessary livestock put at risk, no upsell. Just what the tank required.
+              <span class="app"><strong>Matched TankMate on:</strong> the hardness problem, the right fix, and a multi-week cycle before adding life.</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <h2>Same questions, side by side</h2>
+      <table class="ptable">
+        <thead><tr><th>Store</th><th>What we were told</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Petco</strong> · stop 1</td><td>Didn't know what KH is; Googled our own app's answer</td><td><span class="flag bad">✕ Didn't know</span></td></tr>
+          <tr><td><strong>Petco</strong> · stop 2</td><td>Sold a conditioner for hardness; then "get softer-water fish"</td><td><span class="flag bad">✕ Wrong product</span></td></tr>
+          <tr><td><strong>PetSmart</strong></td><td>"Add fish 24 hours after fresh water"; bacteria "grow when needed"</td><td><span class="flag bad">✕ Dangerous</span></td></tr>
+          <tr><td><strong>Ack's Exotic Pets</strong> · Cicero, NY</td><td>Flagged hardness, correct fix, 2–4 week cycle, no upsell</td><td><span class="flag good">✓ Right call</span></td></tr>
+        </tbody>
+      </table>
+
+      <blockquote class="pull">
+        No money made aside from the hardness fix. No unnecessary life put at risk. No upsell. Simply what was needed.
+        <cite>— Our visit to Ack's Exotic Pets</cite>
+      </blockquote>
+
+      <h2>This is our partner model</h2>
+      <p>We are not against big stores. We are for good advice. On this night, the independent shop had more knowledge, higher expectations for the hobby, and guidance that protects the animal instead of endangering it. That is the pattern we keep seeing, and it is why TankMate builds its partner program around local shops.</p>
+
+      <div class="sell" style="margin-top:22px">
+        <div class="card"><div class="ic">📚</div><h3>Deeper knowledge</h3><p>The people who got it right knew what KH was, why cycling matters, and which fix actually works.</p></div>
+        <div class="card"><div class="ic">🎯</div><h3>Higher expectations</h3><p>They hold the hobby to a standard: do it right, or don't put an animal in harm's way to make a sale.</p></div>
+        <div class="card"><div class="ic">🤝</div><h3>Honest advice</h3><p>Only the hardness fix we needed. No upsell, no risk to living things, no answer built to move product.</p></div>
+      </div>
+
+      <div class="thanks">
+        <div class="t">A thank-you</div>
+        <p>To <b>Ack's Exotic Pets</b> in Cicero, NY — thank you for the honesty, the right answers, and for caring more about the tank than the receipt. This is exactly the kind of shop we want standing next to TankMate.</p>
+      </div>
+
+      <p style="margin-top:22px">TankMate exists to put that same science in your pocket between visits: the KH target, the cycling timeline, the fix that actually works. And when you need hands-on help, we'd rather send you to the shop that knows your water than the one still Googling the question you came in with.</p>
+
+      <div class="hero-cta" style="margin-top:26px">
+        <a class="btn btn-coral" href="https://apps.apple.com/us/app/tankmate-aquarium-ai/id6800954864" target="_blank" rel="noopener">▶ Get TankMate free on the App Store</a>
+        <a class="btn btn-coral" href="https://play.google.com/store/apps/details?id=com.ainovations.reeftankcopilot" target="_blank" rel="noopener">▶ Get TankMate free on Google Play</a>
+        <a class="btn btn-teal" href="/partners">For aquarium stores</a>
+      </div>
+    </article>
+
+    <div class="related">
+      <a href="/partners">For Stores: partner with TankMate →</a>
+      <a href="/reef/how-to-cycle-a-saltwater-tank">Guide: How to Cycle a New Tank →</a>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-links">
+      <a href="/tankmate">TankMate</a>
+      <a href="/tankmate#tanks">Tank Types</a>
+      <a href="/blog">Guides</a>
+      <a href="/partners">For Stores</a>
+      <a href="https://ainovations.net/">AInovations</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+    <p>© 2026 AInovations LLC · TankMate · Now on the App Store &amp; Google Play</p>
+  </div>
+</footer>
+<script src="/appbar.js" defer></script>
+</body>
+</html>
