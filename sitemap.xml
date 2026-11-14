@@ -413,6 +413,34 @@
   </url>
 
   <url>
+    <loc>https://ainovations.net/tanks/semi-aquatic-frogs</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://ainovations.net/tanks/tree-frogs</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://ainovations.net/tanks/aquatic-turtle</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://ainovations.net/tanks/tortoise</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://ainovations.net/blog</loc>
     <lastmod>2026-08-15</lastmod>
     <changefreq>monthly</changefreq>
